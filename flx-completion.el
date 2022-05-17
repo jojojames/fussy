@@ -18,8 +18,10 @@
 
 (require 'flx)
 
+;;; Code:
+
 (defgroup flx-completion nil
-  "Fuzzy completion style using `flx.'"
+  "Fuzzy completion style using `flx.'."
   :group 'flx
   :link '(url-link :tag "GitHub" "https://github.com/jojojames/flx-completion"))
 
@@ -56,7 +58,7 @@ If this is nil, don't propertize (e.g. highlight matches) at all."
     (funcall flx-completion-propertize-fn obj score)))
 
 (defun flx-completion-propertize-by-completions-common (obj score)
-  "Return propertized copy of obj according to score.
+  "Return propertized copy of OBJ according to score.
 
 SCORE of nil means to clear the properties."
   (let ((block-started (cadr score))
@@ -80,9 +82,15 @@ SCORE of nil means to clear the properties."
       str)))
 
 (defun flx-completion-try-completions (string table pred point)
+  "Try to flex-complete STRING in TABLE given PRED and POINT.
+
+Implement `try-completions' interface by using `completion-flex-try-completion'."
   (completion-flex-try-completion string table pred point))
 
 (defun flx-completion-all-completions (string table pred point)
+  "Get flex-completions of STRING in TABLE, given PRED and POINT.
+
+Implement `all-completions' interface by using `flx' scoring."
   (let ((completion-ignore-case flx-completion-ignore-case))
     (pcase-let ((`(,all ,pattern ,prefix ,_suffix ,_carbounds)
                  (completion-substring--all-completions
