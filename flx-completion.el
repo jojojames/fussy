@@ -23,21 +23,25 @@
   :group 'flx
   :link '(url-link :tag "GitHub" "https://github.com/jojojames/flx-completion"))
 
-(defconst flx--max-needle-len 128)
+(defconst flx-completion--max-needle-len 128)
 
 (defcustom flx-completion-ignore-case t
   "If t, `flx' ignores `completion-ignore-case'."
-  :group 'flx-completion)
+  :group 'flx-completion
+  :type 'boolean)
 
 (defcustom flx-completion-max-word-length-to-score 1000
   "Words that are longer than this length are not scored by flx."
-  :group 'flx-completion)
+  :group 'flx-completion
+  :type 'integer)
 
 (defcustom flx-completion-propertize-fn
   #'flx-propertize
-  "Function used to propertize `flx' matches. Takes OBJ \(to be propertized\)\
-and SCORE \(list of indices of OBJ to be propertized\). If this is nil, don't\
-propertize (e.g. highlight matches) at all."
+  "Function used to propertize `flx' matches.
+
+Takes OBJ \(to be propertized\) and
+SCORE \(list of indices of OBJ to be propertized\).
+If this is nil, don't propertize (e.g. highlight matches) at all."
   :type `(choice
           (const :tag "No highlighting" nil)
           (const :tag "By completions-common face."
@@ -46,7 +50,7 @@ propertize (e.g. highlight matches) at all."
           (function :tag "Custom function"))
   :group 'flx-completion)
 
-(defun flx--completion-propertize (obj score)
+(defun flx-completion--propertize (obj score)
   "Propertize OBJ with SCORE by calling `flx-completion-propertize-fn'."
   (unless (null flx-completion-propertize-fn)
     (funcall flx-completion-propertize-fn obj score)))
@@ -87,7 +91,8 @@ SCORE of nil means to clear the properties."
                   #'completion-flex--make-flex-pattern)))
       (when all
         (nconc
-         (if (or (> (length string) flx--max-needle-len) (string= string ""))
+         (if (or (> (length string) flx-completion--max-needle-len)
+                 (string= string ""))
              ;; Copy of `completion-flex-all-completions' when we don't do any
              ;; sorting.
              (completion-pcm--hilit-commonality pattern all)
@@ -104,7 +109,7 @@ SCORE of nil means to clear the properties."
                   (put-text-property 0 1 'completion-score
                                      (car score)
                                      x)
-                  (setq x (flx--completion-propertize
+                  (setq x (flx-completion--propertize
                            x score)))))
               x)
             all))
@@ -118,3 +123,4 @@ SCORE of nil means to clear the properties."
                      "Flx Fuzzy completion.")))
 
 (provide 'flx-completion)
+;;; flx-completion.el ends here
