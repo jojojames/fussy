@@ -70,7 +70,9 @@ We can leverage [[flx-rs][flx-rs]] to achieve faster scoring by using Rust.
 #+end_src
 
 * Company Integration
-flx may or may not be too slow when completing with [[company-mode]].
+flx may or may not be too slow when completing with
+[[company-mode][company-mode]].
+
 For this, we can advise ~company-capf~ to use basic completions.
 
 #+begin_src emacs-lisp :tangle yes
