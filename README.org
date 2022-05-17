@@ -1,7 +1,7 @@
 #+TITLE: Flx Completion
 #+STARTUP: noindent
 
-This is a package to provide a ~completion-style~ to Emacs that leverages [[flx][flx]].
+This is a package to provide a ~completion-style~ to Emacs that leverages [[https://github.com/lewang/flx][flx]].
 
 * Installation
 
@@ -43,7 +43,7 @@ This is a package to provide a ~completion-style~ to Emacs that leverages [[flx]
 
 * Faster Scoring
 
-We can leverage [[flx-rs][flx-rs]] to achieve faster scoring by using Rust.
+We can leverage [[https://github.com/jcs-elpa/flx-rs][flx-rs]] to achieve faster scoring by using Rust.
 
 #+begin_src emacs-lisp :tangle yes
 (use-package flx-rs
@@ -71,7 +71,7 @@ We can leverage [[flx-rs][flx-rs]] to achieve faster scoring by using Rust.
 
 * Company Integration
 flx may or may not be too slow when completing with
-[[company-mode][company-mode]].
+[[https://github.com/company-mode/company-mode][company-mode]].
 
 For this, we can advise ~company-capf~ to use basic completions.
 
@@ -101,7 +101,3 @@ while `company-capf' runs."
 
 (advice-add 'company-capf :around 'company-capf-with-og-completion-styles)
 #+end_src
-
-#+LINK: flx https://github.com/lewang/flx
-#+LINK: flx-rs https://github.com/jcs-elpa/flx-rs
-#+LINK: company-mode https://github.com/company-mode/company-mode
