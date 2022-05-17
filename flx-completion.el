@@ -11,7 +11,7 @@
 ;;; Commentary:
 
 ;; This is a fuzzy Emacs completion style similar to the built-in
-;; `flex' style, but with using `flx' for scoring.
+;; `flex' style, but using `flx' for scoring.
 
 ;; To use this style, prepend `flx' to `completion-styles'.
 ;; To speed up `flx' matching, use https://github.com/jcs-elpa/flx-rs.
