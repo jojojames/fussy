@@ -64,8 +64,9 @@ We can leverage [[https://github.com/jcs-elpa/flx-rs][flx-rs]] to achieve faster
   ;; $ ln -s ~/.emacs.d/straight/repos/flx-rs/bin ~/.emacs.d/straight/build/flx-rs/bin
   :config
   (flx-rs-load-dyn)
-  ;; This is not necessary since `flx-all-completions' already checks for this
-  ;; function. It'll still help other libraries that call `flx-score' though.
+  ;; This is not necessary since `flx-completion-all-completions' already checks
+  ;; for this function. It'll still help other libraries that call `flx-score'
+  ;; though.
   (advice-add 'flx-score :override #'flx-rs-score))
 #+end_src
 
