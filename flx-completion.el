@@ -25,7 +25,12 @@
   :group 'flx
   :link '(url-link :tag "GitHub" "https://github.com/jojojames/flx-completion"))
 
-(defconst flx-completion--max-needle-len 128)
+(defcustom flx-completion-max-query-length 128
+  "Collections with queries longer than this are not scored using `flx'.
+
+See `flx-completion-all-completions' for implementation details."
+  :group 'flx-completion
+  :type 'integer)
 
 (defcustom flx-completion-ignore-case t
   "If t, `flx' ignores `completion-ignore-case'."
@@ -99,7 +104,7 @@ Implement `all-completions' interface by using `flx' scoring."
                   #'completion-flex--make-flex-pattern)))
       (when all
         (nconc
-         (if (or (> (length string) flx-completion--max-needle-len)
+         (if (or (> (length string) flx-completion-max-query-length)
                  (string= string ""))
              ;; Copy of `completion-flex-all-completions' when we don't do any
              ;; sorting.
