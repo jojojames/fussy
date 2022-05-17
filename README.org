@@ -48,8 +48,11 @@ We can leverage [[flx-rs][flx-rs]] to achieve faster scoring by using Rust.
 #+begin_src emacs-lisp :tangle yes
 (use-package flx-rs
   :ensure t
-  :straight t
-  :init
+  :straight
+  (flx-rs
+   :repo "jcs-elpa/flx-rs"
+   :fetcher github
+   :files (:defaults "bin"))
   ;; Manual steps:
   ;; Install Rust
   ;; $ curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
@@ -59,16 +62,7 @@ We can leverage [[flx-rs][flx-rs]] to achieve faster scoring by using Rust.
   ;; $ cargo build ~/.emacs.d/straight/repos/flx-rs/core
   ;; Symlink to Straight BUILD directory.
   ;; $ ln -s ~/.emacs.d/straight/repos/flx-rs/bin ~/.emacs.d/straight/build/flx-rs/bin
-  ;; This hasn't been tested.
-  (unless (file-exists-p "~/.emacs.d/straight/build/flx-rs/bin")
-    (unless (executable-find "cargo")
-      (shell-command
-       "curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y")
-      (shell-command "rustup update"))
-    (shell-command "cd ~/.emacs.d/straight/repos/flx-rs/core; cargo build")
-    (shell-command
-     "ln -s ~/.emacs.d/straight/repos/flx-rs/bin ~/.emacs.d/straight/build/flx-rs/bin"))
-
+  :config
   (flx-rs-load-dyn)
   ;; This is not necessary since `flx-all-completions' already checks for this
   ;; function. It'll still help other libraries that call `flx-score' though.
@@ -76,7 +70,6 @@ We can leverage [[flx-rs][flx-rs]] to achieve faster scoring by using Rust.
 #+end_src
 
 * Company Integration
-
 flx may or may not be too slow when completing with [[company-mode]].
 For this, we can advise ~company-capf~ to use basic completions.
 
