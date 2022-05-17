@@ -75,6 +75,9 @@ For this, we can advise ~company-capf~ to use basic completions.
 
 #+begin_src emacs-lisp :tangle yes
 
+(defconst OG-COMPLETION-STYLES completion-styles
+  "Original `completion-styles' Emacs comes with.")
+
 (defun company-capf-with-og-completion-styles (f &rest args)
   "Set `completion-styles' to be the default Emacs `completion-styles'
 while `company-capf' runs."
