@@ -1,0 +1,82 @@
+#+TITLE: Flx Completion
+#+STARTUP: noindent
+
+This is a package to provide a ~completion-style~ to Emacs that leverages [[flx][flx]].
+
+* Installation
+
+- Get the package, either from MELPA (soon to come):
+
+  : M-x package-install RET flx-completion RET
+
+  Or clone / download this repository and modify your ~load-path~:
+
+  : (add-to-list 'load-path (expand-file-name "/path/to/flx-collection/" user-emacs-directory))
+
+* Straight Example
+
+#+begin_src emacs-lisp :tangle yes
+
+(use-package flx
+  :ensure t :straight t
+  :config
+  (set-face-attribute
+   'flx-highlight-face nil
+   :inherit 'match
+   :underline t
+   :overline nil
+   :weight 'bold))
+
+(use-package flx-completion
+  :ensure t
+  :straight
+  (flx-completion :type git :host github :repo "jojojames/flx-completion")
+  :after flx
+  :config
+  (setq completion-styles '(flx)
+        ;; For example, project-find-file uses 'project-files which uses
+        ;; substring completion by default. Set to nil to make sure it's using
+        ;; flx.
+        completion-category-defaults nil
+        completion-category-overrides
+        '((file (styles basic partial-completion)))))
+
+#+end_src
+
+* Faster Scoring
+
+We can leverage [[flx-rs][flx-rs]] to achieve faster scoring by using Rust.
+
+#+begin_src emacs-lisp :tangle yes
+(use-package flx-rs
+  :ensure t
+  :straight t
+  :init
+  ;; Manual steps:
+  ;; Install Rust
+  ;; $ curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+  ;; Update rustup
+  ;; $ rustup update
+  ;; Build flx-rs.
+  ;; $ cargo build ~/.emacs.d/straight/repos/flx-rs/core
+  ;; Symlink to Straight BUILD directory.
+  ;; $ ln -s ~/.emacs.d/straight/repos/flx-rs/bin ~/.emacs.d/straight/build/flx-rs/bin
+  ;; This hasn't been tested.
+  (unless (file-exists-p "~/.emacs.d/straight/build/flx-rs/bin")
+    (unless (executable-find "cargo")
+      (shell-command
+       "curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y")
+      (shell-command "rustup update"))
+    (shell-command "cd ~/.emacs.d/straight/repos/flx-rs/core; cargo build")
+    (shell-command
+     "ln -s ~/.emacs.d/straight/repos/flx-rs/bin ~/.emacs.d/straight/build/flx-rs/bin"))
+
+  (flx-rs-load-dyn)
+  ;; This is not necessary since `flx-all-completions' already checks for this
+  ;; function. It'll still help other libraries that call `flx-score' though.
+  (advice-add 'flx-score :override #'flx-rs-score))
+#+end_src
+
+
+#+LINK: flx https://github.com/lewang/flx
+#+LINK: flx-rs https://github.com/jcs-elpa/flx-rs
