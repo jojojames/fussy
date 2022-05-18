@@ -32,6 +32,23 @@ See `flx-completion-all-completions' for implementation details."
   :group 'flx-completion
   :type 'integer)
 
+(defcustom flx-completion-max-candidate-limit 10000
+  "If collection has a count greater than this limit,
+
+`flx-completion-all-completions' will apply some optimizations.
+
+N -> this variable's value
+
+1. The collection (to be scored) will initially be filtered based off word
+length. e.g. The shortest length N words will be filtered to be scored.
+
+2. Score only up to N words. The rest won't be scored.
+
+Additional implementation details:
+https://github.com/abo-abo/swiper/issues/207#issuecomment-141541960"
+  :group 'flx-completion
+  :type 'integer)
+
 (defcustom flx-completion-ignore-case t
   "If t, `flx' ignores `completion-ignore-case'."
   :group 'flx-completion
@@ -109,24 +126,45 @@ Implement `all-completions' interface by using `flx' scoring."
              ;; Copy of `completion-flex-all-completions' when we don't do any
              ;; sorting.
              (completion-pcm--hilit-commonality pattern all)
-           (mapcar
-            (lambda (x)
-              (setq x (copy-sequence x))
-              (cond
-               ((> (length x) flx-completion-max-word-length-to-score)
-                (put-text-property 0 1 'completion-score 0 x))
-               (:default
-                (let ((score (if (fboundp 'flx-rs-score)
-                                 (flx-rs-score x string)
-                               (flx-score x string flx-strings-cache))))
-                  (put-text-property 0 1 'completion-score
-                                     (car score)
-                                     x)
-                  (setq x (flx-completion--propertize
-                           x score)))))
-              x)
-            all))
+           (if (< (length all) flx-completion-max-candidate-limit)
+               (flx-completion-score all string)
+             (let ((unscored-candidates '())
+                   (candiates-to-score '()))
+               ;; Pre-sort the candidates by length before partitioning.
+               (setq unscored-candidates
+                     (sort all (lambda (c1 c2)
+                                 (< (length c1)
+                                    (length c2)))))
+               ;; Partition the candidates into sorted and unsorted groups.
+               (dotimes (_n (min (length unscored-candidates)
+                                 flx-completion-max-candidate-limit))
+                 (push (pop unscored-candidates) candiates-to-score))
+               (append
+                ;; Compute all of the flx scores only for cands-to-sort.
+                (flx-completion-score (reverse candiates-to-score) string)
+                ;; Add the unsorted candidates.
+                unscored-candidates))))
          (length prefix))))))
+
+(defun flx-completion-score (candidates string)
+  "Score and propertize CANDIDATES using STRING."
+  (mapcar
+   (lambda (x)
+     (setq x (copy-sequence x))
+     (cond
+      ((> (length x) flx-completion-max-word-length-to-score)
+       (put-text-property 0 1 'completion-score 0 x))
+      (:default
+       (let ((score (if (fboundp 'flx-rs-score)
+                        (flx-rs-score x string)
+                      (flx-score x string flx-strings-cache))))
+         (put-text-property 0 1 'completion-score
+                            (car score)
+                            x)
+         (setq x (flx-completion--propertize
+                  x score)))))
+     x)
+   candidates))
 
 ;;;###autoload
 (progn
