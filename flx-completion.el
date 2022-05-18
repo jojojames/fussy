@@ -129,7 +129,7 @@ Implement `all-completions' interface by using `flx' scoring."
            (if (< (length all) flx-completion-max-candidate-limit)
                (flx-completion-score all string)
              (let ((unscored-candidates '())
-                   (candiates-to-score '()))
+                   (candidates-to-score '()))
                ;; Pre-sort the candidates by length before partitioning.
                (setq unscored-candidates
                      (sort all (lambda (c1 c2)
@@ -138,10 +138,10 @@ Implement `all-completions' interface by using `flx' scoring."
                ;; Partition the candidates into sorted and unsorted groups.
                (dotimes (_n (min (length unscored-candidates)
                                  flx-completion-max-candidate-limit))
-                 (push (pop unscored-candidates) candiates-to-score))
+                 (push (pop unscored-candidates) candidates-to-score))
                (append
                 ;; Compute all of the flx scores only for cands-to-sort.
-                (flx-completion-score (reverse candiates-to-score) string)
+                (flx-completion-score (reverse candidates-to-score) string)
                 ;; Add the unsorted candidates.
                 unscored-candidates))))
          (length prefix))))))
