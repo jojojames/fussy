@@ -74,6 +74,27 @@ If this is nil, don't propertize (e.g. highlight matches) at all."
           (function :tag "Custom function"))
   :group 'flx-completion)
 
+;;;###autoload
+(defcustom flx-completion-adjust-metadata-fn
+  #'flx-completion--adjust-metadata
+  "Used for `completion--adjust-metadata' to adjust completion metadata.
+
+`completion--adjust-metadata' is what is used to set up sorting of candidates
+based on `completion-score'.  The default `flex' completion style in
+`completion-styles' uses `completion--flex-adjust-metadata' which respects
+the original completion table's sort functions:
+
+  display-sort-function, cycle-sort-function
+
+The default of `flx-completion-adjust-metadata-fn' is instead to ignore those
+existing sort functions in favor of sorting based only on `flx' match scores."
+  :type `(choice
+          (const :tag "Adjust metadata using flx."
+                 ,#'flx-completion--adjust-metadata)
+          (const :tag "Adjust metadata using flex."
+                 ,#'completion--flex-adjust-metadata)
+          (function :tag "Custom function"))
+  :group 'flx-completion)
 
 (defun flx-completion-propertize-by-completions-common (obj score)
   "Return propertized copy of OBJ according to score.
@@ -165,10 +186,36 @@ Implement `all-completions' interface by using `flx' scoring."
 
 ;;;###autoload
 (progn
-  (put 'flx 'completion--adjust-metadata #'completion--flex-adjust-metadata)
+  (put 'flx 'completion--adjust-metadata flx-completion-adjust-metadata-fn)
   (add-to-list 'completion-styles-alist
                '(flx flx-completion-try-completions flx-completion-all-completions
                      "Flx Fuzzy completion.")))
+
+(defun flx-completion--adjust-metadata (metadata)
+  "If `flx' is actually doing filtering, adjust METADATA's sorting."
+  (let ((flex-is-filtering-p
+         ;; JT@2019-12-23: FIXME: this is kinda wrong.  What we need
+         ;; to test here is "some input that actually leads/led to
+         ;; flex filtering", not "something after the minibuffer
+         ;; prompt".  E.g. The latter is always true for file
+         ;; searches, meaning we'll be doing extra work when we
+         ;; needn't.
+         (or (not (window-minibuffer-p))
+             (> (point-max) (minibuffer-prompt-end)))))
+    (let ((flx-sort-fn
+           (lambda (completions)
+             (sort
+              completions
+              (lambda (c1 c2)
+                (let ((s1 (get-text-property 0 'completion-score c1))
+                      (s2 (get-text-property 0 'completion-score c2)))
+                  (> (or s1 0) (or s2 0))))))))
+      `(metadata
+        ,@(and flex-is-filtering-p
+               `((display-sort-function . ,flx-sort-fn)))
+        ,@(and flex-is-filtering-p
+               `((cycle-sort-function . ,flx-sort-fn)))
+        ,@(cdr metadata)))))
 
 (provide 'flx-completion)
 ;;; flx-completion.el ends here
