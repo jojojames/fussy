@@ -74,10 +74,6 @@ If this is nil, don't propertize (e.g. highlight matches) at all."
           (function :tag "Custom function"))
   :group 'flx-completion)
 
-(defun flx-completion--propertize (obj score)
-  "Propertize OBJ with SCORE by calling `flx-completion-propertize-fn'."
-  (unless (null flx-completion-propertize-fn)
-    (funcall flx-completion-propertize-fn obj score)))
 
 (defun flx-completion-propertize-by-completions-common (obj score)
   "Return propertized copy of OBJ according to score.
@@ -161,8 +157,9 @@ Implement `all-completions' interface by using `flx' scoring."
          (put-text-property 0 1 'completion-score
                             (car score)
                             x)
-         (setq x (flx-completion--propertize
-                  x score)))))
+         (unless (null flx-completion-propertize-fn)
+           (setq
+            x (funcall flx-completion-propertize-fn x score))))))
      x)
    candidates))
 
