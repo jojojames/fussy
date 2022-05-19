@@ -40,9 +40,9 @@ See `flx-completion-all-completions' for implementation details."
 N -> this variable's value
 
 1. The collection (to be scored) will initially be filtered based off word
-length. e.g. The shortest length N words will be filtered to be scored.
+length.  e.g. The shortest length N words will be filtered to be scored.
 
-2. Score only up to N words. The rest won't be scored.
+2. Score only up to N words.  The rest won't be scored.
 
 Additional implementation details:
 https://github.com/abo-abo/swiper/issues/207#issuecomment-141541960"
