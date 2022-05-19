@@ -32,8 +32,8 @@ See `flx-completion-all-completions' for implementation details."
   :group 'flx-completion
   :type 'integer)
 
-(defcustom flx-completion-max-candidate-limit 10000
-  "If collection has a count greater than this limit,
+(defcustom flx-completion-max-candidate-limit 1000
+  "Apply optimizations for collections greater than this limit.
 
 `flx-completion-all-completions' will apply some optimizations.
 
