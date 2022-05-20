@@ -60,7 +60,7 @@ https://github.com/abo-abo/swiper/issues/207#issuecomment-141541960"
   :type 'integer)
 
 (defcustom flx-completion-propertize-fn
-  #'flx-propertize
+  #'flx-completion-propertize-by-completions-common
   "Function used to propertize `flx' matches.
 
 Takes OBJ \(to be propertized\) and
@@ -109,13 +109,19 @@ SCORE of nil means to clear the properties."
       (dolist (char (cdr score))
         (when (and last-char
                    (not (= (1+ last-char) char)))
-          (put-text-property block-started  (1+ last-char)
-                             'face 'completions-common-part str)
-
+          (add-face-text-property block-started (1+ last-char)
+                                  'completions-common-part nil str)
           (setq block-started char))
         (setq last-char char))
-      (put-text-property block-started  (1+ last-char)
-                         'face 'completions-first-difference str))
+      (add-face-text-property block-started (1+ last-char)
+                              'completions-common-part nil str)
+      (when (and
+             last-char
+             (> (length str) (+ 2 last-char)))
+        (add-face-text-property (1+ last-char) (+ 2 last-char)
+                                'completions-first-difference
+                                nil
+                                str)))
     (if (consp obj)
         (cons str (cdr obj))
       str)))
