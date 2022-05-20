@@ -242,13 +242,18 @@ Implement `all-completions' interface by using `flx' scoring."
       ,@(cdr metadata))))
 
 (defun flx-completion--adjust-sorting (completions)
-  "Sorts COMPLETIONS using `completion-score'."
+  "Sorts COMPLETIONS using `completion-score' and completion length."
   (sort
    completions
    (lambda (c1 c2)
-     (let ((s1 (get-text-property 0 'completion-score c1))
-           (s2 (get-text-property 0 'completion-score c2)))
-       (> (or s1 0) (or s2 0))))))
+     (let ((s1 (or (get-text-property 0 'completion-score c1) 0))
+           (s2 (or (get-text-property 0 'completion-score c2) 0)))
+       (if (= s1 s2)
+           ;; Shorter candidates have precedence when completion score is the
+           ;; same.
+           (< (length c1) (length c2))
+         ;; Candidates with higher completion score have precedence.
+         (> s1 s2))))))
 
 (provide 'flx-completion)
 ;;; flx-completion.el ends here
