@@ -60,7 +60,7 @@ https://github.com/abo-abo/swiper/issues/207#issuecomment-141541960"
   :type 'integer)
 
 (defcustom flx-completion-propertize-fn
-  #'flx-completion-propertize-by-completions-common
+  #'flx-completion--propertize-common-part
   "Function used to propertize `flx' matches.
 
 Takes OBJ \(to be propertized\) and
@@ -69,7 +69,7 @@ If this is nil, don't propertize (e.g. highlight matches) at all."
   :type `(choice
           (const :tag "No highlighting" nil)
           (const :tag "By completions-common face."
-                 ,#'flx-completion-propertize-by-completions-common)
+                 ,#'flx-completion--propertize-common-part)
           (const :tag "By flx propertization." ,#'flx-propertize)
           (function :tag "Custom function"))
   :group 'flx-completion)
@@ -96,7 +96,7 @@ existing sort functions in favor of sorting based only on `flx' match scores."
           (function :tag "Custom function"))
   :group 'flx-completion)
 
-(defun flx-completion-propertize-by-completions-common (obj score)
+(defun flx-completion--propertize-common-part (obj score)
   "Return propertized copy of OBJ according to score.
 
 SCORE of nil means to clear the properties."
@@ -147,11 +147,11 @@ Implement `all-completions' interface by using `flx' scoring."
         (nconc
          (if (or (> (length string) flx-completion-max-query-length)
                  (string= string ""))
-             (flx-completion-maybe-highlight pattern all :always-highlight)
+             (flx-completion--maybe-highlight pattern all :always-highlight)
            (if (< (length all) flx-completion-max-candidate-limit)
-               (flx-completion-maybe-highlight
+               (flx-completion--maybe-highlight
                 pattern
-                (flx-completion-score all string using-pcm-highlight)
+                (flx-completion--score all string using-pcm-highlight)
                 using-pcm-highlight)
              (let ((unscored-candidates '())
                    (candidates-to-score '()))
@@ -166,19 +166,19 @@ Implement `all-completions' interface by using `flx' scoring."
                  (push (pop unscored-candidates) candidates-to-score))
                (append
                 ;; Compute all of the flx scores only for cands-to-sort.
-                (flx-completion-maybe-highlight
+                (flx-completion--maybe-highlight
                  pattern
-                 (flx-completion-score
+                 (flx-completion--score
                   (reverse candidates-to-score) string using-pcm-highlight)
                  using-pcm-highlight)
                 ;; Add the unsorted candidates.
                 ;; We could highlight these too,
-                ;; (e.g. with `flx-completion-maybe-highlight') but these are
+                ;; (e.g. with `flx-completion--maybe-highlight') but these are
                 ;; at the bottom of the pile of candidates.
                 unscored-candidates))))
          (length prefix))))))
 
-(defun flx-completion-score (candidates string &optional using-pcm-highlight)
+(defun flx-completion--score (candidates string &optional using-pcm-highlight)
   "Score and propertize \(if not USING-PCM-HIGHLIGHT\) CANDIDATES using STRING."
   (mapcar
    (lambda (x)
@@ -204,7 +204,7 @@ Implement `all-completions' interface by using `flx' scoring."
      x)
    candidates))
 
-(defun flx-completion-maybe-highlight (pattern collection using-pcm-highlight)
+(defun flx-completion--maybe-highlight (pattern collection using-pcm-highlight)
   "Highlight COLLECTION using PATTERN if USING-PCM-HIGHLIGHT is true."
   (if using-pcm-highlight
       ;; This seems to be the best way to get highlighting to work consistently
