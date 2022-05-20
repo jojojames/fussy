@@ -84,9 +84,9 @@ based on `completion-score'.  The default `flex' completion style in
 `completion-styles' uses `completion--flex-adjust-metadata' which respects
 the original completion table's sort functions:
 
-  display-sort-function, cycle-sort-function
+  e.g. display-sort-function, cycle-sort-function
 
-The default of `flx-completion-adjust-metadata-fn' is instead to ignore those
+The default of `flx-completion-adjust-metadata-fn' is used instead to ignore
 existing sort functions in favor of sorting based only on `flx' match scores."
   :type `(choice
           (const :tag "Adjust metadata using flx."
