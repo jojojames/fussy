@@ -236,12 +236,12 @@ Implement `all-completions' interface by using `flx' scoring."
              (> (point-max) (minibuffer-prompt-end)))))
     `(metadata
       ,@(and flex-is-filtering-p
-             `((display-sort-function . flx-completion--adjust-sorting)))
+             `((display-sort-function . flx-completion--sort)))
       ,@(and flex-is-filtering-p
-             `((cycle-sort-function . flx-completion--adjust-sorting)))
+             `((cycle-sort-function . flx-completion--sort)))
       ,@(cdr metadata))))
 
-(defun flx-completion--adjust-sorting (completions)
+(defun flx-completion--sort (completions)
   "Sorts COMPLETIONS using `completion-score' and completion length."
   (sort
    completions
