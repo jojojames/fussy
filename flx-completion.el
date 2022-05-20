@@ -137,7 +137,8 @@ Implement `try-completions' interface by using `completion-flex-try-completion'.
 
 Implement `all-completions' interface by using `flx' scoring."
   (let ((completion-ignore-case flx-completion-ignore-case))
-    (pcase-let ((`(,all ,pattern ,prefix ,_suffix ,_carbounds)
+    (pcase-let ((using-pcm-highlight (eq table 'completion-file-name-table))
+                (`(,all ,pattern ,prefix ,_suffix ,_carbounds)
                  (completion-substring--all-completions
                   string
                   table pred point
@@ -146,11 +147,12 @@ Implement `all-completions' interface by using `flx' scoring."
         (nconc
          (if (or (> (length string) flx-completion-max-query-length)
                  (string= string ""))
-             ;; Copy of `completion-flex-all-completions' when we don't do any
-             ;; sorting.
-             (completion-pcm--hilit-commonality pattern all)
+             (flx-completion-maybe-highlight pattern all :always-highlight)
            (if (< (length all) flx-completion-max-candidate-limit)
-               (flx-completion-score all string)
+               (flx-completion-maybe-highlight
+                pattern
+                (flx-completion-score all string using-pcm-highlight)
+                using-pcm-highlight)
              (let ((unscored-candidates '())
                    (candidates-to-score '()))
                ;; Pre-sort the candidates by length before partitioning.
@@ -164,13 +166,20 @@ Implement `all-completions' interface by using `flx' scoring."
                  (push (pop unscored-candidates) candidates-to-score))
                (append
                 ;; Compute all of the flx scores only for cands-to-sort.
-                (flx-completion-score (reverse candidates-to-score) string)
+                (flx-completion-maybe-highlight
+                 pattern
+                 (flx-completion-score
+                  (reverse candidates-to-score) string using-pcm-highlight)
+                 using-pcm-highlight)
                 ;; Add the unsorted candidates.
+                ;; We could highlight these too,
+                ;; (e.g. with `flx-completion-maybe-highlight') but these are
+                ;; at the bottom of the pile of candidates.
                 unscored-candidates))))
          (length prefix))))))
 
-(defun flx-completion-score (candidates string)
-  "Score and propertize CANDIDATES using STRING."
+(defun flx-completion-score (candidates string &optional using-pcm-highlight)
+  "Score and propertize \(if not USING-PCM-HIGHLIGHT\) CANDIDATES using STRING."
   (mapcar
    (lambda (x)
      (setq x (copy-sequence x))
@@ -181,14 +190,31 @@ Implement `all-completions' interface by using `flx' scoring."
        (let ((score (if (fboundp 'flx-rs-score)
                         (flx-rs-score x string)
                       (flx-score x string flx-strings-cache))))
+         ;; This is later used by `completion--adjust-metadata' for sorting.
          (put-text-property 0 1 'completion-score
                             (car score)
                             x)
-         (unless (null flx-completion-propertize-fn)
+         ;; If we're using pcm highlight, we don't need to propertize the
+         ;; string here. This is faster than the pcm highlight but doesn't
+         ;; seem to work with `find-file'.
+         (unless (or using-pcm-highlight
+                     (null flx-completion-propertize-fn))
            (setq
             x (funcall flx-completion-propertize-fn x score))))))
      x)
    candidates))
+
+(defun flx-completion-maybe-highlight (pattern collection using-pcm-highlight)
+  "Highlight COLLECTION using PATTERN if USING-PCM-HIGHLIGHT is true."
+  (if using-pcm-highlight
+      ;; This seems to be the best way to get highlighting to work consistently
+      ;; with `find-file'.
+      (completion-pcm--hilit-commonality pattern collection)
+    ;; This will be the case when the `completing-read' function is not
+    ;; `find-file'.
+    ;; Assume that the collection has already been highlighted.
+    ;; AKA when `using-pcm-highlight' is nil.
+    collection))
 
 ;;;###autoload
 (progn

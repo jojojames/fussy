@@ -36,8 +36,7 @@ This is a package to provide a ~completion-style~ to Emacs that leverages [[http
         ;; substring completion by default. Set to nil to make sure it's using
         ;; flx.
         completion-category-defaults nil
-        completion-category-overrides
-        '((file (styles basic partial-completion)))))
+        completion-category-overrides nil))
 
 #+end_src
 
