@@ -234,20 +234,21 @@ Implement `all-completions' interface by using `flx' scoring."
          ;; needn't.
          (or (not (window-minibuffer-p))
              (> (point-max) (minibuffer-prompt-end)))))
-    (let ((flx-sort-fn
-           (lambda (completions)
-             (sort
-              completions
-              (lambda (c1 c2)
-                (let ((s1 (get-text-property 0 'completion-score c1))
-                      (s2 (get-text-property 0 'completion-score c2)))
-                  (> (or s1 0) (or s2 0))))))))
-      `(metadata
-        ,@(and flex-is-filtering-p
-               `((display-sort-function . ,flx-sort-fn)))
-        ,@(and flex-is-filtering-p
-               `((cycle-sort-function . ,flx-sort-fn)))
-        ,@(cdr metadata)))))
+    `(metadata
+      ,@(and flex-is-filtering-p
+             `((display-sort-function . flx-completion--adjust-sorting)))
+      ,@(and flex-is-filtering-p
+             `((cycle-sort-function . flx-completion--adjust-sorting)))
+      ,@(cdr metadata))))
+
+(defun flx-completion--adjust-sorting (completions)
+  "Sorts COMPLETIONS using `completion-score'."
+  (sort
+   completions
+   (lambda (c1 c2)
+     (let ((s1 (get-text-property 0 'completion-score c1))
+           (s2 (get-text-property 0 'completion-score c2)))
+       (> (or s1 0) (or s2 0))))))
 
 (provide 'flx-completion)
 ;;; flx-completion.el ends here
