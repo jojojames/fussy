@@ -102,9 +102,12 @@ existing sort functions in favor of sorting based only on `flx' match scores."
 SCORE of nil means to clear the properties."
   (let ((block-started (cadr score))
         (last-char nil)
-        (str (if (consp obj)
-                 (substring-no-properties (car obj))
-               (substring-no-properties obj))))
+        ;; Originally we used `substring-no-properties' when setting str but
+        ;; that strips text properties that other packages may set.
+        ;; One example is `consult', which sprinkles text properties onto
+        ;; the candidate. e.g. `consult--line-prefix' will check for
+        ;; 'consult-location on str candidate.
+        (str (if (consp obj) (car obj) obj)))
     (when score
       (dolist (char (cdr score))
         (when (and last-char
