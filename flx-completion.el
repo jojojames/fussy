@@ -113,6 +113,26 @@ If this is nil, do nothing."
           (function :tag "Custom function"))
   :group 'flx-completion)
 
+(defcustom flx-completion-max-limit-preferred-candidate-fn
+  #'flx-completion--strlen<
+  "Function used when collection length is greater than\
+
+`flx-completion-max-candidate-limit'.
+
+FN takes in and compares two candidate strings C1 and C2 and
+returns which candidates should have precedence.
+
+If this is nil, take the first `flx-completion-max-candidate-limit' number
+of candidates that was returned by the completion table. "
+  :type `(choice
+          (const :tag "Take the first X number of candidates." nil)
+          (const :tag "Shorter candidates have precedence."
+                 ,#'flx-completion--strlen<)
+          (const :tag "Longer candidates have precedence."
+                 ,#'flx-completion--strlen>)
+          (function :tag "Custom function"))
+  :group 'flx-completion)
+
 (defmacro flx-completion--measure-time (&rest body)
   "Measure the time it takes to evaluate BODY.
 https://lists.gnu.org/archive/html/help-gnu-emacs/2008-06/msg00087.html"
@@ -185,9 +205,12 @@ Implement `all-completions' interface by using `flx' scoring."
                    (candidates-to-score '()))
                ;; Pre-sort the candidates by length before partitioning.
                (setq unscored-candidates
-                     (sort all (lambda (c1 c2)
-                                 (< (length c1)
-                                    (length c2)))))
+                     (if flx-completion-max-limit-preferred-candidate-fn
+                         (sort
+                          all flx-completion-max-limit-preferred-candidate-fn)
+                       ;; If `flx-completion-max-limit-preferred-candidate-fn'
+                       ;; is nil, we'll partition the candidates as is.
+                       all))
                ;; Partition the candidates into sorted and unsorted groups.
                (dotimes (_n (min (length unscored-candidates)
                                  flx-completion-max-candidate-limit))
