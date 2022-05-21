@@ -96,6 +96,14 @@ existing sort functions in favor of sorting based only on `flx' match scores."
           (function :tag "Custom function"))
   :group 'flx-completion)
 
+(defmacro flx-completion--measure-time (&rest body)
+  "Measure the time it takes to evaluate BODY.
+https://lists.gnu.org/archive/html/help-gnu-emacs/2008-06/msg00087.html"
+  `(let ((time (current-time)))
+     (let ((result ,@body))
+       (message "%.06f" (float-time (time-since time)))
+       result)))
+
 (defun flx-completion--propertize-common-part (obj score)
   "Return propertized copy of OBJ according to score.
 
