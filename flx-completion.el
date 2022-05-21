@@ -123,7 +123,7 @@ FN takes in and compares two candidate strings C1 and C2 and
 returns which candidates should have precedence.
 
 If this is nil, take the first `flx-completion-max-candidate-limit' number
-of candidates that was returned by the completion table. "
+of candidates that was returned by the completion table."
   :type `(choice
           (const :tag "Take the first X number of candidates." nil)
           (const :tag "Shorter candidates have precedence."
@@ -293,7 +293,7 @@ Implement `all-completions' interface by using `flx' scoring."
       ,@(cdr metadata))))
 
 (defun flx-completion--sort (completions)
-  "Sorts COMPLETIONS using `completion-score' and completion length."
+  "Sort COMPLETIONS using `completion-score' and completion length."
   (sort
    completions
    (lambda (c1 c2)
