@@ -101,3 +101,11 @@ while `company-capf' runs."
 
 (advice-add 'company-capf :around 'company-capf-with-og-completion-styles)
 #+end_src
+
+If you don't use the above advice and want to use ~flx~, you should use the
+below ~company-transformer~.
+
+#+begin_src emacs-lisp :tangle yes
+(setq company-transformers
+          '(flx-completion--company-sort-by-completion-score))
+#+end_src

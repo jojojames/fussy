@@ -313,5 +313,16 @@ Implement `all-completions' interface by using `flx' scoring."
   "Return t if C1's length is greater than C2's length."
   (> (length c1) (length c2)))
 
+;; `company' integration.
+(defvar company-backend)
+;; Use with `company-transformers'.
+;; (setq company-transformers
+;;           '(flx-completion--company-sort-by-completion-score))
+(defun flx-completion--company-sort-by-completion-score (candidates)
+  "`company' transformer to sort CANDIDATES."
+  (if (functionp company-backend)
+      candidates
+    (flx-completion--sort candidates)))
+
 (provide 'flx-completion)
 ;;; flx-completion.el ends here
