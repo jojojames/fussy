@@ -96,6 +96,23 @@ existing sort functions in favor of sorting based only on `flx' match scores."
           (function :tag "Custom function"))
   :group 'flx-completion)
 
+(defcustom flx-completion-compare-same-score-fn
+  #'flx-completion--strlen<
+  "Function used to compare matches with the same 'completion-score.
+
+FN takes in and compares two candidate strings C1 and C2 and
+returns which candidates should have precedence.
+
+If this is nil, do nothing."
+  :type `(choice
+          (const :tag "Don't compare candidates with same score." nil)
+          (const :tag "Shorter candidates have precedence."
+                 ,#'flx-completion--strlen<)
+          (const :tag "Longer candidates have precedence."
+                 ,#'flx-completion--strlen>)
+          (function :tag "Custom function"))
+  :group 'flx-completion)
+
 (defmacro flx-completion--measure-time (&rest body)
   "Measure the time it takes to evaluate BODY.
 https://lists.gnu.org/archive/html/help-gnu-emacs/2008-06/msg00087.html"
@@ -259,12 +276,19 @@ Implement `all-completions' interface by using `flx' scoring."
    (lambda (c1 c2)
      (let ((s1 (or (get-text-property 0 'completion-score c1) 0))
            (s2 (or (get-text-property 0 'completion-score c2) 0)))
-       (if (= s1 s2)
-           ;; Shorter candidates have precedence when completion score is the
-           ;; same.
-           (< (length c1) (length c2))
+       (if (and (= s1 s2)
+                (not (null flx-completion-compare-same-score-fn)))
+           (funcall flx-completion-compare-same-score-fn c1 c2)
          ;; Candidates with higher completion score have precedence.
          (> s1 s2))))))
+
+(defun flx-completion--strlen< (c1 c2)
+  "Return t if C1's length is less than C2's length."
+  (< (length c1) (length c2)))
+
+(defun flx-completion--strlen> (c1 c2)
+  "Return t if C1's length is greater than C2's length."
+  (> (length c1) (length c2)))
 
 (provide 'flx-completion)
 ;;; flx-completion.el ends here
