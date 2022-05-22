@@ -88,7 +88,7 @@ If this is nil, don't propertize (e.g. highlight matches) at all."
   :group 'flx-completion)
 
 (defcustom flx-completion-compare-same-score-fn
-  #'flx-completion--strlen<
+  #'flx-completion-strlen<
   "Function used to compare matches with the same 'completion-score.
 
 FN takes in and compares two candidate strings C1 and C2 and
@@ -98,14 +98,14 @@ If this is nil, do nothing."
   :type `(choice
           (const :tag "Don't compare candidates with same score." nil)
           (const :tag "Shorter candidates have precedence."
-                 ,#'flx-completion--strlen<)
+                 ,#'flx-completion-strlen<)
           (const :tag "Longer candidates have precedence."
-                 ,#'flx-completion--strlen>)
+                 ,#'flx-completion-strlen>)
           (function :tag "Custom function"))
   :group 'flx-completion)
 
 (defcustom flx-completion-max-limit-preferred-candidate-fn
-  #'flx-completion--strlen<
+  #'flx-completion-strlen<
   "Function used when collection length is greater than\
 
 `flx-completion-max-candidate-limit'.
@@ -118,9 +118,9 @@ of candidates that was returned by the completion table."
   :type `(choice
           (const :tag "Take the first X number of candidates." nil)
           (const :tag "Shorter candidates have precedence."
-                 ,#'flx-completion--strlen<)
+                 ,#'flx-completion-strlen<)
           (const :tag "Longer candidates have precedence."
-                 ,#'flx-completion--strlen>)
+                 ,#'flx-completion-strlen>)
           (function :tag "Custom function"))
   :group 'flx-completion)
 
@@ -278,7 +278,7 @@ Implement `all-completions' interface by using `flx' scoring."
          ;; string here. This is faster than the pcm highlight but doesn't
          ;; seem to work with `find-file'.
          (unless (or using-pcm-highlight
-                     (flx-completion-using-orderless-p)
+                     (flx-completion--using-orderless-p)
                      (null flx-completion-propertize-fn))
            (setq
             x (funcall flx-completion-propertize-fn x score))))))
@@ -288,7 +288,7 @@ Implement `all-completions' interface by using `flx' scoring."
 (defun flx-completion--maybe-highlight (pattern collection using-pcm-highlight)
   "Highlight COLLECTION using PATTERN if USING-PCM-HIGHLIGHT is true."
   (if (and using-pcm-highlight
-           (not (flx-completion-using-orderless-p)))
+           (not (flx-completion--using-orderless-p)))
       ;; This seems to be the best way to get highlighting to work consistently
       ;; with `find-file'.
       (completion-pcm--hilit-commonality pattern collection)
@@ -337,15 +337,15 @@ Implement `all-completions' interface by using `flx' scoring."
          ;; Candidates with higher completion score have precedence.
          (> s1 s2))))))
 
-(defun flx-completion--strlen< (c1 c2)
+(defun flx-completion-strlen< (c1 c2)
   "Return t if C1's length is less than C2's length."
   (< (length c1) (length c2)))
 
-(defun flx-completion--strlen> (c1 c2)
+(defun flx-completion-strlen> (c1 c2)
   "Return t if C1's length is greater than C2's length."
   (> (length c1) (length c2)))
 
-(defun flx-completion-using-orderless-p ()
+(defun flx-completion--using-orderless-p ()
   "Return whether or not we're using `orderless' for filtering."
   (eq flx-completion-filter-fn 'flx-completion-filter-using-orderless))
 
