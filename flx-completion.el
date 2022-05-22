@@ -355,6 +355,11 @@ Implement `all-completions' interface by using `flx' scoring."
 (declare-function "orderless-highlight-matches" "orderless")
 (declare-function "orderless--prefix+pattern" "orderless")
 (defvar orderless-skip-highlighting)
+;; Make sure this is defined otherwise there will be some weird behavior when
+;; compared against the .elc version of this file.
+;; For example, `orderless-filter' will not respect the let* bound
+;; `orderless-matching-styles'.
+(defvar orderless-matching-styles)
 
 (defun flx-completion-filter-using-orderless (string table pred _point)
   "Match STRING to the entries in TABLE.
