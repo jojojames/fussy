@@ -87,28 +87,6 @@ If this is nil, don't propertize (e.g. highlight matches) at all."
           (function :tag "Custom function"))
   :group 'flx-completion)
 
-;;;###autoload
-(defcustom flx-completion-adjust-metadata-fn
-  #'flx-completion--adjust-metadata
-  "Used for `completion--adjust-metadata' to adjust completion metadata.
-
-`completion--adjust-metadata' is what is used to set up sorting of candidates
-based on `completion-score'.  The default `flex' completion style in
-`completion-styles' uses `completion--flex-adjust-metadata' which respects
-the original completion table's sort functions:
-
-  e.g. display-sort-function, cycle-sort-function
-
-The default of `flx-completion-adjust-metadata-fn' is used instead to ignore
-existing sort functions in favor of sorting based only on `flx' match scores."
-  :type `(choice
-          (const :tag "Adjust metadata using flx."
-                 ,#'flx-completion--adjust-metadata)
-          (const :tag "Adjust metadata using flex."
-                 ,#'completion--flex-adjust-metadata)
-          (function :tag "Custom function"))
-  :group 'flx-completion)
-
 (defcustom flx-completion-compare-same-score-fn
   #'flx-completion--strlen<
   "Function used to compare matches with the same 'completion-score.
@@ -161,6 +139,28 @@ Use `flx-completion-filter-using-orderless' for faster filtering through the
                  ,#'flx-completion-filter-like-flex)
           (const :tag "Orderless Filtering"
                  ,#'flx-completion-filter-using-orderless)
+          (function :tag "Custom function"))
+  :group 'flx-completion)
+
+;;;###autoload
+(defcustom flx-completion-adjust-metadata-fn
+  #'flx-completion--adjust-metadata
+  "Used for `completion--adjust-metadata' to adjust completion metadata.
+
+`completion--adjust-metadata' is what is used to set up sorting of candidates
+based on `completion-score'.  The default `flex' completion style in
+`completion-styles' uses `completion--flex-adjust-metadata' which respects
+the original completion table's sort functions:
+
+  e.g. display-sort-function, cycle-sort-function
+
+The default of `flx-completion-adjust-metadata-fn' is used instead to ignore
+existing sort functions in favor of sorting based only on `flx' match scores."
+  :type `(choice
+          (const :tag "Adjust metadata using flx."
+                 ,#'flx-completion--adjust-metadata)
+          (const :tag "Adjust metadata using flex."
+                 ,#'completion--flex-adjust-metadata)
           (function :tag "Custom function"))
   :group 'flx-completion)
 
