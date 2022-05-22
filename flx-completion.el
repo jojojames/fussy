@@ -365,17 +365,19 @@ Implement `all-completions' interface by using `flx' scoring."
   "Match STRING to the entries in TABLE.
 
 Respect PRED and POINT.  Use `orderless' for filtering."
-  (pcase-let* ((orderless-matching-styles '(orderless-flex))
-               (completions (orderless-filter string table pred))
-               (`(,prefix . ,pattern)
-                (orderless--prefix+pattern string table pred))
-               (skip-highlighting
-                (if (functionp orderless-skip-highlighting)
-                    (funcall orderless-skip-highlighting)
-                  orderless-skip-highlighting)))
-    (if skip-highlighting
-        (list completions pattern prefix)
-      (list (orderless-highlight-matches pattern completions) pattern prefix))))
+  (let* ((orderless-matching-styles '(orderless-flex))
+         (completions (orderless-filter string table pred)))
+    (when completions
+      (pcase-let* ((`(,prefix . ,pattern)
+                    (orderless--prefix+pattern string table pred))
+                   (skip-highlighting
+                    (if (functionp orderless-skip-highlighting)
+                        (funcall orderless-skip-highlighting)
+                      orderless-skip-highlighting)))
+        (if skip-highlighting
+            (list completions pattern prefix)
+          (list (orderless-highlight-matches pattern completions)
+                pattern prefix))))))
 
 (defun flx-completion-filter-like-flex (string table pred point)
   "Match STRING to the entries in TABLE.
