@@ -364,7 +364,9 @@ Implement `all-completions' interface by using `flx' scoring."
 (defun flx-completion-filter-using-orderless (string table pred _point)
   "Match STRING to the entries in TABLE.
 
-Respect PRED and POINT.  Use `orderless' for filtering."
+Use `orderless' for filtering by passing STRING, TABLE and PRED to
+
+`orderless-filter'.  _POINT is not used."
   (let* ((orderless-matching-styles '(orderless-flex))
          (completions (orderless-filter string table pred)))
     (when completions
