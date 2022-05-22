@@ -24,12 +24,13 @@ This is a package to provide a ~completion-style~ to Emacs that leverages [[http
   (flx-completion :type git :host github :repo "jojojames/flx-completion")
   :after flx
   :config
-  (setq completion-styles '(flx)
-        ;; For example, project-find-file uses 'project-files which uses
-        ;; substring completion by default. Set to nil to make sure it's using
-        ;; flx.
-        completion-category-defaults nil
-        completion-category-overrides nil))
+  (push 'flx completion-styles)
+  (setq
+   ;; For example, project-find-file uses 'project-files which uses
+   ;; substring completion by default. Set to nil to make sure it's using
+   ;; flx.
+   completion-category-defaults nil
+   completion-category-overrides nil))
 
 #+end_src
 
