@@ -133,6 +133,24 @@ of candidates that was returned by the completion table."
           (function :tag "Custom function"))
   :group 'flx-completion)
 
+(defcustom flx-completion-filter-fn
+  #'flx-completion-filter-like-flex
+  "Function used for filtering candidates before scoring with `flx'.
+
+FN takes in the same arguments as `flx-completion-try-completions'.
+
+This FN should not be nil.
+
+Use `flx-completion-filter-using-orderless' for faster filtering through the
+`all-completions' (written in C) interface."
+  :type `(choice
+          (const :tag "Built in Flex Filtering"
+                 ,#'flx-completion-filter-like-flex)
+          (const :tag "Orderless Filtering"
+                 ,#'flx-completion-filter-using-orderless)
+          (function :tag "Custom function"))
+  :group 'flx-completion)
+
 (defmacro flx-completion--measure-time (&rest body)
   "Measure the time it takes to evaluate BODY.
 https://lists.gnu.org/archive/html/help-gnu-emacs/2008-06/msg00087.html"
@@ -184,50 +202,48 @@ Implement `try-completions' interface by using `completion-flex-try-completion'.
   "Get flex-completions of STRING in TABLE, given PRED and POINT.
 
 Implement `all-completions' interface by using `flx' scoring."
-  (let ((completion-ignore-case flx-completion-ignore-case))
-    (pcase-let ((using-pcm-highlight (eq table 'completion-file-name-table))
-                (`(,all ,pattern ,prefix ,_suffix ,_carbounds)
-                 (completion-substring--all-completions
-                  string
-                  table pred point
-                  #'completion-flex--make-flex-pattern)))
-      (when all
-        (nconc
-         (if (or (> (length string) flx-completion-max-query-length)
-                 (string= string ""))
-             (flx-completion--maybe-highlight pattern all :always-highlight)
-           (if (< (length all) flx-completion-max-candidate-limit)
-               (flx-completion--maybe-highlight
-                pattern
-                (flx-completion--score all string using-pcm-highlight)
-                using-pcm-highlight)
-             (let ((unscored-candidates '())
-                   (candidates-to-score '()))
-               ;; Pre-sort the candidates by length before partitioning.
-               (setq unscored-candidates
-                     (if flx-completion-max-limit-preferred-candidate-fn
-                         (sort
-                          all flx-completion-max-limit-preferred-candidate-fn)
-                       ;; If `flx-completion-max-limit-preferred-candidate-fn'
-                       ;; is nil, we'll partition the candidates as is.
-                       all))
-               ;; Partition the candidates into sorted and unsorted groups.
-               (dotimes (_n (min (length unscored-candidates)
-                                 flx-completion-max-candidate-limit))
-                 (push (pop unscored-candidates) candidates-to-score))
-               (append
-                ;; Compute all of the flx scores only for cands-to-sort.
-                (flx-completion--maybe-highlight
-                 pattern
-                 (flx-completion--score
-                  (reverse candidates-to-score) string using-pcm-highlight)
-                 using-pcm-highlight)
-                ;; Add the unsorted candidates.
-                ;; We could highlight these too,
-                ;; (e.g. with `flx-completion--maybe-highlight') but these are
-                ;; at the bottom of the pile of candidates.
-                unscored-candidates))))
-         (length prefix))))))
+  (pcase-let* ((completion-ignore-case flx-completion-ignore-case)
+               (using-pcm-highlight (eq table 'completion-file-name-table))
+               (`(,all ,pattern ,prefix)
+                (funcall flx-completion-filter-fn
+                         string table pred point)))
+    (when all
+      (nconc
+       (if (or (> (length string) flx-completion-max-query-length)
+               (string= string ""))
+           (flx-completion--maybe-highlight pattern all :always-highlight)
+         (if (< (length all) flx-completion-max-candidate-limit)
+             (flx-completion--maybe-highlight
+              pattern
+              (flx-completion--score all string using-pcm-highlight)
+              using-pcm-highlight)
+           (let ((unscored-candidates '())
+                 (candidates-to-score '()))
+             ;; Pre-sort the candidates by length before partitioning.
+             (setq unscored-candidates
+                   (if flx-completion-max-limit-preferred-candidate-fn
+                       (sort
+                        all flx-completion-max-limit-preferred-candidate-fn)
+                     ;; If `flx-completion-max-limit-preferred-candidate-fn'
+                     ;; is nil, we'll partition the candidates as is.
+                     all))
+             ;; Partition the candidates into sorted and unsorted groups.
+             (dotimes (_n (min (length unscored-candidates)
+                               flx-completion-max-candidate-limit))
+               (push (pop unscored-candidates) candidates-to-score))
+             (append
+              ;; Compute all of the flx scores only for cands-to-sort.
+              (flx-completion--maybe-highlight
+               pattern
+               (flx-completion--score
+                (reverse candidates-to-score) string using-pcm-highlight)
+               using-pcm-highlight)
+              ;; Add the unsorted candidates.
+              ;; We could highlight these too,
+              ;; (e.g. with `flx-completion--maybe-highlight') but these are
+              ;; at the bottom of the pile of candidates.
+              unscored-candidates))))
+       (length prefix)))))
 
 (defun flx-completion--score (candidates string &optional using-pcm-highlight)
   "Score and propertize \(if not USING-PCM-HIGHLIGHT\) CANDIDATES using STRING."
@@ -249,6 +265,7 @@ Implement `all-completions' interface by using `flx' scoring."
          ;; string here. This is faster than the pcm highlight but doesn't
          ;; seem to work with `find-file'.
          (unless (or using-pcm-highlight
+                     (flx-completion-using-orderless-p)
                      (null flx-completion-propertize-fn))
            (setq
             x (funcall flx-completion-propertize-fn x score))))))
@@ -257,14 +274,16 @@ Implement `all-completions' interface by using `flx' scoring."
 
 (defun flx-completion--maybe-highlight (pattern collection using-pcm-highlight)
   "Highlight COLLECTION using PATTERN if USING-PCM-HIGHLIGHT is true."
-  (if using-pcm-highlight
+  (if (and using-pcm-highlight
+           (not (flx-completion-using-orderless-p)))
       ;; This seems to be the best way to get highlighting to work consistently
       ;; with `find-file'.
       (completion-pcm--hilit-commonality pattern collection)
     ;; This will be the case when the `completing-read' function is not
     ;; `find-file'.
     ;; Assume that the collection has already been highlighted.
-    ;; AKA when `using-pcm-highlight' is nil.
+    ;; e.g. When `using-pcm-highlight' is nil or we're using `orderless' for
+    ;; filtering and highlighting.
     collection))
 
 ;;;###autoload
@@ -312,6 +331,47 @@ Implement `all-completions' interface by using `flx' scoring."
 (defun flx-completion--strlen> (c1 c2)
   "Return t if C1's length is greater than C2's length."
   (> (length c1) (length c2)))
+
+(defun flx-completion-using-orderless-p ()
+  "Return whether or not we're using `orderless' for filtering."
+  (eq flx-completion-filter-fn 'flx-completion-filter-using-orderless))
+
+;; Filtering functions.
+
+(declare-function "orderless-filter" "orderless")
+(declare-function "orderless-highlight-matches" "orderless")
+(declare-function "orderless--prefix+pattern" "orderless")
+(defvar orderless-skip-highlighting)
+
+(defun flx-completion-filter-using-orderless (string table pred _point)
+  "Match STRING to the entries in TABLE.
+
+Respect PRED and POINT.  Use `orderless' for filtering."
+  (pcase-let* ((orderless-matching-styles '(orderless-flex))
+               (completions (orderless-filter string table pred))
+               (`(,prefix . ,pattern)
+                (orderless--prefix+pattern string table pred))
+               (skip-highlighting
+                (if (functionp orderless-skip-highlighting)
+                    (funcall orderless-skip-highlighting)
+                  orderless-skip-highlighting)))
+    (if skip-highlighting
+        (list completions pattern prefix)
+      (list (orderless-highlight-matches pattern completions) pattern prefix))))
+
+(defun flx-completion-filter-like-flex (string table pred point)
+  "Match STRING to the entries in TABLE.
+
+Respect PRED and POINT.  The filter here is the same as in
+`completion-flex-all-completions'."
+  (pcase-let ((`(,completions ,pattern ,prefix ,_suffix ,_carbounds)
+               (completion-substring--all-completions
+                string
+                table pred point
+                #'completion-flex--make-flex-pattern)))
+    (list completions pattern prefix)))
+
+;; Integrations
 
 ;; `company' integration.
 (defvar company-backend)

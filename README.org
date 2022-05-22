@@ -34,7 +34,7 @@ This is a package to provide a ~completion-style~ to Emacs that leverages [[http
 
 #+end_src
 
-* Faster Scoring
+* Faster Scoring with Flx-rs
 
 We can leverage [[https://github.com/jcs-elpa/flx-rs][flx-rs]] to achieve faster scoring by using Rust.
 
@@ -102,4 +102,59 @@ below ~company-transformer~.
 #+begin_src emacs-lisp :tangle yes
 (setq company-transformers
           '(flx-completion--company-sort-by-completion-score))
+#+end_src
+* Orderless Integration
+
+[[https://github.com/oantolin/orderless][orderless]] can be used for filtering.
+
+Quick eyetest benchmarking yields about a 20~ms improvement.
+
+e.g.
+
+#+begin_src emacs-lisp :tangle yes
+
+(flx-completion--measure-time
+ (funcall flx-completion-filter-fn
+          string table pred point))
+
+;; M-x describe-symbol (30000~ candidates)
+
+;; Flex
+;; Type letter a
+;; 0.114714
+;; Type letter b
+;; 0.071597
+;; Type letter c
+;; 0.096974
+;; Type letter d
+;; 0.092788
+;; Type letter e
+;; 0.124994
+;; Type letter f
+;; 0.077074
+;; Type letter g
+;; 0.090732
+
+;; Orderless
+;; Type letter a
+;; 0.091367
+;; Type letter b
+;; 0.049451
+;; Type letter c
+;; 0.076276
+;; Type letter d
+;; 0.069673
+;; Type letter e
+;; 0.101040
+;; Type letter f
+;; 0.054231
+;; Type letter g
+;; 0.065002
+
+#+end_src
+
+To use [[https://github.com/oantolin/orderless][orderless]] filtering:
+
+#+begin_src emacs-lisp :tangle yes
+(setq flx-completion-filter-fn 'flx-completion-filter-using-orderless)
 #+end_src
