@@ -319,7 +319,7 @@ Implement `all-completions' interface by using `flx' scoring."
      (let ((s1 (or (get-text-property 0 'completion-score c1) 0))
            (s2 (or (get-text-property 0 'completion-score c2) 0)))
        (if (and (= s1 s2)
-                (not (null flx-completion-compare-same-score-fn)))
+                flx-completion-compare-same-score-fn)
            (funcall flx-completion-compare-same-score-fn c1 c2)
          ;; Candidates with higher completion score have precedence.
          (> s1 s2))))))
