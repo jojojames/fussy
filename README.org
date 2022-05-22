@@ -120,6 +120,7 @@ e.g.
 ;; M-x describe-symbol (30000~ candidates)
 
 ;; Flex
+;; (setq flx-completion-filter-fn 'flx-completion-filter-like-flex)
 ;; Type letter a
 ;; 0.114714
 ;; Type letter b
@@ -136,6 +137,7 @@ e.g.
 ;; 0.090732
 
 ;; Orderless
+;; (setq flx-completion-filter-fn 'flx-completion-filter-using-orderless)
 ;; Type letter a
 ;; 0.091367
 ;; Type letter b
