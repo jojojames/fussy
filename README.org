@@ -145,5 +145,10 @@ e.g.
 To use [[https://github.com/oantolin/orderless][orderless]] filtering:
 
 #+begin_src emacs-lisp :tangle yes
+(use-package orderless
+  :straight t
+  :ensure t
+  :commands (orderless-filter))
+
 (setq flx-completion-filter-fn 'flx-completion-filter-using-orderless)
 #+end_src
