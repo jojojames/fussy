@@ -78,20 +78,7 @@ For this, we can advise ~company-capf~ to use basic completions.
   "Set `completion-styles' to be the default Emacs `completion-styles'
 while `company-capf' runs."
   (let ((completion-styles OG-COMPLETION-STYLES))
-    (apply f args))
-  ;; (let ((completion-styles
-  ;;        (if (or (length< company-prefix
-  ;;                         (if (and
-  ;;                              (fboundp 'native-comp-available-p)
-  ;;                              (native-comp-available-p))
-  ;;                             3
-  ;;                           5)))
-  ;;            j-backup-completion-styles
-  ;;          `(,(if (featurep 'orderless)
-  ;;                 'orderless
-  ;;               'flex) ))))
-  ;;   (apply f args))
-  )
+    (apply f args)))
 
 (advice-add 'company-capf :around 'company-capf-with-og-completion-styles)
 #+end_src
