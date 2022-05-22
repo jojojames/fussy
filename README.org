@@ -16,14 +16,7 @@ This is a package to provide a ~completion-style~ to Emacs that leverages [[http
 #+begin_src emacs-lisp :tangle yes
 
 (use-package flx
-  :ensure t :straight t
-  :config
-  (set-face-attribute
-   'flx-highlight-face nil
-   :inherit 'match
-   :underline t
-   :overline nil
-   :weight 'bold))
+  :ensure t :straight t)
 
 (use-package flx-completion
   :ensure t
