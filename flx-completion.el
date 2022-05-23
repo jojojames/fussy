@@ -101,6 +101,10 @@ If this is nil, do nothing."
                  ,#'flx-completion-strlen<)
           (const :tag "Longer candidates have precedence."
                  ,#'flx-completion-strlen>)
+          (const :tag "Recent candidates have precedence."
+                 ,#'flx-completion-histlen<)
+          (const :tag "Recent (then shorter length) candidates have precedence."
+                 ,#'flx-completion-histlen->strlen<)
           (function :tag "Custom function"))
   :group 'flx-completion)
 
@@ -121,6 +125,10 @@ of candidates that was returned by the completion table."
                  ,#'flx-completion-strlen<)
           (const :tag "Longer candidates have precedence."
                  ,#'flx-completion-strlen>)
+          (const :tag "Recent candidates have precedence."
+                 ,#'flx-completion-histlen<)
+          (const :tag "Recent (then shorter length) candidates have precedence."
+                 ,#'flx-completion-histlen->strlen<)
           (function :tag "Custom function"))
   :group 'flx-completion)
 
@@ -344,6 +352,33 @@ Implement `all-completions' interface by using `flx' scoring."
 (defun flx-completion-strlen> (c1 c2)
   "Return t if C1's length is greater than C2's length."
   (> (length c1) (length c2)))
+
+(defun flx-completion-histlen< (c1 c2)
+  "Return t if C1 occurred more recently than C2.
+
+Check C1 and C2 in `minibuffer-history-variable'."
+  (let* ((hist (and (not (eq minibuffer-history-variable t))
+                    (symbol-value minibuffer-history-variable))))
+    (catch 'found
+      (dolist (h hist)
+        (when (string= c1 h)
+          (throw 'found t))
+        (when (string= c2 h)
+          (throw 'found nil))))))
+
+(defun flx-completion-histlen->strlen< (c1 c2)
+  "Return t if C1 occurs more recently than C2 or is shorter than C2."
+  (let* ((hist (and (not (eq minibuffer-history-variable t))
+                    (symbol-value minibuffer-history-variable))))
+    (let ((result (catch 'found
+                    (dolist (h hist)
+                      (when (string= c1 h)
+                        (throw 'found 'c1))
+                      (when (string= c2 h)
+                        (throw 'found 'c2))))))
+      (if result
+          (eq result 'c1)
+        (flx-completion-strlen< c1 c2)))))
 
 (defun flx-completion--using-orderless-p ()
   "Return whether or not we're using `orderless' for filtering."
