@@ -150,6 +150,19 @@ Use `flx-completion-filter-using-orderless' for faster filtering through the
           (function :tag "Custom function"))
   :group 'flx-completion)
 
+(defcustom flx-completion-score-fn
+  #'flx-score
+  "Function used for scoring candidates.
+
+FN should at least take in STR and QUERY."
+  :type `(choice
+          (const :tag "Score using Elisp"
+                 ,#'flx-score)
+          (const :tag "Score using Rust"
+                 ,#'flx-rs-score)
+          (function :tag "Custom function"))
+  :group 'flx-completion)
+
 ;;;###autoload
 (defcustom flx-completion-adjust-metadata-fn
   #'flx-completion--adjust-metadata
@@ -223,8 +236,14 @@ Implement `try-completions' interface by using `completion-flex-try-completion'.
   "Get flex-completions of STRING in TABLE, given PRED and POINT.
 
 Implement `all-completions' interface by using `flx' scoring."
-  (pcase-let* ((completion-ignore-case flx-completion-ignore-case)
+  (pcase-let* ((metadata (completion-metadata string table pred))
+               (completion-ignore-case flx-completion-ignore-case)
                (using-pcm-highlight (eq table 'completion-file-name-table))
+               (cache (if (memq (completion-metadata-get metadata 'category)
+                                '(file
+                                  project-file))
+                          flx-file-cache
+                        flx-strings-cache))
                (`(,all ,pattern ,prefix)
                 (funcall flx-completion-filter-fn
                          string table pred point)))
@@ -236,7 +255,7 @@ Implement `all-completions' interface by using `flx' scoring."
          (if (< (length all) flx-completion-max-candidate-limit)
              (flx-completion--maybe-highlight
               pattern
-              (flx-completion--score all string using-pcm-highlight)
+              (flx-completion--score all string using-pcm-highlight cache)
               using-pcm-highlight)
            (let ((unscored-candidates '())
                  (candidates-to-score '()))
@@ -257,7 +276,7 @@ Implement `all-completions' interface by using `flx' scoring."
               (flx-completion--maybe-highlight
                pattern
                (flx-completion--score
-                (reverse candidates-to-score) string using-pcm-highlight)
+                (reverse candidates-to-score) string using-pcm-highlight cache)
                using-pcm-highlight)
               ;; Add the unsorted candidates.
               ;; We could highlight these too,
@@ -266,8 +285,10 @@ Implement `all-completions' interface by using `flx' scoring."
               unscored-candidates))))
        (length prefix)))))
 
-(defun flx-completion--score (candidates string &optional using-pcm-highlight)
-  "Score and propertize \(if not USING-PCM-HIGHLIGHT\) CANDIDATES using STRING."
+(defun flx-completion--score (candidates string using-pcm-highlight cache)
+  "Score and propertize \(if not USING-PCM-HIGHLIGHT\) CANDIDATES using STRING.
+
+Use CACHE for scoring."
   (mapcar
    (lambda (x)
      (setq x (copy-sequence x))
@@ -275,9 +296,10 @@ Implement `all-completions' interface by using `flx' scoring."
       ((> (length x) flx-completion-max-word-length-to-score)
        (put-text-property 0 1 'completion-score 0 x))
       (:default
-       (let ((score (if (fboundp 'flx-rs-score)
-                        (flx-rs-score x string)
-                      (flx-score x string flx-strings-cache))))
+       (let ((score
+              (funcall flx-completion-score-fn
+                       x string
+                       cache)))
          ;; This is later used by `completion--adjust-metadata' for sorting.
          (put-text-property 0 1 'completion-score
                             (car score)
