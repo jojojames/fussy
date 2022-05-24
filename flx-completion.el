@@ -456,8 +456,8 @@ Respect PRED and POINT.  The filter here is the same as in
 (defvar company-backend)
 ;; Use with `company-transformers'.
 ;; (setq company-transformers
-;;           '(flx-completion--company-sort-by-completion-score))
-(defun flx-completion--company-sort-by-completion-score (candidates)
+;;           '(flx-completion-company-sort-by-completion-score))
+(defun flx-completion-company-sort-by-completion-score (candidates)
   "`company' transformer to sort CANDIDATES."
   (if (functionp company-backend)
       candidates

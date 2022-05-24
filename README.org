@@ -88,7 +88,7 @@ below ~company-transformer~.
 
 #+begin_src emacs-lisp :tangle yes
 (setq company-transformers
-          '(flx-completion--company-sort-by-completion-score))
+          '(flx-completion-company-sort-by-completion-score))
 #+end_src
 * Eglot Integration
 
