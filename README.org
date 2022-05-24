@@ -90,6 +90,17 @@ below ~company-transformer~.
 (setq company-transformers
           '(flx-completion--company-sort-by-completion-score))
 #+end_src
+* Eglot Integration
+
+Eglot by default uses ~flex~ in ~completion-category-defaults~.
+Use this to override that.
+
+#+begin_src emacs-lisp :tangle yes
+(with-eval-after-load 'eglot
+    (add-to-list 'completion-category-overrides
+                 '(eglot (styles flx basic))))
+#+end_src
+
 * Orderless Integration
 
 [[https://github.com/oantolin/orderless][orderless]] can be used for filtering.
@@ -182,6 +193,7 @@ To use [[https://github.com/oantolin/orderless][orderless]] filtering:
   (flx-completion :type git :host github :repo "jojojames/flx-completion")
   :after flx
   :config
+  (setq flx-completion-score-fn 'flx-rs-score)
   (setq flx-completion-filter-fn 'flx-completion-filter-using-orderless)
 
   (push 'flx completion-styles)
@@ -190,5 +202,11 @@ To use [[https://github.com/oantolin/orderless][orderless]] filtering:
    ;; substring completion by default. Set to nil to make sure it's using
    ;; flx.
    completion-category-defaults nil
-   completion-category-overrides nil))
+   completion-category-overrides nil)
+
+  ;; `eglot' defaults to flex, so set an override to point to flx instead.
+  (with-eval-after-load 'eglot
+    (add-to-list 'completion-category-overrides
+                 '(eglot (styles flx basic)))))
+
 #+end_src
