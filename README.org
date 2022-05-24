@@ -118,7 +118,7 @@ e.g.
 ;; M-x describe-symbol (30000~ candidates)
 
 ;; Flex
-;; (setq flx-completion-filter-fn 'flx-completion-filter-like-flex)
+;; (setq flx-completion-filter-fn 'flx-completion-filter-flex)
 ;; Type letter a
 ;; 0.114714
 ;; Type letter b
@@ -135,7 +135,7 @@ e.g.
 ;; 0.090732
 
 ;; Orderless
-;; (setq flx-completion-filter-fn 'flx-completion-filter-using-orderless)
+;; (setq flx-completion-filter-fn 'flx-completion-filter-orderless)
 ;; Type letter a
 ;; 0.091367
 ;; Type letter b
@@ -161,7 +161,7 @@ To use [[https://github.com/oantolin/orderless][orderless]] filtering:
   :ensure t
   :commands (orderless-filter))
 
-(setq flx-completion-filter-fn 'flx-completion-filter-using-orderless)
+(setq flx-completion-filter-fn 'flx-completion-filter-orderless)
 #+end_src
 * Recommended Configuration for Performance
 #+begin_src emacs-lisp :tangle yes
@@ -194,7 +194,7 @@ To use [[https://github.com/oantolin/orderless][orderless]] filtering:
   :after flx
   :config
   (setq flx-completion-score-fn 'flx-rs-score)
-  (setq flx-completion-filter-fn 'flx-completion-filter-using-orderless)
+  (setq flx-completion-filter-fn 'flx-completion-filter-orderless)
 
   (push 'flx completion-styles)
   (setq

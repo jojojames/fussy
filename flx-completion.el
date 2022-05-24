@@ -133,20 +133,20 @@ of candidates that was returned by the completion table."
   :group 'flx-completion)
 
 (defcustom flx-completion-filter-fn
-  #'flx-completion-filter-like-flex
+  #'flx-completion-filter-flex
   "Function used for filtering candidates before scoring with `flx'.
 
 FN takes in the same arguments as `flx-completion-try-completions'.
 
 This FN should not be nil.
 
-Use `flx-completion-filter-using-orderless' for faster filtering through the
+Use `flx-completion-filter-orderless' for faster filtering through the
 `all-completions' (written in C) interface."
   :type `(choice
           (const :tag "Built in Flex Filtering"
-                 ,#'flx-completion-filter-like-flex)
+                 ,#'flx-completion-filter-flex)
           (const :tag "Orderless Filtering"
-                 ,#'flx-completion-filter-using-orderless)
+                 ,#'flx-completion-filter-orderless)
           (function :tag "Custom function"))
   :group 'flx-completion)
 
@@ -308,7 +308,7 @@ Use CACHE for scoring."
          ;; string here. This is faster than the pcm highlight but doesn't
          ;; seem to work with `find-file'.
          (unless (or using-pcm-highlight
-                     (flx-completion--using-orderless-p)
+                     (flx-completion--orderless-p)
                      (null flx-completion-propertize-fn))
            (setq
             x (funcall flx-completion-propertize-fn x score))))))
@@ -318,7 +318,7 @@ Use CACHE for scoring."
 (defun flx-completion--maybe-highlight (pattern collection using-pcm-highlight)
   "Highlight COLLECTION using PATTERN if USING-PCM-HIGHLIGHT is true."
   (if (and using-pcm-highlight
-           (not (flx-completion--using-orderless-p)))
+           (not (flx-completion--orderless-p)))
       ;; This seems to be the best way to get highlighting to work consistently
       ;; with `find-file'.
       (completion-pcm--hilit-commonality pattern collection)
@@ -402,9 +402,9 @@ Check C1 and C2 in `minibuffer-history-variable'."
           (eq result 'c1)
         (flx-completion-strlen< c1 c2)))))
 
-(defun flx-completion--using-orderless-p ()
+(defun flx-completion--orderless-p ()
   "Return whether or not we're using `orderless' for filtering."
-  (eq flx-completion-filter-fn 'flx-completion-filter-using-orderless))
+  (eq flx-completion-filter-fn 'flx-completion-filter-orderless))
 
 ;; Filtering functions.
 
@@ -418,7 +418,7 @@ Check C1 and C2 in `minibuffer-history-variable'."
 ;; `orderless-matching-styles'.
 (defvar orderless-matching-styles)
 
-(defun flx-completion-filter-using-orderless (string table pred _point)
+(defun flx-completion-filter-orderless (string table pred _point)
   "Match STRING to the entries in TABLE.
 
 Use `orderless' for filtering by passing STRING, TABLE and PRED to
@@ -438,7 +438,7 @@ Use `orderless' for filtering by passing STRING, TABLE and PRED to
           (list (orderless-highlight-matches pattern completions)
                 pattern prefix))))))
 
-(defun flx-completion-filter-like-flex (string table pred point)
+(defun flx-completion-filter-flex (string table pred point)
   "Match STRING to the entries in TABLE.
 
 Respect PRED and POINT.  The filter here is the same as in
