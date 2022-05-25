@@ -424,19 +424,20 @@ Check C1 and C2 in `minibuffer-history-variable'."
 Use `orderless' for filtering by passing STRING, TABLE and PRED to
 
 `orderless-filter'.  _POINT is not used."
-  (let* ((orderless-matching-styles '(orderless-flex))
-         (completions (orderless-filter string table pred)))
-    (when completions
-      (pcase-let* ((`(,prefix . ,pattern)
-                    (orderless--prefix+pattern string table pred))
-                   (skip-highlighting
-                    (if (functionp orderless-skip-highlighting)
-                        (funcall orderless-skip-highlighting)
-                      orderless-skip-highlighting)))
-        (if skip-highlighting
-            (list completions pattern prefix)
-          (list (orderless-highlight-matches pattern completions)
-                pattern prefix))))))
+  (with-no-warnings
+    (let* ((orderless-matching-styles '(orderless-flex))
+           (completions (orderless-filter string table pred)))
+      (when completions
+        (pcase-let* ((`(,prefix . ,pattern)
+                      (orderless--prefix+pattern string table pred))
+                     (skip-highlighting
+                      (if (functionp orderless-skip-highlighting)
+                          (funcall orderless-skip-highlighting)
+                        orderless-skip-highlighting)))
+          (if skip-highlighting
+              (list completions pattern prefix)
+            (list (orderless-highlight-matches pattern completions)
+                  pattern prefix)))))))
 
 (defun flx-completion-filter-flex (string table pred point)
   "Match STRING to the entries in TABLE.
