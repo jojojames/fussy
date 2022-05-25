@@ -424,7 +424,10 @@ Check C1 and C2 in `minibuffer-history-variable'."
 Use `orderless' for filtering by passing STRING, TABLE and PRED to
 
 `orderless-filter'.  _POINT is not used."
-  (with-no-warnings
+  (require 'orderless)
+  (when (and (fboundp 'orderless-filter)
+             (fboundp 'orderless-highlight-matches)
+             (fboundp 'orderless--prefix+pattern))
     (let* ((orderless-matching-styles '(orderless-flex))
            (completions (orderless-filter string table pred)))
       (when completions
