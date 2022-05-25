@@ -159,7 +159,7 @@ FN should at least take in STR and QUERY."
           (const :tag "Score using Elisp"
                  ,#'flx-score)
           (const :tag "Score using Rust"
-                 ,#'flx-rs-score)
+                 ,'flx-rs-score)
           (function :tag "Custom function"))
   :group 'flx-completion)
 
