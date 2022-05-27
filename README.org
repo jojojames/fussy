@@ -34,9 +34,13 @@ This is a package to provide a ~completion-style~ to Emacs that leverages [[http
 
 #+end_src
 
-* Faster Scoring with Flx-rs
+* Additional scoring backends.
 
-We can leverage [[https://github.com/jcs-elpa/flx-rs][flx-rs]] to achieve faster scoring by using Rust.
+We default to [[https://github.com/lewang/flx][flx]] for scoring matches but additional scoring functions/backends
+can be used.
+
+We can leverage [[https://github.com/jcs-elpa/flx-rs][flx-rs]] to achieve faster scoring by using Rust. This library
+matches the original [[https://github.com/lewang/flx][flx]] implementation.
 
 #+begin_src emacs-lisp :tangle yes
 (use-package flx-rs
@@ -46,21 +50,26 @@ We can leverage [[https://github.com/jcs-elpa/flx-rs][flx-rs]] to achieve faster
    :repo "jcs-elpa/flx-rs"
    :fetcher github
    :files (:defaults "bin"))
-  ;; Manual steps:
-  ;; Install Rust
-  ;; $ curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
-  ;; Update rustup
-  ;; $ rustup update
-  ;; Build flx-rs.
-  ;; $ cargo build ~/.emacs.d/straight/repos/flx-rs/core
-  ;; Symlink to Straight BUILD directory.
-  ;; $ ln -s ~/.emacs.d/straight/repos/flx-rs/bin ~/.emacs.d/straight/build/flx-rs/bin
   :config
   (flx-rs-load-dyn)
   ;; This is not necessary since `fussy-all-completions' already checks
   ;; for this function. It'll still help other libraries that call `flx-score'
   ;; though.
   (advice-add 'flx-score :override #'flx-rs-score))
+#+end_src
+
+Another option is to use the [[https://github.com/rustify-emacs/fuz.el][fuz]] library (also in Rust) for scoring.
+Additional information about [[https://github.com/rustify-emacs/fuz.el][fuz]]'s scoring algorithm can be found [[https://github.com/lotabout/fuzzy-matcher][here]].
+
+#+begin_src emacs-lisp :tangle yes
+(use-package fuz
+  :ensure nil
+  :after flx
+  :straight (fuz :type git :host github :repo "rustify-emacs/fuz.el")
+  :config
+  (setq fussy-score-fn 'fussy-fuz-score)
+  (unless (require 'fuz-core nil t)
+    (fuz-build-and-load-dymod)))
 #+end_src
 
 * Company Integration

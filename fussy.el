@@ -164,8 +164,19 @@ FN should at least take in STR and QUERY."
                  ,'flx-score)
           (const :tag "Score using Rust"
                  ,'flx-rs-score)
+          (const :tag "Score using Fuz"
+                 #'fussy-fuz-score)
           (function :tag "Custom function"))
   :group 'fussy)
+
+(defcustom fussy-fuz-use-skim-p t
+  "If t, use skim fuzzy matching algorithm with `fuz'.
+
+If nil, use clangd fuzzy matching algorithm with `fuz'.
+
+This boolean is only used if `fussy-fuz-score' is the `fussy-score-fn'."
+  :group 'fussy
+  :type 'boolean)
 
 ;;;###autoload
 (defcustom fussy-adjust-metadata-fn
@@ -339,7 +350,7 @@ Use CACHE for scoring."
   (put 'fussy 'completion--adjust-metadata fussy-adjust-metadata-fn)
   (add-to-list 'completion-styles-alist
                '(fussy fussy-try-completions fussy-all-completions
-                     "Smart Fuzzy completion with scoring.")))
+                       "Smart Fuzzy completion with scoring.")))
 
 (defun fussy--adjust-metadata (metadata)
   "If actually doing filtering, adjust METADATA's sorting."
@@ -471,6 +482,30 @@ Respect PRED and POINT.  The filter here is the same as in
   (if (functionp company-backend)
       candidates
     (fussy--sort candidates)))
+
+;; `fuz' integration.
+(declare-function "fuz-fuzzy-match-skim" "fuz")
+(declare-function "fuz-calc-score-skim" "fuz")
+(declare-function "fuz-fuzzy-match-clangd" "fuz")
+(declare-function "fuz-calc-score-clangd" "fuz")
+
+(defun fussy-fuz-score (str query &rest _args)
+  "Score using `fuz'. skim or clangd algorithm can be used.
+
+If `orderless' is used for filtering, we skip calculating matches
+for more speed."
+  (require 'fuz)
+  (if fussy-fuz-use-skim-p
+      (if (eq fussy-filter-fn 'fussy-filter-orderless)
+          (when (fboundp 'fuz-calc-score-skim)
+            (list (fuz-calc-score-skim query str)))
+        (when (fboundp 'fuz-fuzzy-match-skim)
+          (fuz-fuzzy-match-skim query str)))
+    (if (eq fussy-filter-fn 'fussy-filter-orderless)
+        (when (fboundp 'fuz-calc-score-clangd)
+          (list (fuz-calc-score-clangd query str)))
+      (when (fboundp 'fuz-fuzzy-match-clangd)
+        (fuz-fuzzy-match-clangd query str)))))
 
 (provide 'fussy)
 ;;; fussy.el ends here
