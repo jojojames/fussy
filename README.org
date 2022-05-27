@@ -10,7 +10,7 @@ This is a package to provide a ~completion-style~ to Emacs that leverages [[http
   : M-x package-install RET fussy RET
   Or clone / download this repository and modify your ~load-path~:
 
-  : (add-to-list 'load-path (expand-file-name "/path/to/flx-collection/" user-emacs-directory))
+  : (add-to-list 'load-path (expand-file-name "/path/to/fussy/" user-emacs-directory))
 * Straight Example
 
 #+begin_src emacs-lisp :tangle yes
@@ -22,9 +22,8 @@ This is a package to provide a ~completion-style~ to Emacs that leverages [[http
     :ensure t
     :straight
     (fussy :type git :host github :repo "jojojames/fussy")
-    :after flx
     :config
-    (push 'flx completion-styles)
+    (push 'fussy completion-styles)
     (setq
      ;; For example, project-find-file uses 'project-files which uses
      ;; substring completion by default. Set to nil to make sure it's using
@@ -108,7 +107,7 @@ For more information: [[https://github.com/rmm5t/liquidmetal][liquidmetal]]
 #+end_src
 
 * Company Integration
-flx may or may not be too slow when completing with
+Fuzzy completion may or may not be too slow when completing with
 [[https://github.com/company-mode/company-mode][company-mode]].
 
 For this, we can advise ~company-capf~ to use basic completions.
@@ -127,8 +126,8 @@ For this, we can advise ~company-capf~ to use basic completions.
   (advice-add 'company-capf :around 'company-capf-with-og-completion-styles)
 #+end_src
 
-If you don't use the above advice and want to use ~flx~, you should use the
-below ~company-transformer~.
+If you don't use the above advice and want to use fuzzy completion, you can
+use the below ~company-transformer~.
 
 #+begin_src emacs-lisp :tangle yes
   (setq company-transformers
@@ -214,7 +213,6 @@ User is recommended to try the various scoring functions. See ~fussy-score-fn~.
 For speed, ~flx-rs~ or ~fuz~/~fuz-bin~ will be the most performant but uses Rust.
 
 ~flx-rs~ will provide an algorithm that matches the original ~flx~ algorithm.
-
 
 Below is a sample config that uses ~flx-rs~ for improved performance.
 
