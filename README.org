@@ -1,4 +1,4 @@
-#+TITLE: Flx Completion
+#+TITLE: Fussy
 #+STARTUP: noindent
 
 This is a package to provide a ~completion-style~ to Emacs that leverages [[https://github.com/lewang/flx][flx]].
@@ -7,7 +7,7 @@ This is a package to provide a ~completion-style~ to Emacs that leverages [[http
 
 - Get the package, either from MELPA (soon to come):
 
-  : M-x package-install RET flx-completion RET
+  : M-x package-install RET fussy RET
   Or clone / download this repository and modify your ~load-path~:
 
   : (add-to-list 'load-path (expand-file-name "/path/to/flx-collection/" user-emacs-directory))
@@ -18,10 +18,10 @@ This is a package to provide a ~completion-style~ to Emacs that leverages [[http
 (use-package flx
   :ensure t :straight t)
 
-(use-package flx-completion
+(use-package fussy
   :ensure t
   :straight
-  (flx-completion :type git :host github :repo "jojojames/flx-completion")
+  (fussy :type git :host github :repo "jojojames/fussy")
   :after flx
   :config
   (push 'flx completion-styles)
@@ -57,7 +57,7 @@ We can leverage [[https://github.com/jcs-elpa/flx-rs][flx-rs]] to achieve faster
   ;; $ ln -s ~/.emacs.d/straight/repos/flx-rs/bin ~/.emacs.d/straight/build/flx-rs/bin
   :config
   (flx-rs-load-dyn)
-  ;; This is not necessary since `flx-completion-all-completions' already checks
+  ;; This is not necessary since `fussy-all-completions' already checks
   ;; for this function. It'll still help other libraries that call `flx-score'
   ;; though.
   (advice-add 'flx-score :override #'flx-rs-score))
@@ -88,7 +88,7 @@ below ~company-transformer~.
 
 #+begin_src emacs-lisp :tangle yes
 (setq company-transformers
-          '(flx-completion-company-sort-by-completion-score))
+          '(fussy-company-sort-by-completion-score))
 #+end_src
 * Eglot Integration
 
@@ -111,14 +111,14 @@ e.g.
 
 #+begin_src emacs-lisp :tangle yes
 
-(flx-completion--measure-time
- (funcall flx-completion-filter-fn
+(fussy--measure-time
+ (funcall fussy-filter-fn
           string table pred point))
 
 ;; M-x describe-symbol (30000~ candidates)
 
 ;; Flex
-;; (setq flx-completion-filter-fn 'flx-completion-filter-flex)
+;; (setq fussy-filter-fn 'fussy-filter-flex)
 ;; Type letter a
 ;; 0.114714
 ;; Type letter b
@@ -135,7 +135,7 @@ e.g.
 ;; 0.090732
 
 ;; Orderless
-;; (setq flx-completion-filter-fn 'flx-completion-filter-orderless)
+;; (setq fussy-filter-fn 'fussy-filter-orderless)
 ;; Type letter a
 ;; 0.091367
 ;; Type letter b
@@ -161,7 +161,7 @@ To use [[https://github.com/oantolin/orderless][orderless]] filtering:
   :ensure t
   :commands (orderless-filter))
 
-(setq flx-completion-filter-fn 'flx-completion-filter-orderless)
+(setq fussy-filter-fn 'fussy-filter-orderless)
 #+end_src
 * Recommended Configuration for Performance
 #+begin_src emacs-lisp :tangle yes
@@ -187,16 +187,16 @@ To use [[https://github.com/oantolin/orderless][orderless]] filtering:
   :ensure t
   :straight t)
 
-(use-package flx-completion
+(use-package fussy
   :ensure t
   :straight
-  (flx-completion :type git :host github :repo "jojojames/flx-completion")
+  (fussy :type git :host github :repo "jojojames/fussy")
   :after flx
   :config
-  (setq flx-completion-score-fn 'flx-rs-score)
-  (setq flx-completion-filter-fn 'flx-completion-filter-orderless)
+  (setq fussy-score-fn 'flx-rs-score)
+  (setq fussy-filter-fn 'fussy-filter-orderless)
 
-  (push 'flx completion-styles)
+  (push 'fussy completion-styles)
   (setq
    ;; For example, project-find-file uses 'project-files which uses
    ;; substring completion by default. Set to nil to make sure it's using
