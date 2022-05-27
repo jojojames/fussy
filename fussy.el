@@ -24,7 +24,7 @@
 ;;; Commentary:
 
 ;; This is a fuzzy Emacs completion style similar to the built-in
-;; `flex' style, but using `flx' for scoring. It also supports various other
+;; `flex' style, but using `flx' for scoring.  It also supports various other
 ;; fuzzy scoring systems in place of `flx'.
 
 ;; To use this style, prepend `fussy' to `completion-styles'.
@@ -166,6 +166,10 @@ FN should at least take in STR and QUERY."
                  ,'flx-rs-score)
           (const :tag "Score using Fuz"
                  #'fussy-fuz-score)
+          (const :tag "Score using Fuz-Bin"
+                 #'fussy-fuz-bin-score)
+          (const :tag "Score using LiquidMetal"
+                 #'fussy-liquidmetal-score)
           (function :tag "Custom function"))
   :group 'fussy)
 
@@ -490,7 +494,9 @@ Respect PRED and POINT.  The filter here is the same as in
 (declare-function "fuz-calc-score-clangd" "fuz")
 
 (defun fussy-fuz-score (str query &rest _args)
-  "Score using `fuz'. skim or clangd algorithm can be used.
+  "Score STR for QUERY using `fuz'.
+
+skim or clangd algorithm can be used.
 
 If `orderless' is used for filtering, we skip calculating matches
 for more speed."
@@ -506,6 +512,44 @@ for more speed."
           (list (fuz-calc-score-clangd query str)))
       (when (fboundp 'fuz-fuzzy-match-clangd)
         (fuz-fuzzy-match-clangd query str)))))
+
+;; `fuz-bin' integration.
+(declare-function "fuz-bin-dyn-score-skim" "fuz-bin")
+(declare-function "fuz-bin-score-skim" "fuz-bin")
+(declare-function "fuz-bin-dyn-score-clangd" "fuz-bin")
+(declare-function "fuz-bin-score-clangd" "fuz-bin")
+
+(defun fussy-fuz-bin-score (str query &rest _args)
+  "Score STR for QUERY using `fuz-bin'.
+
+skim or clangd algorithm can be used.
+
+If `orderless' is used for filtering, we skip calculating matches
+for more speed."
+  (require 'fuz-bin)
+  (if fussy-fuz-use-skim-p
+      (if (eq fussy-filter-fn 'fussy-filter-orderless)
+          (when (fboundp 'fuz-bin-dyn-score-skim)
+            (list (fuz-bin-dyn-score-skim query str)))
+        (when (fboundp 'fuz-bin-score-skim)
+          (fuz-bin-score-skim query str)))
+    (if (eq fussy-filter-fn 'fussy-filter-orderless)
+        (when (fboundp 'fuz-bin-dyn-score-clangd)
+          (list (fuz-bin-dyn-score-clangd query str)))
+      (when (fboundp 'fuz-bin-score-clangd)
+        (fuz-bin-score-clangd query str)))))
+
+;; `liquidmetal' integration
+(declare-function "liquidmetal-score" "liquidmetal")
+
+(defun fussy-liquidmetal-score (str query &rest _args)
+  "Score STR for QUERY using `liquidmetal'.
+
+This should be paired with `fussy-filter-orderless' to obtain match
+highlighting."
+  (require 'liquidmetal)
+  (when (fboundp 'liquidmetal-score)
+    (list (liquidmetal-score str query))))
 
 (provide 'fussy)
 ;;; fussy.el ends here

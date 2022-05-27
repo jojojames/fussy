@@ -15,61 +15,96 @@ This is a package to provide a ~completion-style~ to Emacs that leverages [[http
 
 #+begin_src emacs-lisp :tangle yes
 
-(use-package flx
-  :ensure t :straight t)
+  (use-package flx
+    :ensure t :straight t)
 
-(use-package fussy
-  :ensure t
-  :straight
-  (fussy :type git :host github :repo "jojojames/fussy")
-  :after flx
-  :config
-  (push 'flx completion-styles)
-  (setq
-   ;; For example, project-find-file uses 'project-files which uses
-   ;; substring completion by default. Set to nil to make sure it's using
-   ;; flx.
-   completion-category-defaults nil
-   completion-category-overrides nil))
+  (use-package fussy
+    :ensure t
+    :straight
+    (fussy :type git :host github :repo "jojojames/fussy")
+    :after flx
+    :config
+    (push 'flx completion-styles)
+    (setq
+     ;; For example, project-find-file uses 'project-files which uses
+     ;; substring completion by default. Set to nil to make sure it's using
+     ;; flx.
+     completion-category-defaults nil
+     completion-category-overrides nil))
 
 #+end_src
 
-* Additional scoring backends.
-
+* Scoring Backends
 We default to [[https://github.com/lewang/flx][flx]] for scoring matches but additional scoring functions/backends
 can be used.
+** Flx
+#+begin_src emacs-lisp :tangle yes
+(use-package flx
+  :ensure t
+  :straight t)
+#+end_src
 
 We can leverage [[https://github.com/jcs-elpa/flx-rs][flx-rs]] to achieve faster scoring by using Rust. This library
 matches the original [[https://github.com/lewang/flx][flx]] implementation.
 
 #+begin_src emacs-lisp :tangle yes
-(use-package flx-rs
-  :ensure t
-  :straight
-  (flx-rs
-   :repo "jcs-elpa/flx-rs"
-   :fetcher github
-   :files (:defaults "bin"))
-  :config
-  (flx-rs-load-dyn)
-  ;; This is not necessary since `fussy-all-completions' already checks
-  ;; for this function. It'll still help other libraries that call `flx-score'
-  ;; though.
-  (advice-add 'flx-score :override #'flx-rs-score))
+  (use-package flx-rs
+    :ensure t
+    :straight
+    (flx-rs
+     :repo "jcs-elpa/flx-rs"
+     :fetcher github
+     :files (:defaults "bin"))
+    :config
+    (setq fussy-score-fn 'flx-rs-score)
+    (flx-rs-load-dyn))
 #+end_src
 
+** Fuz
 Another option is to use the [[https://github.com/rustify-emacs/fuz.el][fuz]] library (also in Rust) for scoring.
 Additional information about [[https://github.com/rustify-emacs/fuz.el][fuz]]'s scoring algorithm can be found [[https://github.com/lotabout/fuzzy-matcher][here]].
 
 #+begin_src emacs-lisp :tangle yes
-(use-package fuz
-  :ensure nil
-  :after flx
-  :straight (fuz :type git :host github :repo "rustify-emacs/fuz.el")
-  :config
-  (setq fussy-score-fn 'fussy-fuz-score)
-  (unless (require 'fuz-core nil t)
-    (fuz-build-and-load-dymod)))
+  (use-package fuz
+    :ensure nil
+    :after flx
+    :straight (fuz :type git :host github :repo "rustify-emacs/fuz.el")
+    :config
+    (setq fussy-score-fn 'fussy-fuz-score)
+    (unless (require 'fuz-core nil t)
+      (fuz-build-and-load-dymod)))
+#+end_src
+
+#+begin_src emacs-lisp :tangle yes
+  ;; Same as fuz but with prebuilt binaries.
+  (use-package fuz-bin
+    :ensure t
+    :straight
+    (fuz-bin
+     :repo "jcs-elpa/fuz-bin"
+     :fetcher github
+     :files (:defaults "bin"))
+    :config
+    (setq fussy-score-fn 'fussy-fuz-bin-score)
+    (fuz-bin-load-dyn))
+#+end_src
+** Liquid Metal
+A mimetic poly-alloy of the Quicksilver scoring algorithm,
+essentially LiquidMetal.
+
+Flex matching short abbreviations against longer strings is a boon in
+productivity for typists.  Applications like Quicksilver, Alfred, LaunchBar, and
+Launchy have made this method of keyboard entry a popular one. It's time to
+bring this same functionality to web controls. LiquidMetal makes scoring long
+strings against abbreviations easy.
+
+For more information: [[https://github.com/rmm5t/liquidmetal][liquidmetal]]
+
+#+begin_src emacs-lisp :tangle yes
+ (use-package liquidmetal
+  :ensure t
+  :straight t
+  (setq fussy-score-fn 'fussy-liquidmetal-score))
 #+end_src
 
 * Company Integration
@@ -80,24 +115,24 @@ For this, we can advise ~company-capf~ to use basic completions.
 
 #+begin_src emacs-lisp :tangle yes
 
-(defconst OG-COMPLETION-STYLES completion-styles
-  "Original `completion-styles' Emacs comes with.")
+  (defconst OG-COMPLETION-STYLES completion-styles
+    "Original `completion-styles' Emacs comes with.")
 
-(defun company-capf-with-og-completion-styles (f &rest args)
-  "Set `completion-styles' to be the default Emacs `completion-styles'
-while `company-capf' runs."
-  (let ((completion-styles OG-COMPLETION-STYLES))
-    (apply f args)))
+  (defun company-capf-with-og-completion-styles (f &rest args)
+    "Set `completion-styles' to be the default Emacs `completion-styles'
+  while `company-capf' runs."
+    (let ((completion-styles OG-COMPLETION-STYLES))
+      (apply f args)))
 
-(advice-add 'company-capf :around 'company-capf-with-og-completion-styles)
+  (advice-add 'company-capf :around 'company-capf-with-og-completion-styles)
 #+end_src
 
 If you don't use the above advice and want to use ~flx~, you should use the
 below ~company-transformer~.
 
 #+begin_src emacs-lisp :tangle yes
-(setq company-transformers
-          '(fussy-company-sort-by-completion-score))
+  (setq company-transformers
+        '(fussy-company-sort-by-completion-score))
 #+end_src
 * Eglot Integration
 
@@ -105,7 +140,7 @@ Eglot by default uses ~flex~ in ~completion-category-defaults~.
 Use this to override that.
 
 #+begin_src emacs-lisp :tangle yes
-(with-eval-after-load 'eglot
+  (with-eval-after-load 'eglot
     (add-to-list 'completion-category-overrides
                  '(eglot (styles fussy basic))))
 #+end_src
@@ -120,102 +155,112 @@ e.g.
 
 #+begin_src emacs-lisp :tangle yes
 
-(fussy--measure-time
- (funcall fussy-filter-fn
-          string table pred point))
+  (fussy--measure-time
+   (funcall fussy-filter-fn
+            string table pred point))
 
-;; M-x describe-symbol (30000~ candidates)
+  ;; M-x describe-symbol (30000~ candidates)
 
-;; Flex
-;; (setq fussy-filter-fn 'fussy-filter-flex)
-;; Type letter a
-;; 0.114714
-;; Type letter b
-;; 0.071597
-;; Type letter c
-;; 0.096974
-;; Type letter d
-;; 0.092788
-;; Type letter e
-;; 0.124994
-;; Type letter f
-;; 0.077074
-;; Type letter g
-;; 0.090732
+  ;; Flex
+  ;; (setq fussy-filter-fn 'fussy-filter-flex)
+  ;; Type letter a
+  ;; 0.114714
+  ;; Type letter b
+  ;; 0.071597
+  ;; Type letter c
+  ;; 0.096974
+  ;; Type letter d
+  ;; 0.092788
+  ;; Type letter e
+  ;; 0.124994
+  ;; Type letter f
+  ;; 0.077074
+  ;; Type letter g
+  ;; 0.090732
 
-;; Orderless
-;; (setq fussy-filter-fn 'fussy-filter-orderless)
-;; Type letter a
-;; 0.091367
-;; Type letter b
-;; 0.049451
-;; Type letter c
-;; 0.076276
-;; Type letter d
-;; 0.069673
-;; Type letter e
-;; 0.101040
-;; Type letter f
-;; 0.054231
-;; Type letter g
-;; 0.065002
+  ;; Orderless
+  ;; (setq fussy-filter-fn 'fussy-filter-orderless)
+  ;; Type letter a
+  ;; 0.091367
+  ;; Type letter b
+  ;; 0.049451
+  ;; Type letter c
+  ;; 0.076276
+  ;; Type letter d
+  ;; 0.069673
+  ;; Type letter e
+  ;; 0.101040
+  ;; Type letter f
+  ;; 0.054231
+  ;; Type letter g
+  ;; 0.065002
 
 #+end_src
 
 To use [[https://github.com/oantolin/orderless][orderless]] filtering:
 
 #+begin_src emacs-lisp :tangle yes
-(use-package orderless
-  :straight t
-  :ensure t
-  :commands (orderless-filter))
+  (use-package orderless
+    :straight t
+    :ensure t
+    :commands (orderless-filter))
 
-(setq fussy-filter-fn 'fussy-filter-orderless)
-#+end_src
-* Recommended Configuration for Performance
-#+begin_src emacs-lisp :tangle yes
-(use-package orderless
-  :straight t
-  :ensure t
-  :commands (orderless-filter))
-
-(use-package flx-rs
-  :ensure t
-  :straight
-  (flx-rs
-   :repo "jcs-elpa/flx-rs"
-   :fetcher github
-   :files (:defaults "bin"))
-  :config
-  (flx-rs-load-dyn)
-  ;; This is not necessary since `flx-all-completions' already checks for this
-  ;; function. It'll still help other libraries that call `flx-score' though.
-  (advice-add 'flx-score :override #'flx-rs-score))
-
-(use-package flx
-  :ensure t
-  :straight t)
-
-(use-package fussy
-  :ensure t
-  :straight
-  (fussy :type git :host github :repo "jojojames/fussy")
-  :after flx
-  :config
-  (setq fussy-score-fn 'flx-rs-score)
   (setq fussy-filter-fn 'fussy-filter-orderless)
+#+end_src
+* Recommendations
 
-  (push 'fussy completion-styles)
-  (setq
-   ;; For example, project-find-file uses 'project-files which uses
-   ;; substring completion by default. Set to nil to make sure it's using
-   ;; flx.
-   completion-category-defaults nil
-   completion-category-overrides nil)
+User is recommended to try the various scoring functions. See ~fussy-score-fn~.
 
-  ;; `eglot' defaults to flex, so set an override to point to flx instead.
-  (with-eval-after-load 'eglot
-    (add-to-list 'completion-category-overrides
-                 '(eglot (styles flx basic)))))
+For speed, ~flx-rs~ or ~fuz~/~fuz-bin~ will be the most performant but uses Rust.
+
+~flx-rs~ will provide an algorithm that matches the original ~flx~ algorithm.
+
+
+Below is a sample config that uses ~flx-rs~ for improved performance.
+
+Use ~fuz-bin~ or ~fuz~ for a different matching algorithm but similar performance.
+
+#+begin_src emacs-lisp :tangle yes
+  (use-package orderless
+    :straight t
+    :ensure t
+    :commands (orderless-filter))
+
+  (use-package flx-rs
+    :ensure t
+    :straight
+    (flx-rs
+     :repo "jcs-elpa/flx-rs"
+     :fetcher github
+     :files (:defaults "bin"))
+    :config
+    (setq fussy-score-fn 'flx-rs-score)
+    (flx-rs-load-dyn))
+
+  (use-package flx
+    :ensure t
+    :straight t)
+
+  (use-package fussy
+    :ensure t
+    :straight
+    (fussy :type git :host github :repo "jojojames/fussy")
+    :after flx
+    :config
+    (setq fussy-score-fn 'flx-rs-score)
+    (setq fussy-filter-fn 'fussy-filter-orderless)
+
+    (push 'fussy completion-styles)
+    (setq
+     ;; For example, project-find-file uses 'project-files which uses
+     ;; substring completion by default. Set to nil to make sure it's using
+     ;; flx.
+     completion-category-defaults nil
+     completion-category-overrides nil)
+
+    ;; `eglot' defaults to flex, so set an override to point to flx instead.
+    (with-eval-after-load 'eglot
+      (add-to-list 'completion-category-overrides
+                   '(eglot (styles fussy basic)))))
 
 #+end_src
