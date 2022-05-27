@@ -170,6 +170,8 @@ FN should at least take in STR and QUERY."
                  #'fussy-fuz-bin-score)
           (const :tag "Score using LiquidMetal"
                  #'fussy-liquidmetal-score)
+          (const :tag "Score using Sublime-Fuzzy"
+                 #'fussy-sublime-fuzzy-score)
           (function :tag "Custom function"))
   :group 'fussy)
 
@@ -550,6 +552,15 @@ highlighting."
   (require 'liquidmetal)
   (when (fboundp 'liquidmetal-score)
     (list (liquidmetal-score str query))))
+
+;; sublime-fuzzy`
+(declare-function "sublime-fuzzy-score" "sublime-fuzzy")
+
+(defun fussy-sublime-fuzzy-score (str query &rest _args)
+  "Score STR for QUERY using `sublime-fuzzy"
+  (require 'sublime-fuzzy)
+  (when (fboundp 'sublime-fuzzy-score)
+    (list (sublime-fuzzy-score query str))))
 
 (provide 'fussy)
 ;;; fussy.el ends here
