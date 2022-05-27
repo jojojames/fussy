@@ -256,7 +256,7 @@ Use ~fuz-bin~ or ~fuz~ for a different matching algorithm but similar performanc
      completion-category-defaults nil
      completion-category-overrides nil)
 
-    ;; `eglot' defaults to flex, so set an override to point to flx instead.
+    ;; `eglot' defaults to flex, so set an override to point to fussy instead.
     (with-eval-after-load 'eglot
       (add-to-list 'completion-category-overrides
                    '(eglot (styles fussy basic)))))

@@ -198,7 +198,7 @@ The default of `fussy-adjust-metadata-fn' is used instead to ignore
 existing sort functions in favor of sorting based only on the scoring done by
 `fussy-score-fn'."
   :type `(choice
-          (const :tag "Adjust metadata using flx."
+          (const :tag "Adjust metadata using fussy."
                  ,#'fussy--adjust-metadata)
           (const :tag "Adjust metadata using flex."
                  ,#'completion--flex-adjust-metadata)
@@ -292,7 +292,7 @@ Implement `all-completions' interface with additional fuzzy / `flx' scoring."
                                fussy-max-candidate-limit))
                (push (pop unscored-candidates) candidates-to-score))
              (append
-              ;; Compute all of the flx scores only for cands-to-sort.
+              ;; Compute all of the fuzzy scores only for cands-to-sort.
               (fussy--maybe-highlight
                pattern
                (fussy--score
