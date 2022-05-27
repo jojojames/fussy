@@ -98,7 +98,7 @@ Use this to override that.
 #+begin_src emacs-lisp :tangle yes
 (with-eval-after-load 'eglot
     (add-to-list 'completion-category-overrides
-                 '(eglot (styles flx basic))))
+                 '(eglot (styles fussy basic))))
 #+end_src
 
 * Orderless Integration
