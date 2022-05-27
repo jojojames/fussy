@@ -106,6 +106,20 @@ For more information: [[https://github.com/rmm5t/liquidmetal][liquidmetal]]
   (setq fussy-score-fn 'fussy-liquidmetal-score))
 #+end_src
 
+** Sublime-Fuzzy
+Alternative flx implementation written in Rust.
+
+#+begin_src emacs-lisp :tangle yes
+(use-package sublime-fuzzy
+  :ensure t
+  :straight
+  (sublime-fuzzy
+   :files (:defaults "bin"))
+  :config
+  (setq fussy-score-fn 'fussy-sublime-fuzzy-score)
+  (sublime-fuzzy-load-dyn))
+#+end_src
+
 * Company Integration
 Fuzzy completion may or may not be too slow when completing with
 [[https://github.com/company-mode/company-mode][company-mode]].
