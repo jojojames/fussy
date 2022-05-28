@@ -1,81 +1,81 @@
 (require 'ert)
-(require 'flx-completion)
+(require 'fussy)
 
-(defvar flx-completion-history-variable '())
+(defvar fussy-history-variable '())
 
-(ert-deftest flx-completion--strlen<-test ()
-  (should (equal nil (flx-completion-strlen< "abc" "a")))
-  (should (equal t (flx-completion-strlen< "a" "bc")))
-  (should (equal nil (flx-completion-strlen< "a" "a"))))
+(ert-deftest fussy--strlen<-test ()
+  (should (equal nil (fussy-strlen< "abc" "a")))
+  (should (equal t (fussy-strlen< "a" "bc")))
+  (should (equal nil (fussy-strlen< "a" "a"))))
 
-(ert-deftest flx-completion--strlen>-test ()
-  (should (equal t (flx-completion-strlen> "abc" "a")))
-  (should (equal nil (flx-completion-strlen> "a" "bc")))
-  (should (equal nil (flx-completion-strlen> "a" "a"))))
+(ert-deftest fussy--strlen>-test ()
+  (should (equal t (fussy-strlen> "abc" "a")))
+  (should (equal nil (fussy-strlen> "a" "bc")))
+  (should (equal nil (fussy-strlen> "a" "a"))))
 
-(ert-deftest flx-completion-histlen<-test--benchmark ()
-  (setq flx-completion-history-variable '("first"
-                                          "second"
-                                          "three"
-                                          "four"
-                                          "five"
-                                          "six"
-                                          "seven"
-                                          "eight"
-                                          "nine"
-                                          "ten"))
+(ert-deftest fussy-histlen<-test--benchmark ()
+  (setq fussy-history-variable '("first"
+                                 "second"
+                                 "three"
+                                 "four"
+                                 "five"
+                                 "six"
+                                 "seven"
+                                 "eight"
+                                 "nine"
+                                 "ten"))
   (should (> .00009
              (car (benchmark-run 1
-                    (flx-completion-histlen< "xyz" "abc"))))))
+                    (fussy-histlen< "xyz" "abc"))))))
 
-(ert-deftest flx-completion-histlen<-test ()
-  (setq flx-completion-history-variable '("first" "second"))
-  (let ((minibuffer-history-variable 'flx-completion-history-variable))
-    (should (equal t (flx-completion-histlen< "first" "second")))
-    (should (equal nil (flx-completion-histlen< "second" "first")))
-    (should (equal nil (flx-completion-histlen< "doesntexist" "first")))
-    (should (equal t (flx-completion-histlen< "second" "doesntexist")))
-    (should (equal nil (flx-completion-histlen< "doesntexist" "doesntexist")))))
+(ert-deftest fussy-histlen<-test ()
+  (setq fussy-history-variable '("first" "second"))
+  (let ((minibuffer-history-variable 'fussy-history-variable))
+    (should (equal t (fussy-histlen< "first" "second")))
+    (should (equal nil (fussy-histlen< "second" "first")))
+    (should (equal nil (fussy-histlen< "doesntexist" "first")))
+    (should (equal t (fussy-histlen< "second" "doesntexist")))
+    (should (equal nil (fussy-histlen< "doesntexist" "doesntexist")))))
 
-(ert-deftest flx-completion-histlen->strlen<--benchmark ()
-  (setq flx-completion-history-variable '("first"
-                                          "second"
-                                          "three"
-                                          "four"
-                                          "five"
-                                          "six"
-                                          "seven"
-                                          "eight"
-                                          "nine"
-                                          "ten"))
+(ert-deftest fussy-histlen->strlen<--benchmark ()
+  (setq fussy-history-variable '("first"
+                                 "second"
+                                 "three"
+                                 "four"
+                                 "five"
+                                 "six"
+                                 "seven"
+                                 "eight"
+                                 "nine"
+                                 "ten"))
   (should (> .00009
              (car (benchmark-run 1
-                    (flx-completion-histlen->strlen< "twelve" "eleven"))))))
+                    (fussy-histlen->strlen< "twelve" "eleven"))))))
 
-(ert-deftest flx-completion-histlen->strlen< ()
-  (setq flx-completion-history-variable '("first" "second"))
-  (let ((minibuffer-history-variable 'flx-completion-history-variable))
-    (should (equal t (flx-completion-histlen->strlen< "first" "second")))
-    (should (equal nil (flx-completion-histlen->strlen< "second" "first")))
-    (should (equal nil (flx-completion-histlen->strlen< "doesntexist" "first")))
-    (should (equal t (flx-completion-histlen->strlen< "second" "doesntexist")))
+(ert-deftest fussy-histlen->strlen< ()
+  (setq fussy-history-variable '("first" "second"))
+  (let ((minibuffer-history-variable 'fussy-history-variable))
+    (should (equal t (fussy-histlen->strlen< "first" "second")))
+    (should (equal nil (fussy-histlen->strlen< "second" "first")))
+    (should (equal nil (fussy-histlen->strlen< "doesntexist" "first")))
+    (should (equal t (fussy-histlen->strlen< "second" "doesntexist")))
     (should
-     (equal nil (flx-completion-histlen->strlen< "doesntexist" "doesntexist")))
-    (should (equal nil (flx-completion-histlen->strlen< "longerstring" "short")))
-    (should (equal t (flx-completion-histlen->strlen< "short" "longerstring")))))
+     (equal nil (fussy-histlen->strlen< "doesntexist" "doesntexist")))
+    (should (equal nil (fussy-histlen->strlen< "longerstring" "short")))
+    (should (equal t (fussy-histlen->strlen< "short" "longerstring")))))
 
-(ert-deftest flx-completion--score--cache ()
+(ert-deftest fussy--score--cache ()
   (let*
-      ((flx-completion-score-fn 'flx-score)
+      ((fussy-score-fn 'flx-score)
        (candidates
         '("~/.emacs.d/straight/repos/orderless/orderless.el"
           "~/Code/yyoshereios/iOSTest/yyosHereiPadRootViewController.h"))
        (string-cache-res
-        (flx-completion--score candidates "odor" nil
-                               flx-strings-cache))
+        (fussy--score candidates "odor" nil
+                      flx-strings-cache))
        (file-cache-res
-        (flx-completion--score candidates "odor" nil
-                               flx-file-cache)))
+        (fussy--score candidates "odor" nil
+                      flx-file-cache)))
 
     ;; With `flx-strings-cache' candidate 1 loses to candidate 2 which is
     ;; not desirable for filenames.
