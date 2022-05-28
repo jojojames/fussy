@@ -28,7 +28,7 @@
              (car (benchmark-run 1
                     (fussy-histlen< "xyz" "abc"))))))
 
-(ert-deftest fussy-filter-fn-flex-c< ()
+(ert-deftest fussy-all-completions-fussy-filter-fn-flex-c< ()
   "Assert `fussy-filter-flex-c' is the fastest filter method."
   (dolist (query '("a" "b" "c"))
     (let* ((table 'help--symbol-completion-table)
@@ -49,6 +49,26 @@
           (let ((fussy-filter-fn 'fussy-filter-orderless))
             (car (benchmark-run 3
                    (fussy-all-completions query table pred point)))))))))
+
+(ert-deftest fussy-filter-fn-flex-c< ()
+  "Assert `fussy-filter-flex-c' is the fastest filter method."
+  (dolist (query '("a" "b" "c" "def"))
+    (let* ((table 'help--symbol-completion-table)
+           (pred nil)
+           (point 1)
+           (flex-c-res
+            (car (benchmark-run 3
+                   (fussy-filter-flex-c query table pred point)))))
+      (should
+       (<
+        flex-c-res
+        (car (benchmark-run 3
+               (fussy-filter-orderless query table pred point)))))
+      (should
+       (<
+        flex-c-res
+        (car (benchmark-run 3
+               (fussy-filter-flex query table pred point))))))))
 
 (ert-deftest fussy-filter-fn-flex-c-candidates ()
   "Assert result of `fussy-filter-flex-c' matches other filters."
