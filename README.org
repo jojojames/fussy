@@ -38,9 +38,9 @@ We default to [[https://github.com/lewang/flx][flx]] for scoring matches but add
 can be used.
 ** Flx
 #+begin_src emacs-lisp :tangle yes
-(use-package flx
-  :ensure t
-  :straight t)
+  (use-package flx
+    :ensure t
+    :straight t)
 #+end_src
 
 We can leverage [[https://github.com/jcs-elpa/flx-rs][flx-rs]] to achieve faster scoring by using Rust. This library
@@ -60,8 +60,18 @@ matches the original [[https://github.com/lewang/flx][flx]] implementation.
 #+end_src
 
 ** Fuz
-Another option is to use the [[https://github.com/rustify-emacs/fuz.el][fuz]] library (also in Rust) for scoring.
-Additional information about [[https://github.com/rustify-emacs/fuz.el][fuz]]'s scoring algorithm can be found [[https://github.com/lotabout/fuzzy-matcher][here]].
+Another option is to use the [[https://github.com/rustify-emacs/fuz.el][fuz]]
+library (also in Rust) for scoring.
+
+This library has two fuzzy matching algorithms, ~skim~ and ~clangd~.
+
+Skim: Just like [[https://github.com/junegunn/fzf][fzf]] v2, the algorithm is
+based on Smith-Waterman algorithm which is normally used in DNA sequence alignment
+
+Clangd: The algorithm is based on clangd's
+[[https://github.com/MaskRay/ccls/blob/master/src/fuzzy_match.cc][FuzzyMatch.cpp]].
+
+For more information: [[https://github.com/lotabout/fuzzy-matcher][fuzzy-matcher]]
 
 #+begin_src emacs-lisp :tangle yes
   (use-package fuz
@@ -100,24 +110,29 @@ strings against abbreviations easy.
 For more information: [[https://github.com/rmm5t/liquidmetal][liquidmetal]]
 
 #+begin_src emacs-lisp :tangle yes
- (use-package liquidmetal
-  :ensure t
-  :straight t
-  (setq fussy-score-fn 'fussy-liquidmetal-score))
+  (use-package liquidmetal
+    :ensure t
+    :straight t
+    (setq fussy-score-fn 'fussy-liquidmetal-score))
 #+end_src
 
 ** Sublime-Fuzzy
-Alternative flx implementation written in Rust.
+
+Fuzzy matching algorithm based on Sublime Text's string search.
+Iterates through characters of a search string and calculates a score.
+This is another fuzzy implementation written in Rust.
+
+For more information: [[https://github.com/Schlechtwetterfront/fuzzy-rs][fuzzy-rs]]
 
 #+begin_src emacs-lisp :tangle yes
-(use-package sublime-fuzzy
-  :ensure t
-  :straight
-  (sublime-fuzzy
-   :files (:defaults "bin"))
-  :config
-  (setq fussy-score-fn 'fussy-sublime-fuzzy-score)
-  (sublime-fuzzy-load-dyn))
+  (use-package sublime-fuzzy
+    :ensure t
+    :straight
+    (sublime-fuzzy
+     :files (:defaults "bin"))
+    :config
+    (setq fussy-score-fn 'fussy-sublime-fuzzy-score)
+    (sublime-fuzzy-load-dyn))
 #+end_src
 
 * Company Integration
@@ -224,7 +239,7 @@ To use [[https://github.com/oantolin/orderless][orderless]] filtering:
 
 User is recommended to try the various scoring functions. See ~fussy-score-fn~.
 
-For speed, ~flx-rs~ or ~fuz~/~fuz-bin~ will be the most performant but uses Rust.
+For speed, ~flx-rs~ or ~fuz/fuz-bin~ will be the most performant but uses Rust.
 
 ~flx-rs~ will provide an algorithm that matches the original ~flx~ algorithm.
 
