@@ -134,9 +134,9 @@ For more information: [[https://github.com/Schlechtwetterfront/fuzzy-rs][fuzzy-r
 
 * Filtering Choices
 
-Choices below benchmark the entire ~fussy-all-completions~ function with the
-below macro calling ~M-x describe-symbol (30000 candidates)~ in the scratch
-buffer.
+For the choices below, we benchmark the functions by benchmarking the entire
+~fussy-all-completions~ function with the below macro calling ~M-x
+describe-symbol (30000 candidates)~ in the scratch buffer.
 
 #+begin_src emacs-lisp :tangle yes
   (defmacro fussy--measure-time (&rest body)
