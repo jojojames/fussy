@@ -462,6 +462,13 @@ Check C1 and C2 in `minibuffer-history-variable'."
   "Check TABLE if `completion-pcm--hilit-commonality' should be used."
   (eq table 'completion-file-name-table))
 
+(defun fussy--string-without-unencodeable-chars (string)
+  "Strip invalid chars from STRING."
+  ;; https://emacs.stackexchange.com/questions/5732/how-to-strip-invalid-utf-8-characters-from-a-string
+  (string-join
+   (delq nil (mapcar (lambda (ch)
+                       (encode-coding-char ch 'utf-8 'unicode))
+                     string))))
 ;;
 ;; (@* "Filtering" )
 ;;
@@ -585,17 +592,19 @@ skim or clangd algorithm can be used.
 If `orderless' is used for filtering, we skip calculating matches
 for more speed."
   (require 'fuz)
-  (if fussy-fuz-use-skim-p
+  (let ((str (fussy--string-without-unencodeable-chars str))
+        (query (fussy--string-without-unencodeable-chars query)))
+    (if fussy-fuz-use-skim-p
+        (if (eq fussy-filter-fn 'fussy-filter-orderless)
+            (when (fboundp 'fuz-calc-score-skim)
+              (list (fuz-calc-score-skim query str)))
+          (when (fboundp 'fuz-fuzzy-match-skim)
+            (fuz-fuzzy-match-skim query str)))
       (if (eq fussy-filter-fn 'fussy-filter-orderless)
-          (when (fboundp 'fuz-calc-score-skim)
-            (list (fuz-calc-score-skim query str)))
-        (when (fboundp 'fuz-fuzzy-match-skim)
-          (fuz-fuzzy-match-skim query str)))
-    (if (eq fussy-filter-fn 'fussy-filter-orderless)
-        (when (fboundp 'fuz-calc-score-clangd)
-          (list (fuz-calc-score-clangd query str)))
-      (when (fboundp 'fuz-fuzzy-match-clangd)
-        (fuz-fuzzy-match-clangd query str)))))
+          (when (fboundp 'fuz-calc-score-clangd)
+            (list (fuz-calc-score-clangd query str)))
+        (when (fboundp 'fuz-fuzzy-match-clangd)
+          (fuz-fuzzy-match-clangd query str))))))
 
 ;; `fuz-bin' integration.
 (declare-function "fuz-bin-dyn-score-skim" "fuz-bin")
@@ -611,17 +620,21 @@ skim or clangd algorithm can be used.
 If `orderless' is used for filtering, we skip calculating matches
 for more speed."
   (require 'fuz-bin)
-  (if fussy-fuz-use-skim-p
+  (let ((str
+         (fussy--string-without-unencodeable-chars str))
+        (query
+         (fussy--string-without-unencodeable-chars query)))
+    (if fussy-fuz-use-skim-p
+        (if (eq fussy-filter-fn 'fussy-filter-orderless)
+            (when (fboundp 'fuz-bin-dyn-score-skim)
+              (list (fuz-bin-dyn-score-skim query str)))
+          (when (fboundp 'fuz-bin-score-skim)
+            (fuz-bin-score-skim query str)))
       (if (eq fussy-filter-fn 'fussy-filter-orderless)
-          (when (fboundp 'fuz-bin-dyn-score-skim)
-            (list (fuz-bin-dyn-score-skim query str)))
-        (when (fboundp 'fuz-bin-score-skim)
-          (fuz-bin-score-skim query str)))
-    (if (eq fussy-filter-fn 'fussy-filter-orderless)
-        (when (fboundp 'fuz-bin-dyn-score-clangd)
-          (list (fuz-bin-dyn-score-clangd query str)))
-      (when (fboundp 'fuz-bin-score-clangd)
-        (fuz-bin-score-clangd query str)))))
+          (when (fboundp 'fuz-bin-dyn-score-clangd)
+            (list (fuz-bin-dyn-score-clangd query str)))
+        (when (fboundp 'fuz-bin-score-clangd)
+          (fuz-bin-score-clangd query str))))))
 
 ;; `liquidmetal' integration
 (declare-function "liquidmetal-score" "liquidmetal")
@@ -642,7 +655,11 @@ highlighting."
   "Score STR for QUERY using `sublime-fuzzy."
   (require 'sublime-fuzzy)
   (when (fboundp 'sublime-fuzzy-score)
-    (list (sublime-fuzzy-score query str))))
+    (let ((str
+           (fussy--string-without-unencodeable-chars str))
+          (query
+           (fussy--string-without-unencodeable-chars query)))
+      (list (sublime-fuzzy-score query str)))))
 
 (provide 'fussy)
 ;;; fussy.el ends here

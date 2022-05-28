@@ -145,3 +145,15 @@
     (should
      (> (get-text-property 0 'completion-score (nth 0 file-cache-res))
         (get-text-property 0 'completion-score (nth 1 file-cache-res))))))
+
+(ert-deftest fussy--string-without-unencodeable-chars-test ()
+  "Test that unencodeable chars are removed."
+  (should
+   (string=
+    (fussy--string-without-unencodeable-chars ";; Copyright 2022 Jo Beøˆ€’")
+    ";; Copyright 2022 Jo Be"))
+  (should
+   (string=
+    (fussy--string-without-unencodeable-chars
+     ";; This buffer is for text that is not saved, and for Lisp evaluation.øˆ€€")
+    ";; This buffer is for text that is not saved, and for Lisp evaluation.")))
