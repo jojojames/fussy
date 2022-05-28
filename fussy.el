@@ -260,7 +260,7 @@ Implement `try-completions' interface by using `completion-flex-try-completion'.
 Implement `all-completions' interface with additional fuzzy / `flx' scoring."
   (pcase-let* ((metadata (completion-metadata string table pred))
                (completion-ignore-case fussy-ignore-case)
-               (using-pcm-highlight (eq table 'completion-file-name-table))
+               (using-pcm-highlight (fussy--using-pcm-highlight-p table))
                (cache (if (memq (completion-metadata-get metadata 'category)
                                 '(file
                                   project-file))
@@ -427,6 +427,10 @@ Check C1 and C2 in `minibuffer-history-variable'."
 (defun fussy--orderless-p ()
   "Return whether or not we're using `orderless' for filtering."
   (eq fussy-filter-fn 'fussy-filter-orderless))
+
+(defun fussy--using-pcm-highlight-p (table)
+  "Check TABLE `completion-pcm--hilit-commonality' should be used."
+  (eq table 'completion-file-name-table))
 
 ;; Filtering functions.
 
