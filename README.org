@@ -132,44 +132,6 @@ For more information: [[https://github.com/Schlechtwetterfront/fuzzy-rs][fuzzy-r
     (sublime-fuzzy-load-dyn))
 #+end_src
 
-* Company Integration
-Fuzzy completion may or may not be too slow when completing with
-[[https://github.com/company-mode/company-mode][company-mode]].
-
-For this, we can advise ~company-capf~ to use basic completions.
-
-#+begin_src emacs-lisp :tangle yes
-
-  (defconst OG-COMPLETION-STYLES completion-styles
-    "Original `completion-styles' Emacs comes with.")
-
-  (defun company-capf-with-og-completion-styles (f &rest args)
-    "Set `completion-styles' to be the default Emacs `completion-styles'
-  while `company-capf' runs."
-    (let ((completion-styles OG-COMPLETION-STYLES))
-      (apply f args)))
-
-  (advice-add 'company-capf :around 'company-capf-with-og-completion-styles)
-#+end_src
-
-If you don't use the above advice and want to use fuzzy completion, you can
-use the below ~company-transformer~.
-
-#+begin_src emacs-lisp :tangle yes
-  (setq company-transformers
-        '(fussy-company-sort-by-completion-score))
-#+end_src
-* Eglot Integration
-
-Eglot by default uses ~flex~ in ~completion-category-defaults~.
-Use this to override that.
-
-#+begin_src emacs-lisp :tangle yes
-  (with-eval-after-load 'eglot
-    (add-to-list 'completion-category-overrides
-                 '(eglot (styles fussy basic))))
-#+end_src
-
 * Orderless Integration
 
 [[https://github.com/oantolin/orderless][orderless]] can be used for filtering.
@@ -232,6 +194,44 @@ To use [[https://github.com/oantolin/orderless][orderless]] filtering:
 
   (setq fussy-filter-fn 'fussy-filter-orderless)
 #+end_src
+* Company Integration
+Fuzzy completion may or may not be too slow when completing with
+[[https://github.com/company-mode/company-mode][company-mode]].
+
+For this, we can advise ~company-capf~ to use basic completions.
+
+#+begin_src emacs-lisp :tangle yes
+
+  (defconst OG-COMPLETION-STYLES completion-styles
+    "Original `completion-styles' Emacs comes with.")
+
+  (defun company-capf-with-og-completion-styles (f &rest args)
+    "Set `completion-styles' to be the default Emacs `completion-styles'
+  while `company-capf' runs."
+    (let ((completion-styles OG-COMPLETION-STYLES))
+      (apply f args)))
+
+  (advice-add 'company-capf :around 'company-capf-with-og-completion-styles)
+#+end_src
+
+If you don't use the above advice and want to use fuzzy completion, you can
+use the below ~company-transformer~.
+
+#+begin_src emacs-lisp :tangle yes
+  (setq company-transformers
+        '(fussy-company-sort-by-completion-score))
+#+end_src
+* Eglot Integration
+
+Eglot by default uses ~flex~ in ~completion-category-defaults~.
+Use this to override that.
+
+#+begin_src emacs-lisp :tangle yes
+  (with-eval-after-load 'eglot
+    (add-to-list 'completion-category-overrides
+                 '(eglot (styles fussy basic))))
+#+end_src
+
 * Recommendations
 
 User is recommended to try the various scoring functions. See ~fussy-score-fn~.
