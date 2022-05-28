@@ -162,9 +162,9 @@ Use `fussy-filter-orderless' for faster filtering through the
 
 FN should at least take in STR and QUERY."
   :type `(choice
-          (const :tag "Score using Elisp"
+          (const :tag "Score using Flx"
                  ,'flx-score)
-          (const :tag "Score using Rust"
+          (const :tag "Score using Flx-RS"
                  ,'flx-rs-score)
           (const :tag "Score using Fuz"
                  #'fussy-fuz-score)
