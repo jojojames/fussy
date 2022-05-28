@@ -429,7 +429,7 @@ Check C1 and C2 in `minibuffer-history-variable'."
   (eq fussy-filter-fn 'fussy-filter-orderless))
 
 (defun fussy--using-pcm-highlight-p (table)
-  "Check TABLE `completion-pcm--hilit-commonality' should be used."
+  "Check TABLE if `completion-pcm--hilit-commonality' should be used."
   (eq table 'completion-file-name-table))
 
 ;; Filtering functions.
@@ -561,7 +561,7 @@ highlighting."
 (declare-function "sublime-fuzzy-score" "sublime-fuzzy")
 
 (defun fussy-sublime-fuzzy-score (str query &rest _args)
-  "Score STR for QUERY using `sublime-fuzzy"
+  "Score STR for QUERY using `sublime-fuzzy."
   (require 'sublime-fuzzy)
   (when (fboundp 'sublime-fuzzy-score)
     (list (sublime-fuzzy-score query str))))
