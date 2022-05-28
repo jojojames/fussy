@@ -129,6 +129,8 @@ For more information: [[https://github.com/Schlechtwetterfront/fuzzy-rs][fuzzy-r
     :ensure t
     :straight
     (sublime-fuzzy
+     :repo "jcs-elpa/sublime-fuzzy"
+     :fetcher github
      :files (:defaults "bin"))
     :config
     (setq fussy-score-fn 'fussy-sublime-fuzzy-score)
