@@ -10,14 +10,12 @@ This is a package to provide a ~completion-style~ to Emacs that leverages [[http
   : M-x package-install RET fussy RET
   Or clone / download this repository and modify your ~load-path~:
 
-  : (add-to-list 'load-path (expand-file-name "/path/to/fussy/" user-emacs-directory))
+  #+begin_src emacs-lisp :tangle yes
+  (add-to-list 'load-path (expand-file-name "/path/to/fussy/" user-emacs-directory))
+  #+end_src
 * Straight Example
 
 #+begin_src emacs-lisp :tangle yes
-
-  (use-package flx
-    :ensure t :straight t)
-
   (use-package fussy
     :ensure t
     :straight
@@ -30,21 +28,18 @@ This is a package to provide a ~completion-style~ to Emacs that leverages [[http
      ;; flx.
      completion-category-defaults nil
      completion-category-overrides nil))
-
 #+end_src
 
 * Scoring Backends
 We default to [[https://github.com/lewang/flx][flx]] for scoring matches but additional scoring functions/backends
 can be used.
 ** Flx
-#+begin_src emacs-lisp :tangle yes
-  (use-package flx
-    :ensure t
-    :straight t)
-#+end_src
+[[https://github.com/lewang/flx][flx]] is a dependency of ~fussy~ and the default
+scoring algorithm.
 
-We can leverage [[https://github.com/jcs-elpa/flx-rs][flx-rs]] to achieve faster scoring by using Rust. This library
-matches the original [[https://github.com/lewang/flx][flx]] implementation.
+We can leverage [[https://github.com/jcs-elpa/flx-rs][flx-rs]] to achieve faster
+scoring by using Rust. This library matches the original
+[[https://github.com/lewang/flx][flx]] implementation.
 
 #+begin_src emacs-lisp :tangle yes
   (use-package flx-rs
@@ -266,15 +261,10 @@ Use ~fuz-bin~ or ~fuz~ for a different matching algorithm but similar performanc
     (setq fussy-score-fn 'flx-rs-score)
     (flx-rs-load-dyn))
 
-  (use-package flx
-    :ensure t
-    :straight t)
-
   (use-package fussy
     :ensure t
     :straight
     (fussy :type git :host github :repo "jojojames/fussy")
-    :after flx
     :config
     (setq fussy-score-fn 'flx-rs-score)
     (setq fussy-filter-fn 'fussy-filter-orderless)
