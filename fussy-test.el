@@ -159,3 +159,11 @@
      (string-as-multibyte
       ";; This buffer is for text that is not saved, and for Lisp evaluation.øˆ€€"))
     ";; This buffer is for text that is not saved, and for Lisp evaluation.")))
+
+(ert-deftest fussy--string-without-unencodeable-chars-consult--tofu-char-test ()
+  "Test that `consult--tofu-char' is removed."
+  (let ((tofu (char-to-string #x200000)))
+    (should
+     (string=
+      (fussy--string-without-unencodeable-chars (concat "jjbb" tofu))
+      "jjbb"))))
