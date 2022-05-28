@@ -150,10 +150,12 @@
   "Test that unencodeable chars are removed."
   (should
    (string=
-    (fussy--string-without-unencodeable-chars ";; Copyright 2022 Jo Beøˆ€’")
+    (fussy--string-without-unencodeable-chars
+     (string-as-multibyte  ";; Copyright 2022 Jo Beøˆ€’"))
     ";; Copyright 2022 Jo Be"))
   (should
    (string=
     (fussy--string-without-unencodeable-chars
-     ";; This buffer is for text that is not saved, and for Lisp evaluation.øˆ€€")
+     (string-as-multibyte
+      ";; This buffer is for text that is not saved, and for Lisp evaluation.øˆ€€"))
     ";; This buffer is for text that is not saved, and for Lisp evaluation.")))
