@@ -28,6 +28,42 @@
              (car (benchmark-run 1
                     (fussy-histlen< "xyz" "abc"))))))
 
+(ert-deftest fussy-filter-fn-flex-c< ()
+  "Assert `fussy-filter-flex-c' is the fastest filter method."
+  (dolist (query '("a" "b" "c"))
+    (let* ((table 'help--symbol-completion-table)
+           (pred nil)
+           (point 1)
+           (fussy-filter-fn 'fussy-filter-flex-c)
+           (flex-c-res
+            (car
+             (benchmark-run 3
+               (fussy-all-completions query table pred point)))))
+      (should
+       (< flex-c-res
+          (let ((fussy-filter-fn 'fussy-filter-flex))
+            (car (benchmark-run 3
+                   (fussy-all-completions query table pred point))))))
+      (should
+       (< flex-c-res
+          (let ((fussy-filter-fn 'fussy-filter-orderless))
+            (car (benchmark-run 3
+                   (fussy-all-completions query table pred point)))))))))
+
+(ert-deftest fussy-filter-fn-flex-c-candidates ()
+  "Assert result of `fussy-filter-flex-c' matches other filters."
+  (dolist (query '("a" "b" "c" "def"))
+    (let* ((table 'help--symbol-completion-table)
+           (pred nil)
+           (point 1)
+           (flex-c-res (fussy-filter-flex-c query table pred point)))
+      (should
+       (= (length flex-c-res)
+          (length (fussy-filter-flex query table pred point))))
+      (should
+       (= (length flex-c-res)
+          (length (fussy-filter-orderless query table pred point)))))))
+
 (ert-deftest fussy-histlen<-test ()
   (setq fussy-history-variable '("first" "second"))
   (let ((minibuffer-history-variable 'fussy-history-variable))
