@@ -133,6 +133,9 @@ For more information: [[https://github.com/Schlechtwetterfront/fuzzy-rs][fuzzy-r
 #+end_src
 
 * Filtering Choices
+Before scoring and sorting candidates, we must somehow filter them from the
+completion table. The approaches below are several ways to do that, each with
+varying advantages and disadvantages.
 
 For the choices below, we benchmark the functions by benchmarking the entire
 ~fussy-all-completions~ function with the below macro calling ~M-x
