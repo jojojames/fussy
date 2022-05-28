@@ -221,39 +221,6 @@ https://lists.gnu.org/archive/html/help-gnu-emacs/2008-06/msg00087.html"
        (message "%.06f" (float-time (time-since time)))
        result)))
 
-(defun fussy--propertize-common-part (obj score)
-  "Return propertized copy of OBJ according to score.
-
-SCORE of nil means to clear the properties."
-  (let ((block-started (cadr score))
-        (last-char nil)
-        ;; Originally we used `substring-no-properties' when setting str but
-        ;; that strips text properties that other packages may set.
-        ;; One example is `consult', which sprinkles text properties onto
-        ;; the candidate. e.g. `consult--line-prefix' will check for
-        ;; 'consult-location on str candidate.
-        (str (if (consp obj) (car obj) obj)))
-    (when score
-      (dolist (char (cdr score))
-        (when (and last-char
-                   (not (= (1+ last-char) char)))
-          (add-face-text-property block-started (1+ last-char)
-                                  'completions-common-part nil str)
-          (setq block-started char))
-        (setq last-char char))
-      (add-face-text-property block-started (1+ last-char)
-                              'completions-common-part nil str)
-      (when (and
-             last-char
-             (> (length str) (+ 2 last-char)))
-        (add-face-text-property (1+ last-char) (+ 2 last-char)
-                                'completions-first-difference
-                                nil
-                                str)))
-    (if (consp obj)
-        (cons str (cdr obj))
-      str)))
-
 ;;
 ;; (@* "All Completions Interface/API" )
 ;;
@@ -364,6 +331,39 @@ Use CACHE for scoring."
     ;; e.g. When `using-pcm-highlight' is nil or we're using `orderless' for
     ;; filtering and highlighting.
     collection))
+
+(defun fussy--propertize-common-part (obj score)
+  "Return propertized copy of OBJ according to score.
+
+SCORE of nil means to clear the properties."
+  (let ((block-started (cadr score))
+        (last-char nil)
+        ;; Originally we used `substring-no-properties' when setting str but
+        ;; that strips text properties that other packages may set.
+        ;; One example is `consult', which sprinkles text properties onto
+        ;; the candidate. e.g. `consult--line-prefix' will check for
+        ;; 'consult-location on str candidate.
+        (str (if (consp obj) (car obj) obj)))
+    (when score
+      (dolist (char (cdr score))
+        (when (and last-char
+                   (not (= (1+ last-char) char)))
+          (add-face-text-property block-started (1+ last-char)
+                                  'completions-common-part nil str)
+          (setq block-started char))
+        (setq last-char char))
+      (add-face-text-property block-started (1+ last-char)
+                              'completions-common-part nil str)
+      (when (and
+             last-char
+             (> (length str) (+ 2 last-char)))
+        (add-face-text-property (1+ last-char) (+ 2 last-char)
+                                'completions-first-difference
+                                nil
+                                str)))
+    (if (consp obj)
+        (cons str (cdr obj))
+      str)))
 
 ;;
 ;; (@* "Bootstrap" )
