@@ -553,7 +553,7 @@ highlighting."
   (when (fboundp 'liquidmetal-score)
     (list (liquidmetal-score str query))))
 
-;; sublime-fuzzy`
+;; `sublime-fuzzy'
 (declare-function "sublime-fuzzy-score" "sublime-fuzzy")
 
 (defun fussy-sublime-fuzzy-score (str query &rest _args)
