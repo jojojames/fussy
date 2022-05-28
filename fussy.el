@@ -149,6 +149,8 @@ Use `fussy-filter-orderless' for faster filtering through the
   :type `(choice
           (const :tag "Built in Flex Filtering"
                  ,#'fussy-filter-flex)
+          (const :tag "Built in Flex Filtering in C"
+                 ,#'fussy-filter-flex-c)
           (const :tag "Orderless Filtering"
                  ,#'fussy-filter-orderless)
           (function :tag "Custom function"))
@@ -478,6 +480,50 @@ Respect PRED and POINT.  The filter here is the same as in
                 string
                 table pred point
                 #'completion-flex--make-flex-pattern)))
+    (list completions pattern prefix)))
+
+(defun fussy-filter-flex-c (string table pred point)
+  "Match STRING to the entries in TABLE.
+
+Respect PRED and POINT.  This filter uses the `all-completions' interface
+that's written in C for faster filtering."
+  (let* ((beforepoint (substring string 0 point))
+         (afterpoint (substring string point))
+         (bounds (completion-boundaries beforepoint table pred afterpoint))
+         (prefix (substring beforepoint 0 (car bounds)))
+         (infix (concat
+                 (substring beforepoint (car bounds))
+                 (substring afterpoint 0 (cdr bounds))))
+         (regexp (concat "\\`"
+                         (mapconcat
+                          (lambda (x)
+                            (setq x (string x))
+                            (concat "[^" x "]*" (regexp-quote x)))
+                          infix
+                          "")))
+         (completion-regexp-list (cons regexp completion-regexp-list))
+         (completions (or
+                       (all-completions infix table pred)
+                       (all-completions prefix table pred)))
+         ;; Create this pattern for the sole purpose of higlighting with
+         ;; `completion-pcm--hilit-commonality'. We don't actually need this
+         ;; for `all-completions' to work since we're just using
+         ;; `completion-regexp-list' with `all-completions'.
+         ;; In addition to that, we only need this pattern if we're higlighting
+         ;; using `completion-pcm--hilit-commonality' so skip evaluating the
+         ;; pattern if this is not the pcm highlight case.
+         (pattern
+          (when (fussy--using-pcm-highlight-p table)
+            ;; Note to self:
+            ;; The way we create the pattern here can be found in
+            ;; `completion-substring--all-completions'.
+            (let* ((basic-pattern (completion-basic--pattern
+                                   beforepoint afterpoint bounds))
+                   (pattern (if (not (stringp (car basic-pattern)))
+                                basic-pattern
+                              (cons 'prefix basic-pattern))))
+              (completion-pcm--optimize-pattern
+               (completion-flex--make-flex-pattern pattern))))))
     (list completions pattern prefix)))
 
 ;; Integrations

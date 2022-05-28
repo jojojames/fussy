@@ -11,7 +11,7 @@ This is a package to provide a ~completion-style~ to Emacs that leverages [[http
   Or clone / download this repository and modify your ~load-path~:
 
   #+begin_src emacs-lisp :tangle yes
-  (add-to-list 'load-path (expand-file-name "/path/to/fussy/" user-emacs-directory))
+    (add-to-list 'load-path (expand-file-name "/path/to/fussy/" user-emacs-directory))
   #+end_src
 * Straight Example
 
@@ -132,56 +132,97 @@ For more information: [[https://github.com/Schlechtwetterfront/fuzzy-rs][fuzzy-r
     (sublime-fuzzy-load-dyn))
 #+end_src
 
-* Orderless Integration
+* Filtering Choices
 
-[[https://github.com/oantolin/orderless][orderless]] can be used for filtering.
+Choices below benchmark the entire ~fussy-all-completions~ function with the
+below macro calling ~M-x describe-symbol (30000 candidates)~ in the scratch
+buffer.
 
-Quick eyetest benchmarking yields about a 20~ms improvement.
+#+begin_src emacs-lisp :tangle yes
+  (defmacro fussy--measure-time (&rest body)
+    "Measure the time it takes to evaluate BODY.
+  https://lists.gnu.org/archive/html/help-gnu-emacs/2008-06/msg00087.html"
+    `(let ((time (current-time)))
+       (let ((result ,@body))
+         (message "%.06f" (float-time (time-since time)))
+         result)))
+#+end_src
 
-e.g.
+** Flex
+This is the default filtering method and is 1:1 to the filtering done
+when using the ~flex~ ~completion-style~. Advantages are no additional
+dependencies (e.g. ~orderless~) and likely bug-free/stable to use.
+
+The only disadvantage is that it's the slowest of the filtering methods.
 
 #+begin_src emacs-lisp :tangle yes
 
-  (fussy--measure-time
-   (funcall fussy-filter-fn
-            string table pred point))
-
-  ;; M-x describe-symbol (30000~ candidates)
-
   ;; Flex
-  ;; (setq fussy-filter-fn 'fussy-filter-flex)
-  ;; Type letter a
-  ;; 0.114714
-  ;; Type letter b
-  ;; 0.071597
-  ;; Type letter c
-  ;; 0.096974
-  ;; Type letter d
-  ;; 0.092788
-  ;; Type letter e
-  ;; 0.124994
-  ;; Type letter f
-  ;; 0.077074
-  ;; Type letter g
-  ;; 0.090732
+  (setq fussy-filter-fn 'fussy-filter-flex)
+  ;; Type Letter a
+  ;; 0.078952
+  ;; Type Letter b
+  ;; 0.052590
+  ;; Type Letter c
+  ;; 0.065808
+  ;; Type Letter d
+  ;; 0.061254
+  ;; Type Letter e
+  ;; 0.098000
+  ;; Type Letter f
+  ;; 0.053321
+  ;; Type Letter g
+  ;; 0.050180
+#+end_src
 
+** Flex-C
+This is another useable filtering method and leverages the ~all-completions~ API
+written in C to do its filtering. It seems to be the fastest of the filtering
+methods from quick benchmarking as well as requiring no additional dependencies
+(e.g. ~orderless~).
+
+Implementation may be buggy though, so use with caution.
+
+#+begin_src emacs-lisp :tangle yes
+  ;; Flex-C
+  (setq fussy-filter-fn 'fussy-filter-flex-c)
+  ;; Type Letter a
+  ;; 0.030671
+  ;; Type Letter b
+  ;; 0.030247
+  ;; Type Letter c
+  ;; 0.036047
+  ;; Type Letter d
+  ;; 0.032071
+  ;; Type Letter e
+  ;; 0.034785
+  ;; Type Letter f
+  ;; 0.030392
+  ;; Type Letter g
+  ;; 0.033473
+#+end_src
+** Orderless
+[[https://github.com/oantolin/orderless][orderless]] can also be used for filtering. It uses the ~all-completions~ API like
+~fussy-filter-flex-c~ so is also faster than the default filtering but has a
+dependency on ~orderless~.
+
+#+begin_src emacs-lisp :tangle yes
   ;; Orderless
-  ;; (setq fussy-filter-fn 'fussy-filter-orderless)
-  ;; Type letter a
-  ;; 0.091367
-  ;; Type letter b
-  ;; 0.049451
-  ;; Type letter c
-  ;; 0.076276
-  ;; Type letter d
-  ;; 0.069673
-  ;; Type letter e
-  ;; 0.101040
-  ;; Type letter f
-  ;; 0.054231
-  ;; Type letter g
-  ;; 0.065002
-
+  (setq fussy-filter-fn 'fussy-filter-orderless)
+  ;; Type Letter a
+  ;; 0.065390
+  ;; Type Letter b
+  ;; 0.036942
+  ;; Type Letter c
+  ;; 0.054091
+  ;; Type Letter d
+  ;; 0.048816
+  ;; Type Letter e
+  ;; 0.074258
+  ;; Type Letter f
+  ;; 0.040900
+  ;; Type Letter g
+  ;; 0.037928
 #+end_src
 
 To use [[https://github.com/oantolin/orderless][orderless]] filtering:
@@ -242,7 +283,7 @@ For speed, ~flx-rs~ or ~fuz/fuz-bin~ will be the most performant but uses Rust.
 
 Below is a sample config that uses ~flx-rs~ for improved performance.
 
-Use ~fuz-bin~ or ~fuz~ for a different matching algorithm but similar performance.
+~fuz-bin~ or ~fuz~ also seem to be slightly faster than ~flx-rs~ and uses a different algorithm.
 
 #+begin_src emacs-lisp :tangle yes
   (use-package orderless
@@ -282,4 +323,40 @@ Use ~fuz-bin~ or ~fuz~ for a different matching algorithm but similar performanc
       (add-to-list 'completion-category-overrides
                    '(eglot (styles fussy basic)))))
 
+#+end_src
+* My Configuration
+Documenting my configuration for the users that may want to copy. Unlike the
+former configuration, this section will be kept up to date with my ~init.el~.
+
+#+begin_src emacs-lisp :tangle yes
+  (use-package fuz-bin
+    :ensure t
+    :straight
+    (fuz-bin
+     :repo "jcs-elpa/fuz-bin"
+     :fetcher github
+     :files (:defaults "bin"))
+    :config
+    (fuz-bin-load-dyn))
+
+  (use-package fussy
+    :ensure t
+    :straight
+    (fussy :type git :host github :repo "jojojames/fussy")
+    :after flx
+    :config
+    (setq fussy-filter-fn 'fussy-filter-flex-c)
+    (setq fussy-score-fn 'fussy-fuz-bin-score)
+    (push 'fussy completion-styles)
+    (setq
+     ;; For example, project-find-file uses 'project-files which uses
+     ;; substring completion by default. Set to nil to make sure it's using
+     ;; flx.
+     completion-category-defaults nil
+     completion-category-overrides nil)
+
+    ;; `eglot' defaults to flex, so set an override to point to flx instead.
+    (with-eval-after-load 'eglot
+      (add-to-list 'completion-category-overrides
+                   '(eglot (styles fussy basic)))))
 #+end_src
