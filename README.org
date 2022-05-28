@@ -107,7 +107,9 @@ For more information: [[https://github.com/rmm5t/liquidmetal][liquidmetal]]
 #+end_src
 
 ** Sublime-Fuzzy
-Alternative flx implementation written in Rust.
+Fuzzy matching algorithm based on Sublime Text's text search.
+
+For more information: [[https://github.com/Schlechtwetterfront/fuzzy-rs][sublime_fuzzy]]
 
 #+begin_src emacs-lisp :tangle yes
 (use-package sublime-fuzzy
