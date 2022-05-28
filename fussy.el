@@ -34,6 +34,10 @@
 
 ;;; Code:
 
+;;
+;; (@* "Customizations" )
+;;
+
 (defgroup fussy nil
   "Fuzzy completion style using `flx.'."
   :group 'flx
@@ -250,6 +254,10 @@ SCORE of nil means to clear the properties."
         (cons str (cdr obj))
       str)))
 
+;;
+;; (@* "All Completions Interface/API" )
+;;
+
 (defun fussy-try-completions (string table pred point)
   "Try to flex-complete STRING in TABLE given PRED and POINT.
 
@@ -309,6 +317,10 @@ Implement `all-completions' interface with additional fuzzy / `flx' scoring."
               unscored-candidates))))
        (length prefix)))))
 
+;;
+;; (@* "Scoring & Highlighting" )
+;;
+
 (defun fussy--score (candidates string using-pcm-highlight cache)
   "Score and propertize \(if not USING-PCM-HIGHLIGHT\) CANDIDATES using STRING.
 
@@ -353,12 +365,20 @@ Use CACHE for scoring."
     ;; filtering and highlighting.
     collection))
 
+;;
+;; (@* "Bootstrap" )
+;;
+
 ;;;###autoload
 (progn
   (put 'fussy 'completion--adjust-metadata fussy-adjust-metadata-fn)
   (add-to-list 'completion-styles-alist
                '(fussy fussy-try-completions fussy-all-completions
                        "Smart Fuzzy completion with scoring.")))
+
+;;
+;; (@* "Sorting" )
+;;
 
 (defun fussy--adjust-metadata (metadata)
   "If actually doing filtering, adjust METADATA's sorting."
@@ -390,6 +410,10 @@ Use CACHE for scoring."
            (funcall fussy-compare-same-score-fn c1 c2)
          ;; Candidates with higher completion score have precedence.
          (> s1 s2))))))
+
+;;
+;; (@* "Candidate Comparisons" )
+;;
 
 (defun fussy-strlen< (c1 c2)
   "Return t if C1's length is less than C2's length."
@@ -426,6 +450,10 @@ Check C1 and C2 in `minibuffer-history-variable'."
           (eq result 'c1)
         (fussy-strlen< c1 c2)))))
 
+;;
+;; (@* "Utils" )
+;;
+
 (defun fussy--orderless-p ()
   "Return whether or not we're using `orderless' for filtering."
   (eq fussy-filter-fn 'fussy-filter-orderless))
@@ -434,7 +462,9 @@ Check C1 and C2 in `minibuffer-history-variable'."
   "Check TABLE if `completion-pcm--hilit-commonality' should be used."
   (eq table 'completion-file-name-table))
 
-;; Filtering functions.
+;;
+;; (@* "Filtering" )
+;;
 
 (declare-function "orderless-filter" "orderless")
 (declare-function "orderless-highlight-matches" "orderless")
@@ -526,7 +556,9 @@ that's written in C for faster filtering."
                (completion-flex--make-flex-pattern pattern))))))
     (list completions pattern prefix)))
 
-;; Integrations
+;;
+;; (@* "Integration with other Packages" )
+;;
 
 ;; `company' integration.
 (defvar company-backend)
