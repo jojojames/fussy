@@ -346,7 +346,6 @@ former configuration, this section will be kept up to date with my ~init.el~.
     :ensure t
     :straight
     (fussy :type git :host github :repo "jojojames/fussy")
-    :after flx
     :config
     (setq fussy-filter-fn 'fussy-filter-flex-c)
     (setq fussy-score-fn 'fussy-fuz-bin-score)
