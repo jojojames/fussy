@@ -505,11 +505,11 @@ that's written in C for faster filtering."
          (completions (or
                        (all-completions infix table pred)
                        (all-completions prefix table pred)))
-         ;; Create this pattern for the sole purpose of higlighting with
+         ;; Create this pattern for the sole purpose of highlighting with
          ;; `completion-pcm--hilit-commonality'. We don't actually need this
          ;; for `all-completions' to work since we're just using
          ;; `completion-regexp-list' with `all-completions'.
-         ;; In addition to that, we only need this pattern if we're higlighting
+         ;; In addition to that, we only need this pattern if we're highlighting
          ;; using `completion-pcm--hilit-commonality' so skip evaluating the
          ;; pattern if this is not the pcm highlight case.
          (pattern
