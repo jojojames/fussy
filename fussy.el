@@ -204,11 +204,11 @@ e.g. Instead of returning LIST SCORE MATCH_1 MATCH_2 which something like
 
 Scoring functions in this list's highlighting are then taken care of by either
 
-`fussy-filter-orderless' or `completion-pcm--hilit-commonality'. See
+`fussy-filter-orderless' or `completion-pcm--hilit-commonality'.  See
 
 `fussy--using-pcm-highlight-p'.
 
-Functions in this list should either match `fussy-score-fn'."
+Functions in this list should match `fussy-score-fn'."
   :type 'list
   :group 'fussy)
 
@@ -496,7 +496,11 @@ Check C1 and C2 in `minibuffer-history-variable'."
   (eq fussy-filter-fn 'fussy-filter-orderless))
 
 (defun fussy--using-pcm-highlight-p (table)
-  "Check TABLE if `completion-pcm--hilit-commonality' should be used."
+  "Check if highlighting should using `completion-pcm--hilit-commonality'.
+
+Check TABLE needs to be specially highlighted.
+Check if `fussy-score-fn' used doesn't return match indices.
+Check if `orderless' is being used."
   (or
    ;; This table seems peculiar in that highlighting seems to get wiped...
    (eq table 'completion-file-name-table)
