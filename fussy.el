@@ -75,7 +75,7 @@ highlighting with `completion-pcm--hilit-commonality'."
   :group 'fussy
   :type 'boolean)
 
-(defcustom fussy-max-word-length-to-score 1000
+(defcustom fussy-max-word-length-to-score 500
   "Words that are longer than this length are not scored."
   :group 'fussy
   :type 'integer)
