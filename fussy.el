@@ -539,9 +539,28 @@ that's written in C for faster filtering."
                           infix
                           "")))
          (completion-regexp-list (cons regexp completion-regexp-list))
-         (completions (or
-                       (all-completions infix table pred)
-                       (all-completions prefix table pred)))
+         ;; Commentary on why we prefer prefix over infix.
+         ;; For `find-file', if the prefix exists, we're in a different
+         ;; directory, so should be retrieving candidates from that directory
+         ;; instead.
+         ;; ex. We started in ~/ home directory. User starts typing cod.
+         ;; infix will be: c -> co -> cod
+         ;; prefix will be ~/
+         ;; User then enters a directory called ~/Code and types abc.
+         ;; infix will be: a -> b -> c
+         ;; prefix will be ~/Code
+         ;; For `project-find-file', the prefix will usually be empty and only
+         ;; the infix will be matched against.
+         ;; So, *knock on wood*, it seems safe to prefer prefix completion over
+         ;; infix completion.
+         (completions
+          (if prefix
+              (or
+               (all-completions prefix table pred)
+               (all-completions infix table pred))
+            (or
+             (all-completions infix table pred)
+             (all-completions prefix table pred))))
          ;; Create this pattern for the sole purpose of highlighting with
          ;; `completion-pcm--hilit-commonality'. We don't actually need this
          ;; for `all-completions' to work since we're just using
