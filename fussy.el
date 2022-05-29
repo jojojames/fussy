@@ -677,11 +677,11 @@ highlighting."
   (when (fboundp 'liquidmetal-score)
     (list (liquidmetal-score str query))))
 
-;; `sublime-fuzzy'
+;; `sublime-fuzzy' integration
 (declare-function "sublime-fuzzy-score" "sublime-fuzzy")
 
 (defun fussy-sublime-fuzzy-score (str query &rest _args)
-  "Score STR for QUERY using `sublime-fuzzy."
+  "Score STR for QUERY using `sublime-fuzzy'."
   (require 'sublime-fuzzy)
   (when (fboundp 'sublime-fuzzy-score)
     (let ((str
