@@ -68,7 +68,10 @@ https://github.com/abo-abo/swiper/issues/207#issuecomment-141541960"
   :type 'integer)
 
 (defcustom fussy-ignore-case t
-  "If t, ignores `completion-ignore-case'."
+  "If t, ignores `completion-ignore-case'.
+
+If this is set to nil, highlighting may break for cases where we're
+highlighting with `completion-pcm--hilit-commonality'."
   :group 'fussy
   :type 'boolean)
 
@@ -235,11 +238,20 @@ Implement `try-completions' interface by using `completion-flex-try-completion'.
   "Get flex-completions of STRING in TABLE, given PRED and POINT.
 
 Implement `all-completions' interface with additional fuzzy / `flx' scoring."
+  (when fussy-ignore-case
+    ;; `completion-ignore-case' is usually set up in `minibuffer-with-setup-hook'.
+    ;; e.g. `read-file-name-default'
+    ;; Many search functions leverage this variable. In the case of fuzzy
+    ;; matching, it is better to match insensitively.
+    ;; For example, the implementation of `completion-pcm--hilit-commonality'
+    ;; uses `case-fold-search' which sets its value to `completion-ignore-case'.
+    ;; Other examples include `completion-pcm--all-completions' which is used by
+    ;; `fussy-filter-flex', `orderless-filter', `all-completions'.
+    (setq-local completion-ignore-case t))
   (pcase
       (while-no-input
         (pcase-let*
             ((metadata (completion-metadata string table pred))
-             (completion-ignore-case fussy-ignore-case)
              (using-pcm-highlight (fussy--using-pcm-highlight-p table))
              (cache (if (memq (completion-metadata-get metadata 'category)
                               '(file
