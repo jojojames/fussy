@@ -132,6 +132,22 @@ For more information: [[https://github.com/Schlechtwetterfront/fuzzy-rs][fuzzy-r
     (setq fussy-score-fn 'fussy-sublime-fuzzy-score)
     (sublime-fuzzy-load-dyn))
 #+end_src
+** Hotfuzz
+This is a fuzzy Emacs completion style similar to the built-in flex style, but
+with a better scoring algorithm. Specifically, it is non-greedy and ranks
+completions that match at word; path component; or camelCase boundaries higher.
+
+For more information: [[https://github.com/axelf4/hotfuzz][hotfuzz]]
+
+Note, ~hotfuzz~ has its own ~completion-style~ that may be worth using over this one.
+
+#+begin_src emacs-lisp :tangle yes
+(use-package hotfuzz
+  :ensure t
+  :straight t
+  :config
+  (setq fussy-score-fn 'fussy-hotfuzz-score))
+#+end_src
 
 * Filtering Choices
 Before scoring and sorting candidates, we must somehow filter them from the

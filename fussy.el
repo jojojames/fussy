@@ -181,6 +181,8 @@ FN should at least take in STR and QUERY."
                  #'fussy-liquidmetal-score)
           (const :tag "Score using Sublime-Fuzzy"
                  #'fussy-sublime-fuzzy-score)
+          (const :tag "Score using Hotfuzz"
+                 #'fussy-hotfuzz-score)
           (function :tag "Custom function"))
   :group 'fussy)
 
@@ -192,6 +194,23 @@ If nil, use clangd fuzzy matching algorithm with `fuz'.
 This boolean is only used if `fussy-fuz-score' is the `fussy-score-fn'."
   :group 'fussy
   :type 'boolean)
+
+(defcustom fussy-score-fns-without-indices '(fussy-hotfuzz-score
+                                             fussy-liquidmetal-score)
+  "List of scoring functions that only returns the score.
+
+e.g. Instead of returning LIST SCORE MATCH_1 MATCH_2 which something like
+`flx-score' does, it returns LIST SCORE.
+
+Scoring functions in this list's highlighting are then taken care of by either
+
+`fussy-filter-orderless' or `completion-pcm--hilit-commonality'. See
+
+`fussy--using-pcm-highlight-p'.
+
+Functions in this list should either match `fussy-score-fn'."
+  :type 'list
+  :group 'fussy)
 
 ;;;###autoload
 (defcustom fussy-adjust-metadata-fn
@@ -330,7 +349,6 @@ Use CACHE for scoring."
          ;; string here. This is faster than the pcm highlight but doesn't
          ;; seem to work with `find-file'.
          (unless (or using-pcm-highlight
-                     (fussy--orderless-p)
                      (null fussy-propertize-fn))
            (setq
             x (funcall fussy-propertize-fn x score))))))
@@ -339,8 +357,7 @@ Use CACHE for scoring."
 
 (defun fussy--maybe-highlight (pattern collection using-pcm-highlight)
   "Highlight COLLECTION using PATTERN if USING-PCM-HIGHLIGHT is true."
-  (if (and using-pcm-highlight
-           (not (fussy--orderless-p)))
+  (if using-pcm-highlight
       ;; This seems to be the best way to get highlighting to work consistently
       ;; with `find-file'.
       (completion-pcm--hilit-commonality pattern collection)
@@ -479,7 +496,14 @@ Check C1 and C2 in `minibuffer-history-variable'."
 
 (defun fussy--using-pcm-highlight-p (table)
   "Check TABLE if `completion-pcm--hilit-commonality' should be used."
-  (eq table 'completion-file-name-table))
+  (or
+   ;; This table seems peculiar in that highlighting seems to get wiped...
+   (eq table 'completion-file-name-table)
+   ;; These don't generate match indices to highlight at all so we should
+   ;; highlight with `completion-pcm--hilit-commonality'.
+   (memq fussy-score-fn fussy-score-fns-without-indices)
+   ;; `orderless' generates its own highlighting.
+   (fussy--orderless-p)))
 
 (defun fussy--string-without-unencodeable-chars (string)
   "Strip invalid chars from STRING."
@@ -701,6 +725,17 @@ highlighting."
           (query
            (fussy--string-without-unencodeable-chars query)))
       (list (sublime-fuzzy-score query str)))))
+
+;; `hotfuzz' integration
+(declare-function "hotfuzz--cost" "hotfuzz")
+
+(defun fussy-hotfuzz-score (str query &rest _args)
+  "Score STR for QUERY using `hotfuzz'."
+  (require 'hotfuzz)
+  (when (fboundp 'hotfuzz--cost)
+    ;; Looks like the score is flipped for `hotfuzz'.
+    ;; See `hotfuzz-all-completions'.
+    (list (- (hotfuzz--cost query str)))))
 
 (provide 'fussy)
 ;;; fussy.el ends here
