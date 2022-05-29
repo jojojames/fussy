@@ -265,7 +265,8 @@ Implement `all-completions' interface with additional fuzzy / `flx' scoring."
     ;; For example, the implementation of `completion-pcm--hilit-commonality'
     ;; uses `case-fold-search' which sets its value to `completion-ignore-case'.
     ;; Other examples include `completion-pcm--all-completions' which is used by
-    ;; `fussy-filter-flex', `orderless-filter', `all-completions'.
+    ;; `fussy-filter-flex'. `orderless-filter' and `all-completions' also use
+    ;; this variable.
     (setq-local completion-ignore-case t))
   (pcase
       (while-no-input
