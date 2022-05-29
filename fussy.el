@@ -547,7 +547,7 @@ that's written in C for faster filtering."
          ;; infix will be: c -> co -> cod
          ;; prefix will be ~/
          ;; User then enters a directory called ~/Code and types abc.
-         ;; infix will be: a -> b -> c
+         ;; infix will be: a -> ab -> abc
          ;; prefix will be ~/Code
          ;; For `project-find-file', the prefix will usually be empty and only
          ;; the infix will be matched against.
