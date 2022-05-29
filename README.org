@@ -108,6 +108,7 @@ For more information: [[https://github.com/rmm5t/liquidmetal][liquidmetal]]
   (use-package liquidmetal
     :ensure t
     :straight t
+    :config
     (setq fussy-score-fn 'fussy-liquidmetal-score))
 #+end_src
 
