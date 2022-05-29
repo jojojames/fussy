@@ -235,54 +235,61 @@ Implement `try-completions' interface by using `completion-flex-try-completion'.
   "Get flex-completions of STRING in TABLE, given PRED and POINT.
 
 Implement `all-completions' interface with additional fuzzy / `flx' scoring."
-  (pcase-let* ((metadata (completion-metadata string table pred))
-               (completion-ignore-case fussy-ignore-case)
-               (using-pcm-highlight (fussy--using-pcm-highlight-p table))
-               (cache (if (memq (completion-metadata-get metadata 'category)
-                                '(file
-                                  project-file))
-                          flx-file-cache
-                        flx-strings-cache))
-               (`(,all ,pattern ,prefix)
-                (funcall fussy-filter-fn
-                         string table pred point)))
-    (when all
-      (nconc
-       (if (or (> (length string) fussy-max-query-length)
-               (string= string ""))
-           (fussy--maybe-highlight pattern all :always-highlight)
-         (if (< (length all) fussy-max-candidate-limit)
-             (fussy--maybe-highlight
-              pattern
-              (fussy--score all string using-pcm-highlight cache)
-              using-pcm-highlight)
-           (let ((unscored-candidates '())
-                 (candidates-to-score '()))
-             ;; Pre-sort the candidates by length before partitioning.
-             (setq unscored-candidates
-                   (if fussy-max-limit-preferred-candidate-fn
-                       (sort
-                        all fussy-max-limit-preferred-candidate-fn)
-                     ;; If `fussy-max-limit-preferred-candidate-fn'
-                     ;; is nil, we'll partition the candidates as is.
-                     all))
-             ;; Partition the candidates into sorted and unsorted groups.
-             (dotimes (_n (min (length unscored-candidates)
-                               fussy-max-candidate-limit))
-               (push (pop unscored-candidates) candidates-to-score))
-             (append
-              ;; Compute all of the fuzzy scores only for cands-to-sort.
-              (fussy--maybe-highlight
-               pattern
-               (fussy--score
-                (reverse candidates-to-score) string using-pcm-highlight cache)
-               using-pcm-highlight)
-              ;; Add the unsorted candidates.
-              ;; We could highlight these too,
-              ;; (e.g. with `fussy--maybe-highlight') but these are
-              ;; at the bottom of the pile of candidates.
-              unscored-candidates))))
-       (length prefix)))))
+  (pcase
+      (while-no-input
+        (pcase-let*
+            ((metadata (completion-metadata string table pred))
+             (completion-ignore-case fussy-ignore-case)
+             (using-pcm-highlight (fussy--using-pcm-highlight-p table))
+             (cache (if (memq (completion-metadata-get metadata 'category)
+                              '(file
+                                project-file))
+                        flx-file-cache
+                      flx-strings-cache))
+             (`(,all ,pattern ,prefix)
+              (funcall fussy-filter-fn
+                       string table pred point)))
+          (when all
+            (nconc
+             (if (or (> (length string) fussy-max-query-length)
+                     (string= string ""))
+                 (fussy--maybe-highlight pattern all :always-highlight)
+               (if (< (length all) fussy-max-candidate-limit)
+                   (fussy--maybe-highlight
+                    pattern
+                    (fussy--score all string using-pcm-highlight cache)
+                    using-pcm-highlight)
+                 (let ((unscored-candidates '())
+                       (candidates-to-score '()))
+                   ;; Pre-sort the candidates by length before partitioning.
+                   (setq unscored-candidates
+                         (if fussy-max-limit-preferred-candidate-fn
+                             (sort
+                              all fussy-max-limit-preferred-candidate-fn)
+                           ;; If `fussy-max-limit-preferred-candidate-fn'
+                           ;; is nil, we'll partition the candidates as is.
+                           all))
+                   ;; Partition the candidates into sorted and unsorted groups.
+                   (dotimes (_n (min (length unscored-candidates)
+                                     fussy-max-candidate-limit))
+                     (push (pop unscored-candidates) candidates-to-score))
+                   (append
+                    ;; Compute all of the fuzzy scores only for cands-to-sort.
+                    (fussy--maybe-highlight
+                     pattern
+                     (fussy--score
+                      (reverse candidates-to-score)
+                      string using-pcm-highlight cache)
+                     using-pcm-highlight)
+                    ;; Add the unsorted candidates.
+                    ;; We could highlight these too,
+                    ;; (e.g. with `fussy--maybe-highlight') but these are
+                    ;; at the bottom of the pile of candidates.
+                    unscored-candidates))))
+             (length prefix)))))
+    ('nil nil)
+    ('t nil)
+    (`,collection collection)))
 
 ;;
 ;; (@* "Scoring & Highlighting" )
