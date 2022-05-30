@@ -167,3 +167,57 @@
      (string=
       (fussy--string-without-unencodeable-chars (concat "jjbb" tofu))
       "jjbb"))))
+
+(ert-deftest fussy--should-propertize-p ()
+  "Test `fussy--should-propertize-p' return correct values."
+  ;; use-pcm-highlight is t.
+  (let ((use-pcm-highlight t)
+        (fussy-filter-fn 'not-orderless)
+        (fussy-propertize-fn 'something))
+    (should
+     (eq (fussy--should-propertize-p use-pcm-highlight) nil)))
+
+  ;; `fussy-fitler-fn' is `orderless'.
+  (let ((use-pcm-highlight nil)
+        (fussy-filter-fn 'fussy-filter-orderless)
+        (fussy-propertize-fn 'something))
+    (should
+     (eq (fussy--should-propertize-p use-pcm-highlight) nil)))
+
+  ;; `fussy-propertize-fn' is nil.
+  (let ((use-pcm-highlight nil)
+        (fussy-filter-fn 'not-orderless)
+        (fussy-propertize-fn nil))
+    (should
+     (eq (fussy--should-propertize-p use-pcm-highlight) nil)))
+
+  ;; Should return something.
+  (let ((use-pcm-highlight nil)
+        (fussy-filter-fn 'not-orderless)
+        (fussy-propertize-fn 'something))
+    (should
+     (fussy--should-propertize-p use-pcm-highlight))))
+
+(ert-deftest fussy--using-pcm-highlight-p ()
+  "Test `fussy--using-pcm-highlight-p' return correct values."
+  ;; table is `completion-file-name-table'.
+  (let ((table 'completion-file-name-table)
+        (fussy-filter-fn 'not-orderless))
+    (should
+     (fussy--using-pcm-highlight-p table)))
+
+  ;; `fussy-score-fn' returns no indices.
+  (let ((table 'random-table)
+        (fussy-score-fn 'fn-without-indices)
+        (fussy-score-fns-without-indices '(fn-without-indices))
+        (fussy-filter-fn 'not-orderless))
+    (should
+     (fussy--using-pcm-highlight-p table)))
+
+  ;; `fussy-filter-fn' is using `orderless'.
+  (let ((table 'completion-file-name-table)
+        (fussy-score-fn 'fn-without-indices)
+        (fussy-score-fns-without-indices '(fn-without-indices))
+        (fussy-filter-fn 'fussy-filter-orderless))
+    (should
+     (eq (fussy--using-pcm-highlight-p table) nil))))

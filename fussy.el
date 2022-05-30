@@ -349,12 +349,26 @@ Use CACHE for scoring."
          ;; If we're using pcm highlight, we don't need to propertize the
          ;; string here. This is faster than the pcm highlight but doesn't
          ;; seem to work with `find-file'.
-         (unless (or using-pcm-highlight
-                     (null fussy-propertize-fn))
+         (when (fussy--should-propertize-p using-pcm-highlight)
            (setq
             x (funcall fussy-propertize-fn x score))))))
      x)
    candidates))
+
+(defun fussy--should-propertize-p (using-pcm-highlight)
+  "Whether or not to call `fussy-propertize-fn'.
+
+If USING-PCM-HIGHLIGHT is t, highlighting will be handled in
+`fussy--maybe-highlight'.
+
+If `fussy--orderless-p' is t, `fussy-filter-orderless' will take care of
+highlighting.
+
+If `fussy-propertize-fn' is nil, no highlighting should take place."
+  (and
+   (not using-pcm-highlight)
+   (not (fussy--orderless-p))
+   fussy-propertize-fn))
 
 (defun fussy--maybe-highlight (pattern collection using-pcm-highlight)
   "Highlight COLLECTION using PATTERN if USING-PCM-HIGHLIGHT is true."
@@ -496,19 +510,21 @@ Check C1 and C2 in `minibuffer-history-variable'."
   (eq fussy-filter-fn 'fussy-filter-orderless))
 
 (defun fussy--using-pcm-highlight-p (table)
-  "Check if highlighting should using `completion-pcm--hilit-commonality'.
+  "Check if highlighting should use `completion-pcm--hilit-commonality'.
 
-Check TABLE needs to be specially highlighted.
+Check if TABLE needs to be specially highlighted.
 Check if `fussy-score-fn' used doesn't return match indices.
 Check if `orderless' is being used."
-  (or
-   ;; This table seems peculiar in that highlighting seems to get wiped...
-   (eq table 'completion-file-name-table)
-   ;; These don't generate match indices to highlight at all so we should
-   ;; highlight with `completion-pcm--hilit-commonality'.
-   (memq fussy-score-fn fussy-score-fns-without-indices)
-   ;; `orderless' generates its own highlighting.
-   (fussy--orderless-p)))
+  (and
+   (or
+    ;; This table seems peculiar in that highlighting seems to get wiped...
+    (eq table 'completion-file-name-table)
+    ;; These don't generate match indices to highlight at all so we should
+    ;; highlight with `completion-pcm--hilit-commonality'.
+    (memq fussy-score-fn fussy-score-fns-without-indices))
+   ;; If we're using `orderless' to filter, don't use pcm highlights because
+   ;; `orderless' does it on its own.
+   (not (fussy--orderless-p))))
 
 (defun fussy--string-without-unencodeable-chars (string)
   "Strip invalid chars from STRING."
