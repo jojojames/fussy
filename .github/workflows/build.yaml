@@ -2,8 +2,6 @@ name: build
 
 on:
   workflow_dispatch:
-
-on:
   pull_request:
   push:
     branches:
