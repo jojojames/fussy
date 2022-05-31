@@ -5,9 +5,9 @@
 [[https://melpa.org/#/fussy][file:https://melpa.org/packages/fussy-badge.svg]]
 [[https://stable.melpa.org/#/fussy][file:https://stable.melpa.org/packages/fussy-badge.svg]]
 
-This is a package to provide a ~completion-style~ to Emacs that leverages [[https://github.com/lewang/flx][flx]].
-
-It also supports various other fuzzy scoring systems in place of ~flx~.
+This is a package to provide a ~completion-style~ to Emacs that is able to
+leverage [[https://github.com/lewang/flx][flx]] as well as various other
+fuzzy matching scoring packages to provide intelligent scoring and sorting.
 
 This package is intended to be used with packages that leverage
 ~completion-styles~, e.g. ~completing-read~ and ~completion-at-point-functions~.
@@ -46,15 +46,23 @@ into this package.
 #+end_src
 
 * Scoring Backends
-We default to [[https://github.com/lewang/flx][flx]] for scoring matches but additional scoring functions/backends
-can be used.
+We default to [[https://github.com/lewang/flx][flx]] for scoring matches but
+additional (listed below) scoring functions/backends can be used.
 ** Flx
 [[https://github.com/lewang/flx][flx]] is a dependency of ~fussy~ and the default
 scoring algorithm.
 
-We can leverage [[https://github.com/jcs-elpa/flx-rs][flx-rs]] to achieve faster
-scoring by using Rust. This library matches the original
-[[https://github.com/lewang/flx][flx]] implementation.
+~flx~ has a great scoring algorithm but is one of the slower implementations
+compared to the other scoring backends written as native modules.
+** Flx-rs
+[[https://github.com/jcs-elpa/flx-rs][flx-rs]] is a native module written in Rust
+that matches the original ~flx~ scoring algorithm. It is about 10 times faster
+than the original implementation written in Emacs Lisp. We can use this package
+instead for extra performance with the same scoring strategy.
+
+One downside of this package is that it doesn't yet support using ~flx~'s file
+cache so filename matching is currently slightly worse than the original Emacs
+lisp implementation.
 
 #+begin_src emacs-lisp :tangle yes
   (use-package flx-rs
@@ -127,7 +135,6 @@ For more information: [[https://github.com/rmm5t/liquidmetal][liquidmetal]]
 #+end_src
 
 ** Sublime-Fuzzy
-
 Fuzzy matching algorithm based on Sublime Text's string search.
 Iterates through characters of a search string and calculates a score.
 This is another fuzzy implementation written in Rust.
@@ -236,9 +243,9 @@ Implementation may be buggy though, so use with caution.
   ;; 0.033473
 #+end_src
 ** Orderless
-[[https://github.com/oantolin/orderless][orderless]] can also be used for filtering. It uses the ~all-completions~ API like
-~fussy-filter-flex-c~ so is also faster than the default filtering but has a
-dependency on ~orderless~.
+[[https://github.com/oantolin/orderless][orderless]] can also be used for
+filtering.  It uses the ~all-completions~ API like ~fussy-filter-flex-c~ so is
+also faster than the default filtering but has a dependency on ~orderless~.
 
 #+begin_src emacs-lisp :tangle yes
   ;; Orderless
