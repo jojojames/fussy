@@ -1,8 +1,9 @@
 #+TITLE: Fussy
 #+STARTUP: noindent
 
-[[https://melpa.org/#/fussy][file:https://melpa.org/packages/fussy-badge.svg]]
 [[https://github.com/jojojames/fussy/actions][file:https://github.com/jojojames/fussy/workflows/CI/badge.svg?branch=main]]
+[[https://melpa.org/#/fussy][file:https://melpa.org/packages/fussy-badge.svg]]
+[[https://stable.melpa.org/#/fussy][file:https://stable.melpa.org/packages/fussy-badge.svg]]
 
 
 This is a package to provide a ~completion-style~ to Emacs that leverages [[https://github.com/lewang/flx][flx]].
