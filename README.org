@@ -216,7 +216,7 @@ The only disadvantage is that it's the slowest of the filtering methods.
   ;; 0.050180
 #+end_src
 
-** Flex-C
+** Fast
 This is another useable filtering method and leverages the ~all-completions~ API
 written in C to do its filtering. It seems to be the fastest of the filtering
 methods from quick benchmarking as well as requiring no additional dependencies
@@ -225,8 +225,8 @@ methods from quick benchmarking as well as requiring no additional dependencies
 Implementation may be buggy though, so use with caution.
 
 #+begin_src emacs-lisp :tangle yes
-  ;; Flex-C
-  (setq fussy-filter-fn 'fussy-filter-flex-c)
+  ;; Fast
+  (setq fussy-filter-fn 'fussy-filter-fast)
   ;; Type Letter a
   ;; 0.030671
   ;; Type Letter b
@@ -244,7 +244,7 @@ Implementation may be buggy though, so use with caution.
 #+end_src
 ** Orderless
 [[https://github.com/oantolin/orderless][orderless]] can also be used for
-filtering.  It uses the ~all-completions~ API like ~fussy-filter-flex-c~ so is
+filtering.  It uses the ~all-completions~ API like ~fussy-filter-fast~ so is
 also faster than the default filtering but has a dependency on ~orderless~.
 
 #+begin_src emacs-lisp :tangle yes
@@ -407,7 +407,7 @@ former configuration, this section will be kept up to date with my ~init.el~.
     :straight
     (fussy :type git :host github :repo "jojojames/fussy")
     :config
-    (setq fussy-filter-fn 'fussy-filter-flex-c)
+    (setq fussy-filter-fn 'fussy-filter-fast)
     (setq fussy-score-fn 'fussy-fuz-bin-score)
     (push 'fussy completion-styles)
     (setq

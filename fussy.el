@@ -174,13 +174,13 @@ FN takes in the same arguments as `fussy-try-completions'.
 
 This FN should not be nil.
 
-Use either `fussy-filter-orderless' or `fussy-filter-flex-c' for faster
+Use either `fussy-filter-orderless' or `fussy-filter-fast' for faster
 filtering through the `all-completions' (written in C) interface."
   :type `(choice
           (const :tag "Built in Flex Filtering"
                  ,#'fussy-filter-flex)
-          (const :tag "Built in Flex Filtering in C"
-                 ,#'fussy-filter-flex-c)
+          (const :tag "Built in Faster Flex Filtering in C"
+                 ,#'fussy-filter-fast)
           (const :tag "Orderless Filtering"
                  ,#'fussy-filter-orderless)
           (function :tag "Custom function"))
@@ -606,7 +606,7 @@ Respect PRED and POINT.  The filter here is the same as in
                 #'completion-flex--make-flex-pattern)))
     (list completions pattern prefix)))
 
-(defun fussy-filter-flex-c (string table pred point)
+(defun fussy-filter-fast (string table pred point)
   "Match STRING to the entries in TABLE.
 
 Respect PRED and POINT.  This filter uses the `all-completions' interface
