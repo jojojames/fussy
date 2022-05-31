@@ -147,11 +147,11 @@ For more information: [[https://github.com/axelf4/hotfuzz][hotfuzz]]
 Note, ~hotfuzz~ has its own ~completion-style~ that may be worth using over this one.
 
 #+begin_src emacs-lisp :tangle yes
-(use-package hotfuzz
-  :ensure t
-  :straight t
-  :config
-  (setq fussy-score-fn 'fussy-hotfuzz-score))
+  (use-package hotfuzz
+    :ensure t
+    :straight t
+    :config
+    (setq fussy-score-fn 'fussy-hotfuzz-score))
 #+end_src
 
 * Filtering Choices
@@ -280,8 +280,20 @@ For this, we can advise ~company-capf~ to use basic completions.
   (advice-add 'company-capf :around 'company-capf-with-og-completion-styles)
 #+end_src
 
-If you don't use the above advice and want to use fuzzy completion, you can
-use the below ~company-transformer~.
+Another option is to only apply fuzzy matching later in the query.
+
+#+begin_src emacs-lisp :tangle yes
+  (defun company-capf-smart-completion-styles (f &rest args)
+    "Change which `completion-style' to use based off `company-prefix'."
+    (let ((completion-styles
+           (if (length< company-prefix 3)
+               '(basic partial-completion emacs22)
+             '(fussy basic partial-completion emacs22))))
+      (apply f args)))
+#+end_src
+
+If you intend to run ~company-capf~ with ~fussy~, then use the below
+~company-transformer~ to sort matches based off ~fussy~ scoring.
 
 #+begin_src emacs-lisp :tangle yes
   (setq company-transformers
