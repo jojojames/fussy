@@ -13,14 +13,14 @@ This package is intended to be used with packages that leverage
 ~completion-styles~, e.g. ~completing-read~ and ~completion-at-point-functions~.
 
 It is usable with ~icomplete~ (as well as ~fido-mode~), ~selectrum~,
-~vertico~, ~corfu~, and ~company-mode~'s ~company-capf~.
+~vertico~, ~corfu~, ~helm~ and ~company-mode~'s ~company-capf~.
 
-It is not intended to be used in ~ivy~, ~ido~, or ~helm~ which have their
-own sorting and filtering systems. In addition to those packages, other
-~company-mode~ backends will not hook into this package.
+It is not currently usable with ~ivy~ or ~ido~ which don't yet support
+~completion-styles~ and have their own sorting and filtering systems.
+In addition to those packages, other ~company-mode~ backends will not hook
+into this package.
 
 * Installation
-
 - Get the package, either from MELPA (soon to come):
 
   : M-x package-install RET fussy RET
@@ -30,7 +30,6 @@ own sorting and filtering systems. In addition to those packages, other
     (add-to-list 'load-path (expand-file-name "/path/to/fussy/" user-emacs-directory))
   #+end_src
 * Straight Example
-
 #+begin_src emacs-lisp :tangle yes
   (use-package fussy
     :ensure t
@@ -319,6 +318,16 @@ Use this to override that.
     (add-to-list 'completion-category-overrides
                  '(eglot (styles fussy basic))))
 #+end_src
+* Helm Integration
+Integration with [[https://github.com/emacs-helm/helm][helm]] is possible by
+setting ~helm-completion-style~ to ~emacs~ instead of ~helm~.
+
+#+begin_src emacs-lisp :tangle yes
+(setq helm-completion-style 'emacs)
+#+end_src
+
+For more information:
+https://github.com/emacs-helm/helm/blob/master/helm-mode.el#L269
 
 * Recommendations
 
@@ -410,4 +419,7 @@ former configuration, this section will be kept up to date with my ~init.el~.
 https://github.com/lewang/flx/issues/54
 https://github.com/company-mode/company-mode/issues/47
 https://github.com/abo-abo/swiper/issues/207
+https://github.com/abo-abo/swiper/issues/2321
+https://github.com/abo-abo/swiper/issues/848
 https://github.com/melpa/melpa/pull/8029
+https://github.com/emacs-helm/helm/issues/2165
