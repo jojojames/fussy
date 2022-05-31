@@ -31,6 +31,7 @@
 ;; To speed up `flx' matching, use https://github.com/jcs-elpa/flx-rs.
 
 (require 'flx)
+(eval-when-compile (require 'subr-x))
 
 ;;; Code:
 
