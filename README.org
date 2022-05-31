@@ -76,7 +76,6 @@ For more information: [[https://github.com/lotabout/fuzzy-matcher][fuzzy-matcher
 #+begin_src emacs-lisp :tangle yes
   (use-package fuz
     :ensure nil
-    :after flx
     :straight (fuz :type git :host github :repo "rustify-emacs/fuz.el")
     :config
     (setq fussy-score-fn 'fussy-fuz-score)
@@ -396,3 +395,8 @@ former configuration, this section will be kept up to date with my ~init.el~.
       (add-to-list 'completion-category-overrides
                    '(eglot (styles fussy basic)))))
 #+end_src
+* Discussions
+https://github.com/lewang/flx/issues/54
+https://github.com/company-mode/company-mode/issues/47
+https://github.com/abo-abo/swiper/issues/207
+https://github.com/melpa/melpa/pull/8029
