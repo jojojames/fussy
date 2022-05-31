@@ -5,8 +5,19 @@
 [[https://melpa.org/#/fussy][file:https://melpa.org/packages/fussy-badge.svg]]
 [[https://stable.melpa.org/#/fussy][file:https://stable.melpa.org/packages/fussy-badge.svg]]
 
-
 This is a package to provide a ~completion-style~ to Emacs that leverages [[https://github.com/lewang/flx][flx]].
+
+It also supports various other fuzzy scoring systems in place of ~flx~.
+
+This package is intended to be used with packages that leverage
+~completion-styles~, e.g. ~completing-read~ and ~completion-at-point-functions~.
+
+It is usable with ~icomplete~ (as well as ~fido-mode~), ~selectrum~,
+~vertico~, ~corfu~, and ~company-mode~'s ~company-capf~.
+
+It is not intended to be used in ~ivy~, ~ido~, or ~helm~ which have their
+own sorting and filtering systems. In addition to those packages, other
+~company-mode~ backends will not hook into this package.
 
 * Installation
 
