@@ -1,6 +1,9 @@
 (require 'ert)
 (require 'fussy)
 
+;; For `help--symbol-completion-table'.
+(require 'help-fns)
+
 (defvar fussy-history-variable '())
 
 (ert-deftest fussy--strlen<-test ()
