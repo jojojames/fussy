@@ -58,6 +58,20 @@
 ;;; Code:
 
 ;;
+;; (@* "Constants" )
+;;
+
+(defconst fussy--consult--tofu-char #x200000
+  "Special character used to encode line prefixes for disambiguation.
+We use invalid characters outside the Unicode range.
+
+This is a copy of `consult--tofu-char' that we've copied over here so that we
+can strip out this character for `consult' specific functions that encode
+the character into the candidate.
+
+See `fussy--without-tofu-char'.")
+
+;;
 ;; (@* "Customizations" )
 ;;
 
@@ -234,6 +248,29 @@ Scoring functions in this list's highlighting are then taken care of by either
 
 Functions in this list should match `fussy-score-fn'."
   :type 'list
+  :group 'fussy)
+
+(defcustom fussy-remove-bad-char-fn
+  #'fussy-without-tofu-char
+  "Function used to strip characters that some backends are unable to handle.
+
+Some scoring backends \(e.g. Rust backends\) are unable to handle strings with
+certain character encoding. This function is applied to the candidate strings
+before they are passed to the scoring function.
+
+This was added specifically for `consult' but other encodings could also pose
+a problem. To keep the performance of the Rust backends useful,
+`fussy-without-tofu-char' is set as the default function.
+`fussy--without-tofu-char' is an order of magnitude faster than
+`fussy-without-unencodeable-chars' but won't handle every case.
+
+For more information: \(https://github.com/minad/consult/issues/585\)"
+  :type `(choice
+          (const :tag "Remove Tofu"
+                 ,#'fussy-without-tofu-char)
+          (const :tag "Remove All"
+                 ,#'fussy-without-unencodeable-chars)
+          (function :tag "Custom function"))
   :group 'fussy)
 
 ;;;###autoload
@@ -550,13 +587,28 @@ Check if `orderless' is being used."
    ;; `orderless' does it on its own.
    (not (fussy--orderless-p))))
 
-(defun fussy--string-without-unencodeable-chars (string)
-  "Strip invalid chars from STRING."
+(defun fussy-without-unencodeable-chars (string)
+  "Strip invalid chars from STRING.
+
+See `fussy-remove-bad-char-fn'."
   ;; https://emacs.stackexchange.com/questions/5732/how-to-strip-invalid-utf-8-characters-from-a-string
   (string-join
    (delq nil (mapcar (lambda (ch)
                        (encode-coding-char ch 'utf-8 'unicode))
                      string))))
+
+(defun fussy-without-tofu-char (string)
+  "Strip `fussy--tofu-char' from STRING.
+
+`fussy--consult--tofu-char' is a copy of `consult--tofu-char'.
+
+See `fussy-remove-bad-char-fn'."
+  (when string
+    (let* ((last (- (length string) 1)))
+      (if (= (aref string last) fussy--consult--tofu-char)
+          (substring string 0 last)
+        string))))
+
 ;;
 ;; (@* "Filtering" )
 ;;
@@ -706,8 +758,8 @@ skim or clangd algorithm can be used.
 If `orderless' is used for filtering, we skip calculating matches
 for more speed."
   (require 'fuz)
-  (let ((str (fussy--string-without-unencodeable-chars str))
-        (query (fussy--string-without-unencodeable-chars query)))
+  (let ((str (funcall fussy-remove-bad-char-fn str))
+        (query (funcall fussy-remove-bad-char-fn query)))
     (if fussy-fuz-use-skim-p
         (if (eq fussy-filter-fn 'fussy-filter-orderless)
             (when (fboundp 'fuz-calc-score-skim)
@@ -734,10 +786,8 @@ skim or clangd algorithm can be used.
 If `orderless' is used for filtering, we skip calculating matches
 for more speed."
   (require 'fuz-bin)
-  (let ((str
-         (fussy--string-without-unencodeable-chars str))
-        (query
-         (fussy--string-without-unencodeable-chars query)))
+  (let ((str (funcall fussy-remove-bad-char-fn str))
+        (query (funcall fussy-remove-bad-char-fn query)))
     (if fussy-fuz-use-skim-p
         (if (eq fussy-filter-fn 'fussy-filter-orderless)
             (when (fboundp 'fuz-bin-dyn-score-skim)
@@ -770,9 +820,9 @@ highlighting."
   (require 'sublime-fuzzy)
   (when (fboundp 'sublime-fuzzy-score)
     (let ((str
-           (fussy--string-without-unencodeable-chars str))
+           (funcall fussy-remove-bad-char-fn str))
           (query
-           (fussy--string-without-unencodeable-chars query)))
+           (funcall fussy-remove-bad-char-fn query)))
       (list (sublime-fuzzy-score query str)))))
 
 ;; `hotfuzz' integration

@@ -149,27 +149,81 @@
      (> (get-text-property 0 'completion-score (nth 0 file-cache-res))
         (get-text-property 0 'completion-score (nth 1 file-cache-res))))))
 
-(ert-deftest fussy--string-without-unencodeable-chars-test ()
+(ert-deftest fussy-without-unencodeable-chars-test ()
   "Test that unencodeable chars are removed."
   (should
    (string=
-    (fussy--string-without-unencodeable-chars
+    (fussy-without-unencodeable-chars
      (string-as-multibyte  ";; Copyright 2022 Jo Beøˆ€’"))
     ";; Copyright 2022 Jo Be"))
   (should
    (string=
-    (fussy--string-without-unencodeable-chars
+    (fussy-without-unencodeable-chars
      (string-as-multibyte
       ";; This buffer is for text that is not saved, and for Lisp evaluation.øˆ€€"))
     ";; This buffer is for text that is not saved, and for Lisp evaluation.")))
 
-(ert-deftest fussy--string-without-unencodeable-chars-consult--tofu-char-test ()
+(ert-deftest fussy-without-unencodeable-chars-consult--tofu-char-test ()
   "Test that `consult--tofu-char' is removed."
   (let ((tofu (char-to-string #x200000)))
     (should
      (string=
-      (fussy--string-without-unencodeable-chars (concat "jjbb" tofu))
+      (fussy-without-unencodeable-chars (concat "jjbb" tofu))
       "jjbb"))))
+
+(ert-deftest fussy-without-tofu-char-test ()
+  "Test `fussy-without-tofu-char'."
+  (let ((tofu (char-to-string fussy--consult--tofu-char)))
+    (should
+     (string=
+      (fussy-without-tofu-char (concat "jjbb" tofu))
+      "jjbb"))
+    (should
+     (string=
+      (fussy-without-tofu-char
+       (string-as-multibyte  ";; Copyright 2022 Jo Beøˆ€’"))
+      ";; Copyright 2022 Jo Be"))
+    (should
+     (string=
+      (fussy-without-tofu-char
+       (string-as-multibyte
+        ";; This buffer is for text that is not saved, and for Lisp evaluation.øˆ€€"))
+      ";; This buffer is for text that is not saved, and for Lisp evaluation."))))
+
+(ert-deftest fussy-without-tofu-char-good-input-test ()
+  "Test `fussy-without-tofu-char'."
+  (should
+   (string=
+    (fussy-without-tofu-char "bb") "bb"))
+  (should
+   (string=
+    (fussy-without-tofu-char "jj") "jj")))
+
+(ert-deftest fussy-without-tofu-char-perf-test ()
+  "Test `fussy-without-tofu-char' performance.
+
+This test asserts `fussy-without-tofu-char' is much much faster than
+`fussy--string-without-unencodeable-chars'."
+  (let* ((tofu (char-to-string fussy--consult--tofu-char))
+         (string-1 (concat "jjbb" tofu))
+         (string-2 (string-as-multibyte ";; Copyright 2022 Jo Beøˆ€’"))
+         (string-3 (string-as-multibyte ";; This buffer is for text that is not saved, and for Lisp evaluation.øˆ€€"))
+         (performance-factor 80))
+    (should
+     (<
+      (* performance-factor
+         (car (benchmark-run 1000 (fussy-without-tofu-char string-1))))
+      (car (benchmark-run 1000 (fussy-without-unencodeable-chars string-1)))))
+    (should
+     (<
+      (* performance-factor
+         (car (benchmark-run 1000 (fussy-without-tofu-char string-2))))
+      (car (benchmark-run 1000 (fussy-without-unencodeable-chars string-2)))))
+    (should
+     (<
+      (* performance-factor
+         (car (benchmark-run 1000 (fussy-without-tofu-char string-3))))
+      (car (benchmark-run 1000 (fussy-without-unencodeable-chars string-3)))))))
 
 (ert-deftest fussy--should-propertize-p ()
   "Test `fussy--should-propertize-p' return correct values."
