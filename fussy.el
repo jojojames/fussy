@@ -670,6 +670,10 @@ that's written in C for faster filtering."
                               (cons 'prefix basic-pattern))))
               (completion-pcm--optimize-pattern
                (completion-flex--make-flex-pattern pattern))))))
+    ;; (progn
+    ;;   (message (format "prefix: %s infix: %s regexp: %s pattern %s"
+    ;;                    prefix infix regexp pattern))
+    ;;   (princ completions))
     (list completions pattern prefix)))
 
 ;;
