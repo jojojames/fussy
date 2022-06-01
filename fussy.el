@@ -34,10 +34,12 @@
 ;; It is usable with `icomplete' (as well as `fido-mode'), `selectrum',
 ;; `vertico', `corfu', `helm' and `company-mode''s `company-capf'.
 
-;; It is not currently usable with `ivy' or `ido' which don't yet support
-;; `completion-styles' and have their own sorting and filtering systems.
-;; In addition to those packages, other `company-mode' backends will not hook
-;; into this package.
+;; It is not currently usable with `ido' which doesn't support
+;; `completion-styles' and has its own sorting and filtering system.  In
+;; addition to those packages, other `company-mode' backends will not hook into
+;; this package.  `ivy' support can be somewhat baked in following
+;; https://github.com/abo-abo/swiper/issues/848#issuecomment-1143129670 but the
+;; performance gains may not be as high as the other `completion-read' APIs.
 
 ;; To use this style, prepend `fussy' to `completion-styles'.
 
