@@ -219,6 +219,7 @@ This boolean is only used if `fussy-fuz-score' is the `fussy-score-fn'."
   :type 'boolean)
 
 (defcustom fussy-score-fns-without-indices '(fussy-hotfuzz-score
+                                             fussy-sublime-fuzzy-score
                                              fussy-liquidmetal-score)
   "List of scoring functions that only returns the score.
 
