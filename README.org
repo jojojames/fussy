@@ -342,7 +342,7 @@ https://github.com/emacs-helm/helm/blob/master/helm-mode.el#L269
 
 * Ivy Integration
 Since ~ivy~ doesn't support ~completion-styles~, we have to hack ~fussy~ into it.
-We can advice ~ivy--flx-sort~ and replace it with our own sorting function.
+We can advise ~ivy--flx-sort~ and replace it with our own sorting function.
 
 #+begin_src emacs-lisp :tangle yes
 (defun ivy--fussy-sort (name cands)
