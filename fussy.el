@@ -38,7 +38,7 @@
 ;; `completion-styles' and has its own sorting and filtering system.  In
 ;; addition to those packages, other `company-mode' backends will not hook into
 ;; this package.  `ivy' support can be somewhat baked in following
-;; https://github.com/abo-abo/swiper/issues/848#issuecomment-1143129670 but the
+;; https://github.com/jojojames/fussy#ivy-integration but the
 ;; performance gains may not be as high as the other `completion-read' APIs.
 
 ;; To use this style, prepend `fussy' to `completion-styles'.
