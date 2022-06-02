@@ -192,7 +192,9 @@ FN takes in the same arguments as `fussy-try-completions'.
 This FN should not be nil.
 
 Use either `fussy-filter-orderless' or `fussy-filter-fast' for faster
-filtering through the `all-completions' (written in C) interface."
+filtering through the `all-completions' (written in C) interface.
+
+If using `fussy-filter-fast', `fussy-fast-regex-fn' can be configured."
   :type `(choice
           (const :tag "Built in Flex Filtering"
                  ,#'fussy-filter-flex)
@@ -200,6 +202,29 @@ filtering through the `all-completions' (written in C) interface."
                  ,#'fussy-filter-fast)
           (const :tag "Orderless Filtering"
                  ,#'fussy-filter-orderless)
+          (function :tag "Custom function"))
+  :group 'fussy)
+
+(defcustom fussy-fast-regex-fn
+  #'fussy-pattern-flex-2
+  "Function used to create regex for `fussy-filter-fast'.
+
+It takes in a STR and returns a regex usable with `all-completions'.
+
+The return value of this FN is meant to be pushed to `completion-regexp-list'.
+
+Flex 1 is what is used in `company-flx'.  It seems to be the fastest from an eye
+test but all the regex are comparable in performance.
+
+Flex 2 functions match the regex returned by `orderless-flex'.  Flex 2 functions
+are more exhaustive than Flex 1 functions."
+  :type `(choice
+          (const :tag "Flex 1"
+                 ,#'fussy-pattern-flex-1)
+          (const :tag "Flex 2"
+                 ,#'fussy-pattern-flex-2)
+          (const :tag "Flex 2 in RX"
+                 ,#'fussy-pattern-flex-rx)
           (function :tag "Custom function"))
   :group 'fussy)
 
@@ -258,11 +283,11 @@ Functions in this list should match `fussy-score-fn'."
   "Function used to strip characters that some backends are unable to handle.
 
 Some scoring backends \(e.g. Rust backends\) are unable to handle strings with
-certain character encoding. This function is applied to the candidate strings
+certain character encoding.  This function is applied to the candidate strings
 before they are passed to the scoring function.
 
 This was added specifically for `consult' but other encodings could also pose
-a problem. To keep the performance of the Rust backends useful,
+a problem.  To keep the performance of the Rust backends useful,
 `fussy-without-tofu-char' is set as the default function.
 `fussy-without-tofu-char' is an order of magnitude faster than
 `fussy-without-unencodeable-chars' but won't handle every case.
@@ -699,13 +724,8 @@ that's written in C for faster filtering."
          (infix (concat
                  (substring beforepoint (car bounds))
                  (substring afterpoint 0 (cdr bounds))))
-         (regexp (concat "\\`"
-                         (mapconcat
-                          (lambda (x)
-                            (setq x (string x))
-                            (concat "[^" x "]*" (regexp-quote x)))
-                          infix
-                          "")))
+         (regexp
+          (funcall fussy-fast-regex-fn infix))
          (completion-regexp-list (cons regexp completion-regexp-list))
          ;; Commentary on why we prefer prefix over infix.
          ;; For `find-file', if the prefix exists, we're in a different
@@ -756,6 +776,59 @@ that's written in C for faster filtering."
     ;;                    prefix infix regexp pattern))
     ;;   (princ completions))
     (list completions pattern prefix)))
+
+;;
+;; (@* "Pattern Compiler" )
+;;
+;; Random note:
+;; These return something similar to what `orderless-pattern-compiler'
+;; would return if they were wrapped inside a list.
+;; e.g. \(list \(fussy-pattern-flex-1 "str"\)\)
+;;
+
+(defun fussy-pattern-flex-1 (str)
+  "Make STR flex pattern.
+
+This may be the fastest regex to use but is not exhaustive."
+  (concat "\\`"
+          (mapconcat
+           (lambda (x)
+             (setq x (string x))
+             (concat "[^" x "]*" (regexp-quote x)))
+           str
+           "")))
+
+(defun fussy-pattern-flex-2 (str)
+  "Make STR flex pattern.
+
+This is a copy of the `orderless-flex' pattern written without `rx'.
+
+This one may be slower than `fussy-pattern-flex-1' but is more
+exhaustive on matches."
+  (concat
+   (when (> (length str) 1)
+     "\\(?:")
+   (mapconcat
+    (lambda (x)
+      (format "\\(%c\\)" x))
+    str
+    ".*")
+   (when (> (length str) 1)
+     "\\)")))
+
+(defun fussy-pattern-flex-rx (str)
+  "Make STR flex pattern using `rx'.
+
+This is a copy of the `orderless-flex' pattern."
+  (require 'rx)
+  (rx-to-string
+   `(seq
+     ""
+     ,@(cl-loop
+        for (sexp . more) on (cl-loop for char across str collect char)
+        collect `(group ,sexp)
+        when more collect '(zero-or-more nonl))
+     "")))
 
 ;;
 ;; (@* "Integration with other Packages" )

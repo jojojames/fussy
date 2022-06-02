@@ -1,3 +1,4 @@
+;;; fussy-test.el --- `fussy' test. -*- lexical-binding: t; -*-
 (require 'ert)
 (require 'fussy)
 
@@ -335,3 +336,24 @@ This test asserts `fussy-encode-coding-string' is much much faster than
         (fussy-filter-fn 'fussy-filter-orderless))
     (should
      (eq (fussy--using-pcm-highlight-p) nil))))
+
+(ert-deftest fussy-pattern-flex-2-test ()
+  "Test flex-2 matches flex-rx and `orderless-flex'."
+  (should
+   (string= (fussy-pattern-flex-2 "a")
+            (fussy-pattern-flex-rx "a")))
+  (should
+   (string= (fussy-pattern-flex-2 "abc")
+            (fussy-pattern-flex-rx "abc")))
+  (should
+   (string= (fussy-pattern-flex-2 "abasd90803423c")
+            (fussy-pattern-flex-rx "abasd90803423c")))
+  (should
+   (string= (fussy-pattern-flex-2 "a")
+            (orderless-flex "a")))
+  (should
+   (string= (fussy-pattern-flex-2 "abc")
+            (orderless-flex "abc")))
+  (should
+   (string= (fussy-pattern-flex-2 "abasd90803423c")
+            (orderless-flex "abasd90803423c"))))
