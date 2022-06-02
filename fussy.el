@@ -63,17 +63,7 @@
 ;; (@* "Constants" )
 ;;
 
-(defconst fussy--consult--tofu-char #x200000
-  "Special character used to encode line prefixes for disambiguation.
-We use invalid characters outside the Unicode range.
-
-This is a copy of `consult--tofu-char' that we've copied over here so that we
-can strip out this character for `consult' specific functions that encode
-the character into the candidate.
-
-See `fussy--without-tofu-char'.")
-
-(defconst fussy--no-score '(0)
+(defconst fussy--no-score '(0 0)
   "Used for when `fussy-score-fn' returns nil.")
 
 ;;
@@ -256,7 +246,7 @@ Functions in this list should match `fussy-score-fn'."
   :group 'fussy)
 
 (defcustom fussy-remove-bad-char-fn
-  #'fussy-without-unencodeable-chars ; FIXME
+  #'fussy-without-tofu-char
   "Function used to strip characters that some backends are unable to handle.
 
 Some scoring backends \(e.g. Rust backends\) are unable to handle strings with
@@ -266,8 +256,15 @@ before they are passed to the scoring function.
 This was added specifically for `consult' but other encodings could also pose
 a problem. To keep the performance of the Rust backends useful,
 `fussy-without-tofu-char' is set as the default function.
-`fussy--without-tofu-char' is an order of magnitude faster than
+`fussy-without-tofu-char' is an order of magnitude faster than
 `fussy-without-unencodeable-chars' but won't handle every case.
+
+Another option is to use `fussy-encode-coding-string' which dumbly converts
+a multibytestring without considering what the final string will look like.
+Using this may work for the purpose of matching too as the final candidate
+string may go from something like abcX to abcR where X was the multibyte char
+that is not useable with the above scoring backends and R is a random ascii
+character encoded from X.
 
 For more information: \(https://github.com/minad/consult/issues/585\)"
   :type `(choice
@@ -275,6 +272,8 @@ For more information: \(https://github.com/minad/consult/issues/585\)"
                  ,#'fussy-without-tofu-char)
           (const :tag "Remove All"
                  ,#'fussy-without-unencodeable-chars)
+          (const :tag "Convert to Unibyte"
+                 ,#'fussy-encode-coding-string)
           (function :tag "Custom function"))
   :group 'fussy)
 
@@ -422,6 +421,8 @@ Use CACHE for scoring."
                         x string
                         cache)
                fussy--no-score)))
+         ;; (message
+         ;;  (format "candidate: %s string: %s score %s" x string (car score)))
 
          ;; This is later used by `completion--adjust-metadata' for sorting.
          (put-text-property 0 1 'completion-score
@@ -617,16 +618,16 @@ See `fussy-remove-bad-char-fn'."
                      string))))
 
 (defun fussy-without-tofu-char (string)
-  "Strip `fussy--tofu-char' from STRING.
-
-`fussy--consult--tofu-char' is a copy of `consult--tofu-char'.
+  "Strip unencodeable char from STRING.
 
 See `fussy-remove-bad-char-fn'."
-  (when string
-    (let* ((last (- (length string) 1)))
-      (if (= (aref string last) fussy--consult--tofu-char)
-          (substring string 0 last)
-        string))))
+  (if (multibyte-string-p string)
+      (substring string 0 (- (length string) 1))
+    string))
+
+(defun fussy-encode-coding-string (string)
+  "Call `encode-coding-string' for STRING."
+  (encode-coding-string string 'utf-8 t))
 
 ;;
 ;; (@* "Filtering" )
@@ -778,7 +779,9 @@ If `orderless' is used for filtering, we skip calculating matches
 for more speed."
   (require 'fuz)
   (let ((str (funcall fussy-remove-bad-char-fn str))
-        (query (funcall fussy-remove-bad-char-fn query)))
+        (query
+         ;; Assume query can just be passed in as a unibyte string.
+         (fussy-encode-coding-string query)))
     (if fussy-fuz-use-skim-p
         (if (eq fussy-filter-fn 'fussy-filter-orderless)
             (when (fboundp 'fuz-calc-score-skim)
@@ -805,8 +808,12 @@ skim or clangd algorithm can be used.
 If `orderless' is used for filtering, we skip calculating matches
 for more speed."
   (require 'fuz-bin)
+  ;; (message (format "before: str: %s query: %s" str query))
   (let ((str (funcall fussy-remove-bad-char-fn str))
-        (query (funcall fussy-remove-bad-char-fn query)))
+        (query
+         ;; Assume query can just be passed in as a unibyte string.
+         (fussy-encode-coding-string query)))
+    ;; (message (format "after: str: %s query: %s" str query))
     (if fussy-fuz-use-skim-p
         (if (eq fussy-filter-fn 'fussy-filter-orderless)
             (when (fboundp 'fuz-bin-dyn-score-skim)
@@ -841,7 +848,8 @@ highlighting."
     (let ((str
            (funcall fussy-remove-bad-char-fn str))
           (query
-           (funcall fussy-remove-bad-char-fn query)))
+           ;; Assume query can just be passed in as a unibyte string.
+           (fussy-encode-coding-string query)))
       (list (sublime-fuzzy-score query str)))))
 
 ;; `hotfuzz' integration

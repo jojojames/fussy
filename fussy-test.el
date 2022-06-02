@@ -4,6 +4,16 @@
 ;; For `help--symbol-completion-table'.
 (require 'help-fns)
 
+(defconst fussy--consult--tofu-char #x200000
+  "Special character used to encode line prefixes for disambiguation.
+We use invalid characters outside the Unicode range.
+
+This is a copy of `consult--tofu-char' that we've copied over here so that we
+can strip out this character for `consult' specific functions that encode
+the character into the candidate.
+
+See `fussy-without-tofu-char'.")
+
 (defvar fussy-history-variable '())
 
 (ert-deftest fussy--strlen<-test ()
@@ -163,31 +173,29 @@
 
 (ert-deftest fussy-without-unencodeable-chars-consult--tofu-char-test ()
   "Test that `consult--tofu-char' is removed."
-  (let ((tofu (char-to-string #x200000)))
-    (should
-     (string=
-      (fussy-without-unencodeable-chars (concat "jjbb" tofu))
-      "jjbb"))))
+  (should
+   (string=
+    (fussy-without-unencodeable-chars (concat "jjbb" (char-to-string #x200000)))
+    "jjbb")))
 
 (ert-deftest fussy-without-tofu-char-test ()
   "Test `fussy-without-tofu-char'."
-  (let ((tofu (char-to-string fussy--consult--tofu-char)))
-    (should
-     (string=
-      (fussy-without-tofu-char (concat "jjbb" tofu))
-      "jjbb"))
-    ;; (should
-    ;;  (string=
-    ;;   (fussy-without-tofu-char
-    ;;    (string-as-multibyte  ";; Copyright 2022 Jo Beøˆ€’"))
-    ;;   ";; Copyright 2022 Jo Be"))
-    ;; (should
-    ;;  (string=
-    ;;   (fussy-without-tofu-char
-    ;;    (string-as-multibyte
-    ;;     ";; This buffer is for text that is not saved, and for Lisp evaluation.øˆ€€"))
-    ;;   ";; This buffer is for text that is not saved, and for Lisp evaluation."))
-    ))
+  (should
+   (string=
+    (fussy-without-tofu-char
+     (concat "jjbb" (char-to-string fussy--consult--tofu-char)))
+    "jjbb"))
+  (should
+   (string=
+    (fussy-without-tofu-char
+     (string-as-multibyte  ";; Copyright 2022 Jo Beøˆ€’"))
+    ";; Copyright 2022 Jo Be"))
+  (should
+   (string=
+    (fussy-without-tofu-char
+     (string-as-multibyte
+      ";; This buffer is for text that is not saved, and for Lisp evaluation.øˆ€€"))
+    ";; This buffer is for text that is not saved, and for Lisp evaluation.")))
 
 (ert-deftest fussy-without-tofu-char-good-input-test ()
   "Test `fussy-without-tofu-char'."
@@ -202,12 +210,12 @@
   "Test `fussy-without-tofu-char' performance.
 
 This test asserts `fussy-without-tofu-char' is much much faster than
-`fussy--string-without-unencodeable-chars'."
+`fussy-without-unencodeable-chars'."
   (let* ((tofu (char-to-string fussy--consult--tofu-char))
          (string-1 (concat "jjbb" tofu))
          (string-2 (string-as-multibyte ";; Copyright 2022 Jo Beøˆ€’"))
          (string-3 (string-as-multibyte ";; This buffer is for text that is not saved, and for Lisp evaluation.øˆ€€"))
-         (performance-factor 80))
+         (performance-factor 200))
     (should
      (<
       (* performance-factor
@@ -222,6 +230,60 @@ This test asserts `fussy-without-tofu-char' is much much faster than
      (<
       (* performance-factor
          (car (benchmark-run 1000 (fussy-without-tofu-char string-3))))
+      (car (benchmark-run 1000 (fussy-without-unencodeable-chars string-3)))))))
+
+(ert-deftest fussy-encode-coding-string-test ()
+  "Test `fussy-encode-coding-string'."
+  (should
+   (string=
+    (fussy-encode-coding-string
+     (concat "jjbb" (char-to-string fussy--consult--tofu-char)))
+    "jjbb\370\210\200\200\200"))
+  (should
+   (string=
+    (fussy-encode-coding-string
+     (string-as-multibyte  ";; Copyright 2022 Jo Beøˆ€’"))
+    ";; Copyright 2022 Jo Be\370\210\200\201\222"))
+  (should
+   (string=
+    (fussy-encode-coding-string
+     (string-as-multibyte
+      ";; This buffer is for text that is not saved, and for Lisp evaluation.øˆ€€"))
+    ";; This buffer is for text that is not saved, and for Lisp evaluation.\370\210\200\200\201")))
+
+(ert-deftest fussy-encode-coding-string-good-input-test ()
+  "Test `fussy-encode-coding-string'."
+  (should
+   (string=
+    (fussy-encode-coding-string "bb") "bb"))
+  (should
+   (string=
+    (fussy-encode-coding-string "jj") "jj")))
+
+(ert-deftest fussy-encode-coding-string-perf-test ()
+  "Test `fussy-encode-coding-string' performance.
+
+This test asserts `fussy-encode-coding-string' is much much faster than
+`fussy-without-unencodeable-chars'."
+  (let* ((tofu (char-to-string fussy--consult--tofu-char))
+         (string-1 (concat "jjbb" tofu))
+         (string-2 (string-as-multibyte ";; Copyright 2022 Jo Beøˆ€’"))
+         (string-3 (string-as-multibyte ";; This buffer is for text that is not saved, and for Lisp evaluation.øˆ€€"))
+         (performance-factor 100))
+    (should
+     (<
+      (* performance-factor
+         (car (benchmark-run 1000 (fussy-encode-coding-string string-1))))
+      (car (benchmark-run 1000 (fussy-without-unencodeable-chars string-1)))))
+    (should
+     (<
+      (* performance-factor
+         (car (benchmark-run 1000 (fussy-encode-coding-string string-2))))
+      (car (benchmark-run 1000 (fussy-without-unencodeable-chars string-2)))))
+    (should
+     (<
+      (* performance-factor
+         (car (benchmark-run 1000 (fussy-encode-coding-string string-3))))
       (car (benchmark-run 1000 (fussy-without-unencodeable-chars string-3)))))))
 
 (ert-deftest fussy--should-propertize-p ()
