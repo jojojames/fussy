@@ -256,7 +256,7 @@ Functions in this list should match `fussy-score-fn'."
   :group 'fussy)
 
 (defcustom fussy-remove-bad-char-fn
-  #'fussy-without-tofu-char
+  #'fussy-without-unencodeable-chars ; FIXME
   "Function used to strip characters that some backends are unable to handle.
 
 Some scoring backends \(e.g. Rust backends\) are unable to handle strings with
