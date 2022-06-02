@@ -31,60 +31,60 @@
              (car (benchmark-run 1
                     (fussy-histlen< "xyz" "abc"))))))
 
-(ert-deftest fussy-all-completions-fussy-filter-fn-flex-c< ()
-  "Assert `fussy-filter-flex-c' is the fastest filter method."
+(ert-deftest fussy-all-completions-fussy-filter-fn-fast< ()
+  "Assert `fussy-filter-fast' is the fastest filter method."
   (dolist (query '("a" "b" "c"))
     (let* ((table 'help--symbol-completion-table)
            (pred nil)
            (point 1)
-           (fussy-filter-fn 'fussy-filter-flex-c)
-           (flex-c-res
+           (fussy-filter-fn 'fussy-filter-fast)
+           (fast-res
             (car
              (benchmark-run 3
                (fussy-all-completions query table pred point)))))
       (should
-       (< flex-c-res
+       (< fast-res
           (let ((fussy-filter-fn 'fussy-filter-flex))
             (car (benchmark-run 3
                    (fussy-all-completions query table pred point))))))
       (should
-       (< flex-c-res
+       (< fast-res
           (let ((fussy-filter-fn 'fussy-filter-orderless))
             (car (benchmark-run 3
                    (fussy-all-completions query table pred point)))))))))
 
-(ert-deftest fussy-filter-fn-flex-c< ()
-  "Assert `fussy-filter-flex-c' is the fastest filter method."
+(ert-deftest fussy-filter-fn-fast< ()
+  "Assert `fussy-filter-fast' is the fastest filter method."
   (dolist (query '("a" "b" "c" "def"))
     (let* ((table 'help--symbol-completion-table)
            (pred nil)
            (point 1)
-           (flex-c-res
+           (fast-res
             (car (benchmark-run 3
-                   (fussy-filter-flex-c query table pred point)))))
+                   (fussy-filter-fast query table pred point)))))
       (should
        (<
-        flex-c-res
+        fast-res
         (car (benchmark-run 3
                (fussy-filter-orderless query table pred point)))))
       (should
        (<
-        flex-c-res
+        fast-res
         (car (benchmark-run 3
                (fussy-filter-flex query table pred point))))))))
 
-(ert-deftest fussy-filter-fn-flex-c-candidates ()
-  "Assert result of `fussy-filter-flex-c' matches other filters."
+(ert-deftest fussy-filter-fn-fast-candidates ()
+  "Assert result of `fussy-filter-fast' matches other filters."
   (dolist (query '("a" "b" "c" "def"))
     (let* ((table 'help--symbol-completion-table)
            (pred nil)
            (point 1)
-           (flex-c-res (fussy-filter-flex-c query table pred point)))
+           (fast-res (fussy-filter-fast query table pred point)))
       (should
-       (= (length flex-c-res)
+       (= (length fast-res)
           (length (fussy-filter-flex query table pred point))))
       (should
-       (= (length flex-c-res)
+       (= (length fast-res)
           (length (fussy-filter-orderless query table pred point)))))))
 
 (ert-deftest fussy-histlen<-test ()
@@ -130,11 +130,9 @@
         '("~/.emacs.d/straight/repos/orderless/orderless.el"
           "~/Code/yyoshereios/iOSTest/yyosHereiPadRootViewController.h"))
        (string-cache-res
-        (fussy--score candidates "odor" nil
-                      flx-strings-cache))
+        (fussy--score candidates "odor" flx-strings-cache))
        (file-cache-res
-        (fussy--score candidates "odor" nil
-                      flx-file-cache)))
+        (fussy--score candidates "odor" flx-file-cache)))
 
     ;; With `flx-strings-cache' candidate 1 loses to candidate 2 which is
     ;; not desirable for filenames.
@@ -228,53 +226,49 @@ This test asserts `fussy-without-tofu-char' is much much faster than
 (ert-deftest fussy--should-propertize-p ()
   "Test `fussy--should-propertize-p' return correct values."
   ;; use-pcm-highlight is t.
-  (let ((use-pcm-highlight t)
-        (fussy-filter-fn 'not-orderless)
-        (fussy-propertize-fn 'something))
+  (cl-letf* (((symbol-function 'fussy--using-pcm-highlight-p)
+              (lambda () t))
+             (fussy-filter-fn 'not-orderless)
+             (fussy-propertize-fn 'something))
     (should
-     (eq (fussy--should-propertize-p use-pcm-highlight) nil)))
+     (eq (fussy--should-propertize-p) nil)))
 
   ;; `fussy-fitler-fn' is `orderless'.
-  (let ((use-pcm-highlight nil)
-        (fussy-filter-fn 'fussy-filter-orderless)
-        (fussy-propertize-fn 'something))
+  (cl-letf* (((symbol-function 'fussy--using-pcm-highlight-p)
+              (lambda () nil))
+             (fussy-filter-fn 'fussy-filter-orderless)
+             (fussy-propertize-fn 'something))
     (should
-     (eq (fussy--should-propertize-p use-pcm-highlight) nil)))
+     (eq (fussy--should-propertize-p) nil)))
 
   ;; `fussy-propertize-fn' is nil.
-  (let ((use-pcm-highlight nil)
-        (fussy-filter-fn 'not-orderless)
-        (fussy-propertize-fn nil))
+  (cl-letf* (((symbol-function 'fussy--using-pcm-highlight-p)
+              (lambda () nil))
+             (fussy-filter-fn 'not-orderless)
+             (fussy-propertize-fn nil))
     (should
-     (eq (fussy--should-propertize-p use-pcm-highlight) nil)))
+     (eq (fussy--should-propertize-p) nil)))
 
   ;; Should return something.
-  (let ((use-pcm-highlight nil)
-        (fussy-filter-fn 'not-orderless)
-        (fussy-propertize-fn 'something))
+  (cl-letf* (((symbol-function 'fussy--using-pcm-highlight-p)
+              (lambda () nil))
+             (fussy-filter-fn 'not-orderless)
+             (fussy-propertize-fn 'something))
     (should
-     (fussy--should-propertize-p use-pcm-highlight))))
+     (fussy--should-propertize-p))))
 
 (ert-deftest fussy--using-pcm-highlight-p ()
   "Test `fussy--using-pcm-highlight-p' return correct values."
-  ;; table is `completion-file-name-table'.
-  (let ((table 'completion-file-name-table)
-        (fussy-filter-fn 'not-orderless))
-    (should
-     (fussy--using-pcm-highlight-p table)))
-
   ;; `fussy-score-fn' returns no indices.
-  (let ((table 'random-table)
-        (fussy-score-fn 'fn-without-indices)
+  (let ((fussy-score-fn 'fn-without-indices)
         (fussy-score-fns-without-indices '(fn-without-indices))
         (fussy-filter-fn 'not-orderless))
     (should
-     (fussy--using-pcm-highlight-p table)))
+     (fussy--using-pcm-highlight-p)))
 
   ;; `fussy-filter-fn' is using `orderless'.
-  (let ((table 'completion-file-name-table)
-        (fussy-score-fn 'fn-without-indices)
+  (let ((fussy-score-fn 'fn-without-indices)
         (fussy-score-fns-without-indices '(fn-without-indices))
         (fussy-filter-fn 'fussy-filter-orderless))
     (should
-     (eq (fussy--using-pcm-highlight-p table) nil))))
+     (eq (fussy--using-pcm-highlight-p) nil))))

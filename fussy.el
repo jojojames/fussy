@@ -338,25 +338,38 @@ Implement `all-completions' interface with additional fuzzy / `flx' scoring."
       (while-no-input
         (pcase-let*
             ((metadata (completion-metadata string table pred))
-             (using-pcm-highlight (fussy--using-pcm-highlight-p table))
              (cache (if (memq (completion-metadata-get metadata 'category)
                               '(file
                                 project-file))
                         flx-file-cache
                       flx-strings-cache))
+             ;; `default-directory' -> ~/.emacs.d
+             ;; If user type in "abc".
+             ;; `find-file' ->
+             ;; string: ~/.emacs.d/abc prefix: ~/.emacs.d/ infix: abc
+             ;; `project-find-file' ->
+             ;; string: abc prefix:  infix: abc
+             ;; Conclusion: Use infix for scoring.
+             (beforepoint (substring string 0 point))
+             (afterpoint (substring string point))
+             (bounds (completion-boundaries beforepoint table pred afterpoint))
+             (infix (concat
+                     (substring beforepoint (car bounds))
+                     (substring afterpoint 0 (cdr bounds))))
              (`(,all ,pattern ,prefix)
               (funcall fussy-filter-fn
                        string table pred point)))
+          ;; (message (format "string: %s prefix: %s infix: %s"
+          ;;                  string prefix infix))
           (when all
             (nconc
-             (if (or (> (length string) fussy-max-query-length)
-                     (string= string ""))
-                 (fussy--maybe-highlight pattern all :always-highlight)
+             (if (or (> (length infix) fussy-max-query-length)
+                     (string= infix ""))
+                 (fussy--pcm-highlight pattern all)
                (if (< (length all) fussy-max-candidate-limit)
                    (fussy--maybe-highlight
                     pattern
-                    (fussy--score all string using-pcm-highlight cache)
-                    using-pcm-highlight)
+                    (fussy--score all infix cache))
                  (let ((unscored-candidates '())
                        (candidates-to-score '()))
                    ;; Pre-sort the candidates by length before partitioning.
@@ -377,8 +390,7 @@ Implement `all-completions' interface with additional fuzzy / `flx' scoring."
                      pattern
                      (fussy--score
                       (reverse candidates-to-score)
-                      string using-pcm-highlight cache)
-                     using-pcm-highlight)
+                      infix cache))
                     ;; Add the unsorted candidates.
                     ;; We could highlight these too,
                     ;; (e.g. with `fussy--maybe-highlight') but these are
@@ -393,8 +405,8 @@ Implement `all-completions' interface with additional fuzzy / `flx' scoring."
 ;; (@* "Scoring & Highlighting" )
 ;;
 
-(defun fussy--score (candidates string using-pcm-highlight cache)
-  "Score and propertize \(if not USING-PCM-HIGHLIGHT\) CANDIDATES using STRING.
+(defun fussy--score (candidates string cache)
+  "Score and propertize CANDIDATES using STRING.
 
 Use CACHE for scoring."
   (mapcar
@@ -418,16 +430,16 @@ Use CACHE for scoring."
          ;; If we're using pcm highlight, we don't need to propertize the
          ;; string here. This is faster than the pcm highlight but doesn't
          ;; seem to work with `find-file'.
-         (when (fussy--should-propertize-p using-pcm-highlight)
+         (when (fussy--should-propertize-p)
            (setq
             x (funcall fussy-propertize-fn x score))))))
      x)
    candidates))
 
-(defun fussy--should-propertize-p (using-pcm-highlight)
+(defun fussy--should-propertize-p ()
   "Whether or not to call `fussy-propertize-fn'.
 
-If USING-PCM-HIGHLIGHT is t, highlighting will be handled in
+If `fussy--using-pcm-highlight-p' is t, highlighting will be handled in
 `fussy--maybe-highlight'.
 
 If `fussy--orderless-p' is t, `fussy-filter-orderless' will take care of
@@ -435,22 +447,24 @@ highlighting.
 
 If `fussy-propertize-fn' is nil, no highlighting should take place."
   (and
-   (not using-pcm-highlight)
+   (not (fussy--using-pcm-highlight-p))
    (not (fussy--orderless-p))
    fussy-propertize-fn))
 
-(defun fussy--maybe-highlight (pattern collection using-pcm-highlight)
-  "Highlight COLLECTION using PATTERN if USING-PCM-HIGHLIGHT is true."
-  (if using-pcm-highlight
-      ;; This seems to be the best way to get highlighting to work consistently
-      ;; with `find-file'.
-      (completion-pcm--hilit-commonality pattern collection)
-    ;; This will be the case when the `completing-read' function is not
-    ;; `find-file'.
-    ;; Assume that the collection has already been highlighted.
-    ;; e.g. When `using-pcm-highlight' is nil or we're using `orderless' for
-    ;; filtering and highlighting.
+(defun fussy--maybe-highlight (pattern collection)
+  "Highlight COLLECTION using PATTERN.
+
+Only highlight if `fussy--using-pcm-highlight-p' is t."
+  (if (fussy--using-pcm-highlight-p)
+      (fussy--pcm-highlight pattern collection)
+    ;; Assume that the collection's highlighting is handled elsewhere.
     collection))
+
+(defun fussy--pcm-highlight (pattern collection)
+  "Highlight with pcm-style for COLLECTION using PATTERN.
+
+pcm-style refers to using `completion-pcm--hilit-commonality' for highlighting."
+  (completion-pcm--hilit-commonality pattern collection))
 
 (defun fussy--propertize-common-part (obj score)
   "Return propertized copy of OBJ according to score.
@@ -578,19 +592,16 @@ Check C1 and C2 in `minibuffer-history-variable'."
   "Return whether or not we're using `orderless' for filtering."
   (eq fussy-filter-fn 'fussy-filter-orderless))
 
-(defun fussy--using-pcm-highlight-p (table)
+(defun fussy--using-pcm-highlight-p ()
   "Check if highlighting should use `completion-pcm--hilit-commonality'.
 
 Check if TABLE needs to be specially highlighted.
 Check if `fussy-score-fn' used doesn't return match indices.
 Check if `orderless' is being used."
   (and
-   (or
-    ;; This table seems peculiar in that highlighting seems to get wiped...
-    (eq table 'completion-file-name-table)
-    ;; These don't generate match indices to highlight at all so we should
-    ;; highlight with `completion-pcm--hilit-commonality'.
-    (memq fussy-score-fn fussy-score-fns-without-indices))
+   ;; These don't generate match indices to highlight at all so we should
+   ;; highlight with `completion-pcm--hilit-commonality'.
+   (memq fussy-score-fn fussy-score-fns-without-indices)
    ;; If we're using `orderless' to filter, don't use pcm highlights because
    ;; `orderless' does it on its own.
    (not (fussy--orderless-p))))
@@ -720,7 +731,7 @@ that's written in C for faster filtering."
          ;; using `completion-pcm--hilit-commonality' so skip evaluating the
          ;; pattern if this is not the pcm highlight case.
          (pattern
-          (when (fussy--using-pcm-highlight-p table)
+          (when (fussy--using-pcm-highlight-p)
             ;; Note to self:
             ;; The way we create the pattern here can be found in
             ;; `completion-substring--all-completions'.
