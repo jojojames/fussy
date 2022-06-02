@@ -73,6 +73,9 @@ the character into the candidate.
 
 See `fussy--without-tofu-char'.")
 
+(defconst fussy--no-score '(0)
+  "Used for when `fussy-score-fn' returns nil.")
+
 ;;
 ;; (@* "Customizations" )
 ;;
@@ -402,9 +405,12 @@ Use CACHE for scoring."
        (put-text-property 0 1 'completion-score 0 x))
       (:default
        (let ((score
-              (funcall fussy-score-fn
-                       x string
-                       cache)))
+              (or
+               (funcall fussy-score-fn
+                        x string
+                        cache)
+               fussy--no-score)))
+
          ;; This is later used by `completion--adjust-metadata' for sorting.
          (put-text-property 0 1 'completion-score
                             (car score)
