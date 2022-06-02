@@ -60,6 +60,14 @@
 ;;; Code:
 
 ;;
+;; (@* "Landmarks" )
+;;
+
+;; `fussy-all-completions'
+;; `fussy--score'
+;; `fussy-filter-fast'
+
+;;
 ;; (@* "Constants" )
 ;;
 
