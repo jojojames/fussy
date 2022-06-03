@@ -183,6 +183,10 @@ See `fussy-without-tofu-char'.")
   "Test `fussy-without-tofu-char'."
   (should
    (string=
+    (fussy-without-tofu-char (string-make-multibyte "Makefile"))
+    "Makefile"))
+  (should
+   (string=
     (fussy-without-tofu-char
      (concat "jjbb" (char-to-string fussy--consult--tofu-char)))
     "jjbb"))

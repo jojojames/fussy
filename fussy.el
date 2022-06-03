@@ -652,11 +652,23 @@ See `fussy-remove-bad-char-fn'."
                        (encode-coding-char ch 'utf-8 'unicode))
                      string))))
 
+(defconst fussy--consult--tofu-char #x200000
+  "Special character used to encode line prefixes for disambiguation.
+We use invalid characters outside the Unicode range.")
+
+(defconst fussy--consult--tofu-range #x100000
+  "Special character range.")
+
+(defsubst fussy--consult--tofu-p (char)
+  "Return non-nil if CHAR is a tofu."
+  (<= fussy--consult--tofu-char char
+      (+ fussy--consult--tofu-char fussy--consult--tofu-range -1)))
+
 (defun fussy-without-tofu-char (string)
   "Strip unencodeable char from STRING.
 
 See `fussy-remove-bad-char-fn'."
-  (if (multibyte-string-p string)
+  (if (fussy--consult--tofu-p (aref string (- (length string) 1)))
       (substring string 0 (- (length string) 1))
     string))
 
