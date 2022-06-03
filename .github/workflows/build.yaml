@@ -20,24 +20,33 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
-      - uses: jcs090218/setup-emacs@master
+      - uses: purcell/setup-emacs@master
         with:
           version: ${{ matrix.emacs-version }}
 
-    - uses: actions/setup-node@v2
-      with:
-        node-version: '16'
+      - uses: actions/cache@v2
+        id: cache-cask-packages
+        with:
+          path: .cask
+          key: cache-cask-packages-000
 
-    - uses: emacs-eask/setup-eask@master
-      with:
-        version: 'snapshot'
+      - uses: actions/cache@v2
+        id: cache-cask-executable
+        with:
+          path: ~/.cask
+          key: cache-cask-executable-000
+
+      - uses: cask/setup-cask@master
+        if: steps.cache-cask-executable.outputs.cache-hit != 'true'
+        with:
+          version: snapshot
 
       - name: Print emacs version
         run: |
           emacs --version
 
-      - run: echo "$HOME/.eask/bin" >> $GITHUB_PATH
-      - run: eask install --dev
+      - run: echo "$HOME/.cask/bin" >> $GITHUB_PATH
+      - run: cask install
       - run: make compile
       - run: make lint
       - run: make test
