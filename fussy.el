@@ -573,6 +573,8 @@ SCORE of nil means to clear the properties."
    (lambda (c1 c2)
      (let ((s1 (or (get-text-property 0 'completion-score c1) 0))
            (s2 (or (get-text-property 0 'completion-score c2) 0)))
+       ;; (message (format "c1: %s score: %d" c1 s1))
+       ;; (message (format "c2: %s score: %d" c2 s2))
        (if (and (= s1 s2)
                 fussy-compare-same-score-fn)
            (funcall fussy-compare-same-score-fn c1 c2)
