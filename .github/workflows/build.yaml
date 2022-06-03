@@ -37,7 +37,7 @@ jobs:
           emacs --version
 
       - run: echo "$HOME/.cask/bin" >> $GITHUB_PATH
-      - run: cask install
+      - run: eask install --dev
       - run: make compile
       - run: make lint
       - run: make test
