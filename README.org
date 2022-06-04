@@ -490,6 +490,15 @@ former configuration, this section will be kept up to date with my ~init.el~.
       (add-to-list 'completion-category-overrides
                    '(eglot (styles fussy basic)))))
 #+end_src
+* Contributing
+Set up ~eask~.
+#+begin_src sh :tangle yes
+$ brew install node
+$ npm install -g @emacs-eask/eask
+#+end_src
+#+begin_src emacs-lisp :tangle yes
+make test
+#+end_src
 * Discussions
 https://github.com/lewang/flx/issues/54
 https://github.com/company-mode/company-mode/issues/47
