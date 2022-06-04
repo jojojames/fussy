@@ -282,42 +282,29 @@ To use [[https://github.com/oantolin/orderless][orderless]] filtering:
 Fuzzy completion may or may not be too slow when completing with
 [[https://github.com/company-mode/company-mode][company-mode]].
 
-For this, we can advise ~company-capf~ to use basic completions.
+For this, we can advise ~company-capf~ to skip ~fussy~ when desired.
+
+The snippet below only uses fuzzy filtering and scoring when the prefix length
+is 2. The ~company-transformer~ advice is needed to actually sort the scored
+matches.
 
 #+begin_src emacs-lisp :tangle yes
-
-  (defconst OG-COMPLETION-STYLES completion-styles
-    "Original `completion-styles' Emacs comes with.")
-
-  (defun company-capf-with-og-completion-styles (f &rest args)
-    "Set `completion-styles' to be the default Emacs `completion-styles'
-  while `company-capf' runs."
-    (let ((completion-styles OG-COMPLETION-STYLES))
+  (defun bb-company-capf (f &rest args)
+    "Manage `completion-styles'."
+    (if (length< company-prefix 2)
+        (let ((completion-styles (remq 'fussy completion-styles)))
+          (apply f args))
       (apply f args)))
 
-  (advice-add 'company-capf :around 'company-capf-with-og-completion-styles)
-#+end_src
+  (defun bb-company-transformers (f &rest args)
+    "Manage `company-transformers'."
+    (if (length< company-prefix 2)
+        (apply f args)
+      (let ((company-transformers '(fussy-company-sort-by-completion-score)))
+        (apply f args))))
 
-Another option is to only apply fuzzy matching later in the query.
-
-#+begin_src emacs-lisp :tangle yes
-  (defun company-capf-smart-completion-styles (f &rest args)
-    "Change which `completion-style' to use based off `company-prefix'."
-    (let ((completion-styles
-           (if (length< company-prefix 3)
-               '(basic partial-completion emacs22)
-             '(fussy basic partial-completion emacs22))))
-      (apply f args)))
-
-(advice-add 'company-capf :around 'company-capf-smart-completion-styles)
-#+end_src
-
-If you intend to run ~company-capf~ with ~fussy~, then use the below
-~company-transformer~ to sort matches based off ~fussy~ scoring.
-
-#+begin_src emacs-lisp :tangle yes
-  (setq company-transformers
-        '(fussy-company-sort-by-completion-score))
+  (advice-add 'company--transform-candidates :around 'bb-company-transformers)
+  (advice-add 'company-capf :around 'bb-company-capf)
 #+end_src
 * Eglot Integration
 
