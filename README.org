@@ -24,15 +24,24 @@ this package.  ~ivy~ support can be somewhat baked in following
 https://github.com/jojojames/fussy#ivy-integration but the
 performance gains may not be as high as the other ~completion-read~ APIs.
 * Installation
-- Get the package, either from MELPA (soon to come):
-
   : M-x package-install RET fussy RET
   Or clone / download this repository and modify your ~load-path~:
 
   #+begin_src emacs-lisp :tangle yes
     (add-to-list 'load-path (expand-file-name "/path/to/fussy/" user-emacs-directory))
   #+end_src
-* Straight Example
+** Emacs -Q example
+#+begin_src emacs-lisp :tangle yes
+  (add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/"))
+  (require 'package)
+  (package-initialize)
+  (package-refresh-contents)
+
+  (unless (package-installed-p 'fussy)
+    (package-install 'fussy))
+  (add-to-list 'completion-styles 'fussy t)
+#+end_src
+** Straight Example
 #+begin_src emacs-lisp :tangle yes
   (use-package fussy
     :ensure nil
