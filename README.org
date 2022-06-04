@@ -41,11 +41,10 @@ performance gains may not be as high as the other ~completion-read~ APIs.
     (package-install 'fussy))
   (add-to-list 'completion-styles 'fussy t)
 #+end_src
-** Straight Example
+** Use-Package Example
 #+begin_src emacs-lisp :tangle yes
   (use-package fussy
-    :ensure nil
-    :straight t
+    :ensure t
     :config
     (push 'fussy completion-styles)
     (setq
