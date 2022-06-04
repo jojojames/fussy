@@ -46,12 +46,17 @@
 ;; For improved performance,`fussy-filter-fn' and `fussy-score-fn' for filtering
 ;; and scoring matches are good initial starting points for customization.
 
-;; The various available matching algorithms in `fussy-score-fn' have varying
+;; The various available scoring backends in `fussy-score-fn' have varying
 ;; levels of performance and match quality.
 ;; For a faster version that implements the same matching as `flx', use
 ;; https://github.com/jcs-elpa/flx-rs which is a native module written in Rust.
 
-;; For other matching algorithms, take a look at
+;; Other notable scoring backends supported by this package:
+;; flx: https://github.com/lewang/flx
+;; fzf: https://github.com/junegunn/fzf
+;; skim: https://github.com/lotabout/fuzzy-matcher
+
+;; For an exhaustive list of scoring backends, take a look at
 ;; https://github.com/jojojames/fussy#scoring-backends
 
 (require 'flx)
@@ -455,7 +460,7 @@ Use CACHE for scoring."
                         cache)
                fussy--no-score)))
          ;; (message
-         ;;  (format "candidate: %s string: %s score %s" x string (car score)))
+         ;;  (format "candidate: %s query: %s score %s" x string (car score)))
 
          ;; This is later used by `completion--adjust-metadata' for sorting.
          (put-text-property 0 1 'completion-score
