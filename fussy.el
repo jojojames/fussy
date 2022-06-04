@@ -947,6 +947,16 @@ highlighting."
            (fussy-encode-coding-string query)))
       (list (sublime-fuzzy-score query str)))))
 
+(defun fussy-fzf-native-score (str query &rest _args)
+  "Score STR for QUERY using `fzf-native'."
+  (require 'fzf-native)
+  (when (fboundp 'fzf-native-score)
+    (let ((str
+           (funcall fussy-remove-bad-char-fn str))
+          (query
+           (fussy-encode-coding-string query)))
+      (fzf-native-score str query))))
+
 ;; `hotfuzz' integration
 (declare-function "hotfuzz--cost" "hotfuzz")
 
