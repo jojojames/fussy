@@ -5,6 +5,8 @@
 [[https://melpa.org/#/fussy][file:https://melpa.org/packages/fussy-badge.svg]]
 [[https://stable.melpa.org/#/fussy][file:https://stable.melpa.org/packages/fussy-badge.svg]]
 
+[[./screenshots/fussy.png]]
+
 This is a package to provide a ~completion-style~ to Emacs that is able to
 leverage [[https://github.com/lewang/flx][flx]] as well as various other
 fuzzy matching scoring packages to provide intelligent scoring and sorting.
@@ -21,7 +23,6 @@ addition to those packages, other ~company-mode~ backends will not hook into
 this package.  ~ivy~ support can be somewhat baked in following
 https://github.com/jojojames/fussy#ivy-integration but the
 performance gains may not be as high as the other ~completion-read~ APIs.
-
 * Installation
 - Get the package, either from MELPA (soon to come):
 
@@ -80,12 +81,11 @@ lisp implementation.
 #+end_src
 
 ** Fzf-Native
-
 Use [[https://github.com/dangduc/fzf-native][fzf-native]] for scoring.
 
-Provides fuzzy matching scoring based on the fzf algorithm (by
+Provides fuzzy matching scoring based on the ~fzf~ algorithm (by
 [[https://github.com/junegunn][junegunn]]) through a dynamic module
-for a native C implementation of fzf,
+for a native C implementation of ~fzf~,
 [[https://github.com/nvim-telescope/telescope-fzf-native.nvim][telescope-fzf-native.nvim]].
 
 #+begin_src emacs-lisp :tangle yes
@@ -139,6 +139,8 @@ For more information: [[https://github.com/lotabout/fuzzy-matcher][fuzzy-matcher
     (fuz-bin-load-dyn))
 #+end_src
 ** Liquid Metal
+This is the algorithm used by the old [[https://www.emacswiki.org/emacs/lusty-explorer.el][lusty-explorer]].
+
 A mimetic poly-alloy of the Quicksilver scoring algorithm,
 essentially LiquidMetal.
 
@@ -343,7 +345,7 @@ Integration with [[https://github.com/emacs-helm/helm][helm]] is possible by
 setting ~helm-completion-style~ to ~emacs~ instead of ~helm~.
 
 #+begin_src emacs-lisp :tangle yes
-(setq helm-completion-style 'emacs)
+  (setq helm-completion-style 'emacs)
 #+end_src
 
 For more information:
@@ -354,96 +356,107 @@ https://github.com/emacs-helm/helm/blob/master/helm-mode.el#L269
 ~icomplete~'s setup hook to set up ~fussy~ with ~fido-mode~.
 
 #+begin_src emacs-lisp :tangle yes
-(use-package icomplete
-  :ensure nil
-  :straight nil
-  :config
-  (defun fussy-fido-setup ()
-    "Use `fussy' with `fido-mode'."
-    (setq-local completion-styles '(fussy basic)))
-  (advice-add 'icomplete--fido-mode-setup :after 'fussy-fido-setup)
-  (setq icomplete-tidy-shadowed-file-names t
-        icomplete-show-matches-on-no-input t
-        icomplete-compute-delay 0
-        icomplete-delay-completions-threshold 50)
-   ;; Or `fido-mode'.
-  (fido-vertical-mode))
+  (use-package icomplete
+    :ensure nil
+    :straight nil
+    :config
+    (defun fussy-fido-setup ()
+      "Use `fussy' with `fido-mode'."
+      (setq-local completion-styles '(fussy basic)))
+    (advice-add 'icomplete--fido-mode-setup :after 'fussy-fido-setup)
+    (setq icomplete-tidy-shadowed-file-names t
+          icomplete-show-matches-on-no-input t
+          icomplete-compute-delay 0
+          icomplete-delay-completions-threshold 50)
+    ;; Or `fido-mode'.
+    (fido-vertical-mode))
 #+end_src
 * Ivy Integration
 Since ~ivy~ doesn't support ~completion-styles~, we have to hack ~fussy~ into it.
 We can advise ~ivy--flx-sort~ and replace it with our own sorting function.
 
 #+begin_src emacs-lisp :tangle yes
-(defun ivy--fussy-sort (name cands)
-  "Sort according to closeness to string NAME the string list CANDS."
-  (condition-case nil
-      (let* ((bolp (= (string-to-char name) ?^))
-             ;; An optimized regex for fuzzy matching
-             ;; "abc" → "^[^a]*a[^b]*b[^c]*c"
-             (fuzzy-regex (concat "\\`"
-                                  (and bolp (regexp-quote (substring name 1 2)))
-                                  (mapconcat
-                                   (lambda (x)
-                                     (setq x (char-to-string x))
-                                     (concat "[^" x "]*" (regexp-quote x)))
-                                   (if bolp (substring name 2) name)
-                                   "")))
-             ;; Strip off the leading "^" for flx matching
-             (flx-name (if bolp (substring name 1) name))
-             cands-left
-             cands-to-sort)
+  (defun ivy--fussy-sort (name cands)
+    "Sort according to closeness to string NAME the string list CANDS."
+    (condition-case nil
+        (let* ((bolp (= (string-to-char name) ?^))
+               ;; An optimized regex for fuzzy matching
+               ;; "abc" → "^[^a]*a[^b]*b[^c]*c"
+               (fuzzy-regex (concat "\\`"
+                                    (and bolp (regexp-quote (substring name 1 2)))
+                                    (mapconcat
+                                     (lambda (x)
+                                       (setq x (char-to-string x))
+                                       (concat "[^" x "]*" (regexp-quote x)))
+                                     (if bolp (substring name 2) name)
+                                     "")))
+               ;; Strip off the leading "^" for flx matching
+               (flx-name (if bolp (substring name 1) name))
+               cands-left
+               cands-to-sort)
 
-        ;; Filter out non-matching candidates
-        (dolist (cand cands)
-          (when (string-match-p fuzzy-regex cand)
-            (push cand cands-left)))
+          ;; Filter out non-matching candidates
+          (dolist (cand cands)
+            (when (string-match-p fuzzy-regex cand)
+              (push cand cands-left)))
 
-        ;; pre-sort the candidates by length before partitioning
-        (setq cands-left (cl-sort cands-left #'< :key #'length))
+          ;; pre-sort the candidates by length before partitioning
+          (setq cands-left (cl-sort cands-left #'< :key #'length))
 
-        ;; partition the candidates into sorted and unsorted groups
-        (dotimes (_ (min (length cands-left) ivy-flx-limit))
-          (push (pop cands-left) cands-to-sort))
+          ;; partition the candidates into sorted and unsorted groups
+          (dotimes (_ (min (length cands-left) ivy-flx-limit))
+            (push (pop cands-left) cands-to-sort))
 
-        (nconc
-         ;; Compute all of the flx scores in one pass and sort
-         (mapcar #'car
-                 (sort (mapcar
-                        (lambda (cand)
-                          (cons cand
-                                (car
-                                 (funcall
-                                  fussy-score-fn
-                                  cand flx-name
-                                  ivy--flx-cache))))
-                        cands-to-sort)
-                       (lambda (c1 c2)
-                         ;; Break ties by length
-                         (if (/= (cdr c1) (cdr c2))
-                             (> (cdr c1)
-                                (cdr c2))
-                           (< (length (car c1))
-                              (length (car c2)))))))
-         ;; Add the unsorted candidates
-         cands-left))
-    (error cands)))
+          (nconc
+           ;; Compute all of the flx scores in one pass and sort
+           (mapcar #'car
+                   (sort (mapcar
+                          (lambda (cand)
+                            (cons cand
+                                  (car
+                                   (funcall
+                                    fussy-score-fn
+                                    cand flx-name
+                                    ivy--flx-cache))))
+                          cands-to-sort)
+                         (lambda (c1 c2)
+                           ;; Break ties by length
+                           (if (/= (cdr c1) (cdr c2))
+                               (> (cdr c1)
+                                  (cdr c2))
+                             (< (length (car c1))
+                                (length (car c2)))))))
+           ;; Add the unsorted candidates
+           cands-left))
+      (error cands)))
 
-(advice-add 'ivy--flx-sort :override 'ivy--fussy-sort)
+  (advice-add 'ivy--flx-sort :override 'ivy--fussy-sort)
 #+end_src
 
 For more information: https://github.com/abo-abo/swiper/issues/848#issuecomment-1143129670
 
 * Recommendations
+~fussy~ is written to be configure-less by the user. For defaults, it uses the
+built-in ~flex~ algorithm for filtering and ~flx~ for scoring and sorting.
 
-User is recommended to try the various scoring functions. See ~fussy-score-fn~.
+However, users are encouraged to try the various available scoring backends.
+These scoring backends are configured through ~fussy-score-fn~. See its docstring
+for configuration.
 
-For speed, ~flx-rs~ or ~fuz/fuz-bin~ will be the most performant but uses Rust.
+For improved performance, use a scoring backend backed by a native module.
+Examples include but are not limited to:
 
-~flx-rs~ will provide an algorithm that matches the original ~flx~ algorithm.
+- ~flx-rs~
+- ~fuz/fuz-bin~
+- ~fzf-native~
+
+~flx-rs~ will provide an algorithm that matches the original ~flx~ algorithm
+while the other two matches other popular packages (~skim~ and ~fzf~).
 
 Below is a sample config that uses ~flx-rs~ for improved performance.
 
-~fuz-bin~ or ~fuz~ also seem to be slightly faster than ~flx-rs~ and uses a different algorithm.
+~fuz-bin~ or ~fuz~ also seem to be slightly faster than ~flx-rs~ and uses a
+different algorithm.
 
 #+begin_src emacs-lisp :tangle yes
   (use-package orderless
@@ -519,14 +532,31 @@ former configuration, this section will be kept up to date with my ~init.el~.
       (add-to-list 'completion-category-overrides
                    '(eglot (styles fussy basic)))))
 #+end_src
+* Scoring Samples
+Listed below are samples of scores that backends return given a candidate string and a search string to match against it.
+This may help in determining a preferred scoring backend.
+
+Please PR other examples as they come up. This score can be obtained by commenting out the log message in ~fussy-score~.
+Another way to do it is to feed candidates and queries into ~fussy-score~ with the desired ~fussy-score-fn~.
+** Fuz
+#+begin_src emacs-lisp :tangle yes
+  ;; candidate: Makefile query: mkfile score 77
+  ;; candidate: fork/yasnippet-snippets/snippets/chef-mode/cookbook_file query: mkfile score 68
+#+end_src
+** Fzf
+#+begin_src emacs-lisp :tangle yes
+  ;; candidate: Makefile query: mkfile 118
+  ;; candidate: fork/yasnippet-snippets/snippets/chef-mode/cookbook_file query: mkfile 128
+#+end_src
+
 * Contributing
 Set up ~eask~.
 #+begin_src sh :tangle yes
-$ brew install node
-$ npm install -g @emacs-eask/eask
+  $ brew install node
+  $ npm install -g @emacs-eask/eask
 #+end_src
 #+begin_src emacs-lisp :tangle yes
-make test
+  make test
 #+end_src
 * Discussions
 https://github.com/lewang/flx/issues/54
