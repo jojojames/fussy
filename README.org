@@ -36,8 +36,7 @@ performance gains may not be as high as the other ~completion-read~ APIs.
 #+begin_src emacs-lisp :tangle yes
   (use-package fussy
     :ensure t
-    :straight
-    (fussy :type git :host github :repo "jojojames/fussy")
+    :straight t
     :config
     (push 'fussy completion-styles)
     (setq
