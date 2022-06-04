@@ -442,7 +442,7 @@ Implement `all-completions' interface with additional fuzzy / `flx' scoring."
 ;; (@* "Scoring & Highlighting" )
 ;;
 
-(defun fussy-score (candidates string cache)
+(defun fussy-score (candidates string &optional cache)
   "Score and propertize CANDIDATES using STRING.
 
 Use CACHE for scoring."
