@@ -70,6 +70,7 @@ See `fussy-without-tofu-char'.")
     (let* ((table 'help--symbol-completion-table)
            (pred nil)
            (point 1)
+           (fussy-fast-regex-fn 'fussy-pattern-flex-1)
            (fast-res
             (car (benchmark-run 3
                    (fussy-filter-fast query table pred point)))))
