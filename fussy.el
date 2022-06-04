@@ -73,13 +73,6 @@
 ;; `fussy-filter-fast'
 
 ;;
-;; (@* "Constants" )
-;;
-
-(defconst fussy--no-score '(0 0)
-  "Used for when `fussy-score-fn' returns nil.")
-
-;;
 ;; (@* "Customizations" )
 ;;
 
@@ -445,7 +438,10 @@ Implement `all-completions' interface with additional fuzzy / `flx' scoring."
 (defun fussy-score (candidates string &optional cache)
   "Score and propertize CANDIDATES using STRING.
 
-Use CACHE for scoring."
+Use CACHE for scoring.
+
+Set a text-property \='completion-score on candidates with their score.
+`completion--adjust-metadata' later uses this \='completion-score for sorting."
   (mapcar
    (lambda (x)
      (setq x (copy-sequence x))
@@ -453,25 +449,20 @@ Use CACHE for scoring."
       ((> (length x) fussy-max-word-length-to-score)
        (put-text-property 0 1 'completion-score 0 x))
       (:default
-       (let ((score
-              (or
-               (funcall fussy-score-fn
-                        x string
-                        cache)
-               fussy--no-score)))
+       (let ((score (funcall fussy-score-fn
+                             x string
+                             cache)))
          ;; (message
          ;;  (format "candidate: %s query: %s score %s" x string (car score)))
-
-         ;; This is later used by `completion--adjust-metadata' for sorting.
-         (put-text-property 0 1 'completion-score
-                            (car score)
-                            x)
-         ;; If we're using pcm highlight, we don't need to propertize the
-         ;; string here. This is faster than the pcm highlight but doesn't
-         ;; seem to work with `find-file'.
-         (when (fussy--should-propertize-p)
-           (setq
-            x (funcall fussy-propertize-fn x score))))))
+         (if (not score)
+             (put-text-property 0 1 'completion-score 0 x)
+           (put-text-property 0 1 'completion-score (car score) x)
+           ;; If we're using pcm highlight, we don't need to propertize the
+           ;; string here. This is faster than the pcm highlight but doesn't
+           ;; seem to work with `find-file'.
+           (when (fussy--should-propertize-p)
+             (setq
+              x (funcall fussy-propertize-fn x score)))))))
      x)
    candidates))
 
