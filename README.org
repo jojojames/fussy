@@ -349,6 +349,26 @@ setting ~helm-completion-style~ to ~emacs~ instead of ~helm~.
 For more information:
 https://github.com/emacs-helm/helm/blob/master/helm-mode.el#L269
 
+* Icomplete/Fido Integration
+~fido~ uses the built in ~flex~ ~completion-style~ by default. We can advise
+~icomplete~'s setup hook to set up ~fussy~ with ~fido-mode~.
+
+#+begin_src emacs-lisp :tangle yes
+(use-package icomplete
+  :ensure nil
+  :straight nil
+  :config
+  (defun fussy-fido-setup ()
+    "Use `fussy' with `fido-mode'."
+    (setq-local completion-styles '(fussy basic)))
+  (advice-add 'icomplete--fido-mode-setup :after 'fussy-fido-setup)
+  (setq icomplete-tidy-shadowed-file-names t
+        icomplete-show-matches-on-no-input t
+        icomplete-compute-delay 0
+        icomplete-delay-completions-threshold 50)
+   ;; Or `fido-mode'.
+  (fido-vertical-mode))
+#+end_src
 * Ivy Integration
 Since ~ivy~ doesn't support ~completion-styles~, we have to hack ~fussy~ into it.
 We can advise ~ivy--flx-sort~ and replace it with our own sorting function.
