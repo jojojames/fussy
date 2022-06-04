@@ -69,7 +69,7 @@
 ;;
 
 ;; `fussy-all-completions'
-;; `fussy--score'
+;; `fussy-score'
 ;; `fussy-filter-fast'
 
 ;;
@@ -406,7 +406,7 @@ Implement `all-completions' interface with additional fuzzy / `flx' scoring."
                (if (< (length all) fussy-max-candidate-limit)
                    (fussy--maybe-highlight
                     pattern
-                    (fussy--score all infix cache))
+                    (fussy-score all infix cache))
                  (let ((unscored-candidates '())
                        (candidates-to-score '()))
                    ;; Pre-sort the candidates by length before partitioning.
@@ -425,7 +425,7 @@ Implement `all-completions' interface with additional fuzzy / `flx' scoring."
                     ;; Compute all of the fuzzy scores only for cands-to-sort.
                     (fussy--maybe-highlight
                      pattern
-                     (fussy--score
+                     (fussy-score
                       (reverse candidates-to-score)
                       infix cache))
                     ;; Add the unsorted candidates.
@@ -442,7 +442,7 @@ Implement `all-completions' interface with additional fuzzy / `flx' scoring."
 ;; (@* "Scoring & Highlighting" )
 ;;
 
-(defun fussy--score (candidates string cache)
+(defun fussy-score (candidates string cache)
   "Score and propertize CANDIDATES using STRING.
 
 Use CACHE for scoring."

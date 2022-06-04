@@ -165,10 +165,10 @@ Called from `fussy-all-completions'."
           (length (fussy-filter-orderless query table pred point)))))))
 
 ;;
-;; (@* "`fussy--score'" )
+;; (@* "`fussy-score'" )
 ;;
 
-(ert-deftest fussy--score-cache-test ()
+(ert-deftest fussy-score-cache-test ()
   "Test that file cache makes a difference."
   (let*
       ((fussy-score-fn 'flx-score)
@@ -176,9 +176,9 @@ Called from `fussy-all-completions'."
         '("~/.emacs.d/straight/repos/orderless/orderless.el"
           "~/Code/yyoshereios/iOSTest/yyosHereiPadRootViewController.h"))
        (string-cache-res
-        (fussy--score candidates "odor" flx-strings-cache))
+        (fussy-score candidates "odor" flx-strings-cache))
        (file-cache-res
-        (fussy--score candidates "odor" flx-file-cache)))
+        (fussy-score candidates "odor" flx-file-cache)))
 
     ;; With `flx-strings-cache' candidate 1 loses to candidate 2 which is
     ;; not desirable for filenames.
