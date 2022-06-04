@@ -952,6 +952,7 @@ highlighting."
            (fussy-encode-coding-string query)))
       (list (sublime-fuzzy-score query str)))))
 
+;; `fzf-native' integration
 (defun fussy-fzf-native-score (str query &rest _args)
   "Score STR for QUERY using `fzf-native'."
   (require 'fzf-native)
