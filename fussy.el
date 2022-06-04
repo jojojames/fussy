@@ -3,8 +3,8 @@
 ;; Copyright 2022 James Nguyen
 
 ;; Author: James Nguyen <james@jojojames.com>
-;; Version: 0.1
-;; Package-Requires: ((emacs "27.1") (flx "0.5"))
+;; Version: 1.0
+;; Package-Requires: ((emacs "27.2") (flx "0.5"))
 ;; Keywords: matching
 ;; Homepage: https://github.com/jojojames/fussy
 
