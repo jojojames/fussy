@@ -455,8 +455,8 @@ while the other two matches other popular packages (~skim~ and ~fzf~).
 
 Below is a sample config that uses ~flx-rs~ for improved performance.
 
-~fuz-bin~ or ~fuz~ also seem to be slightly faster than ~flx-rs~ and uses a
-different algorithm.
+~fuz-bin~ or ~fuz~ may be a better choice for performance than ~flx-rs~ but uses
+a different algorithm.
 
 #+begin_src emacs-lisp :tangle yes
   (use-package orderless
