@@ -79,6 +79,28 @@ lisp implementation.
     (flx-rs-load-dyn))
 #+end_src
 
+** Fzf-Native
+
+Use [[https://github.com/dangduc/fzf-native][fzf-native]] for scoring.
+
+Provides fuzzy matching scoring based on the fzf algorithm (by
+[[https://github.com/junegunn][junegunn]]) through a dynamic module
+for a native C implementation of fzf,
+[[https://github.com/nvim-telescope/telescope-fzf-native.nvim][telescope-fzf-native.nvim]].
+
+#+begin_src emacs-lisp :tangle yes
+  (use-package fzf-native
+    :ensure t
+    :straight
+    (fzf-native
+     :repo "dangduc/fzf-native"
+     :host github
+     :files (:defaults "bin"))
+    :config
+    (setq fussy-score-fn 'fussy-fzf-native-score)
+    (fzf-native-load-dyn))
+#+end_src
+
 ** Fuz
 Another option is to use the [[https://github.com/rustify-emacs/fuz.el][fuz]]
 library (also in Rust) for scoring.
