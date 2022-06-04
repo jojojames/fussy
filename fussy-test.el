@@ -22,15 +22,37 @@ See `fussy-without-tofu-char'.")
 
 (defvar fussy-history-variable '())
 
-(ert-deftest fussy--strlen<-test ()
+;;
+;; (@* "`fussy-strlen<'" )
+;;
+
+(ert-deftest fussy-strlen<-test ()
   (should (equal nil (fussy-strlen< "abc" "a")))
   (should (equal t (fussy-strlen< "a" "bc")))
   (should (equal nil (fussy-strlen< "a" "a"))))
 
-(ert-deftest fussy--strlen>-test ()
+;;
+;; (@* "`fussy-strlen>'" )
+;;
+
+(ert-deftest fussy-strlen>-test ()
   (should (equal t (fussy-strlen> "abc" "a")))
   (should (equal nil (fussy-strlen> "a" "bc")))
   (should (equal nil (fussy-strlen> "a" "a"))))
+
+
+;;
+;; (@* "`fussy-histlen<'" )
+;;
+
+(ert-deftest fussy-histlen<-test ()
+  (setq fussy-history-variable '("first" "second"))
+  (let ((minibuffer-history-variable 'fussy-history-variable))
+    (should (equal t (fussy-histlen< "first" "second")))
+    (should (equal nil (fussy-histlen< "second" "first")))
+    (should (equal nil (fussy-histlen< "doesntexist" "first")))
+    (should (equal t (fussy-histlen< "second" "doesntexist")))
+    (should (equal nil (fussy-histlen< "doesntexist" "doesntexist")))))
 
 (ert-deftest fussy-histlen<-test--benchmark ()
   (setq fussy-history-variable '("first"
@@ -47,7 +69,42 @@ See `fussy-without-tofu-char'.")
              (car (benchmark-run 1
                     (fussy-histlen< "xyz" "abc"))))))
 
-(ert-deftest fussy-all-completions-fussy-filter-fn-fast< ()
+;;
+;; (@* "`fussy-histlen->strlen<'" )
+;;
+
+(ert-deftest fussy-histlen->strlen< ()
+  (setq fussy-history-variable '("first" "second"))
+  (let ((minibuffer-history-variable 'fussy-history-variable))
+    (should (equal t (fussy-histlen->strlen< "first" "second")))
+    (should (equal nil (fussy-histlen->strlen< "second" "first")))
+    (should (equal nil (fussy-histlen->strlen< "doesntexist" "first")))
+    (should (equal t (fussy-histlen->strlen< "second" "doesntexist")))
+    (should
+     (equal nil (fussy-histlen->strlen< "doesntexist" "doesntexist")))
+    (should (equal nil (fussy-histlen->strlen< "longerstring" "short")))
+    (should (equal t (fussy-histlen->strlen< "short" "longerstring")))))
+
+(ert-deftest fussy-histlen->strlen<-benchmark-test ()
+  (setq fussy-history-variable '("first"
+                                 "second"
+                                 "three"
+                                 "four"
+                                 "five"
+                                 "six"
+                                 "seven"
+                                 "eight"
+                                 "nine"
+                                 "ten"))
+  (should (> .00009
+             (car (benchmark-run 1
+                    (fussy-histlen->strlen< "twelve" "eleven"))))))
+
+;;
+;; (@* "`fussy-filter-fast'" )
+;;
+
+(ert-deftest fussy-filter-fast-in-all-completions-perf-test ()
   "Assert `fussy-filter-fast' with is the fastest filter method.
 
 Called from `fussy-all-completions'."
@@ -72,7 +129,7 @@ Called from `fussy-all-completions'."
             (car (benchmark-run 3
                    (fussy-all-completions query table pred point)))))))))
 
-(ert-deftest fussy-filter-fn-fast< ()
+(ert-deftest fussy-filter-fn-fast-perf-test ()
   "Assert `fussy-filter-fast' is the fastest filter method."
   (dolist (query '("a" "b" "c" "def"))
     (let* ((table 'help--symbol-completion-table)
@@ -107,43 +164,12 @@ Called from `fussy-all-completions'."
        (= (length fast-res)
           (length (fussy-filter-orderless query table pred point)))))))
 
-(ert-deftest fussy-histlen<-test ()
-  (setq fussy-history-variable '("first" "second"))
-  (let ((minibuffer-history-variable 'fussy-history-variable))
-    (should (equal t (fussy-histlen< "first" "second")))
-    (should (equal nil (fussy-histlen< "second" "first")))
-    (should (equal nil (fussy-histlen< "doesntexist" "first")))
-    (should (equal t (fussy-histlen< "second" "doesntexist")))
-    (should (equal nil (fussy-histlen< "doesntexist" "doesntexist")))))
+;;
+;; (@* "`fussy--score'" )
+;;
 
-(ert-deftest fussy-histlen->strlen<--benchmark ()
-  (setq fussy-history-variable '("first"
-                                 "second"
-                                 "three"
-                                 "four"
-                                 "five"
-                                 "six"
-                                 "seven"
-                                 "eight"
-                                 "nine"
-                                 "ten"))
-  (should (> .00009
-             (car (benchmark-run 1
-                    (fussy-histlen->strlen< "twelve" "eleven"))))))
-
-(ert-deftest fussy-histlen->strlen< ()
-  (setq fussy-history-variable '("first" "second"))
-  (let ((minibuffer-history-variable 'fussy-history-variable))
-    (should (equal t (fussy-histlen->strlen< "first" "second")))
-    (should (equal nil (fussy-histlen->strlen< "second" "first")))
-    (should (equal nil (fussy-histlen->strlen< "doesntexist" "first")))
-    (should (equal t (fussy-histlen->strlen< "second" "doesntexist")))
-    (should
-     (equal nil (fussy-histlen->strlen< "doesntexist" "doesntexist")))
-    (should (equal nil (fussy-histlen->strlen< "longerstring" "short")))
-    (should (equal t (fussy-histlen->strlen< "short" "longerstring")))))
-
-(ert-deftest fussy--score--cache ()
+(ert-deftest fussy--score-cache-test ()
+  "Test that file cache makes a difference."
   (let*
       ((fussy-score-fn 'flx-score)
        (candidates
@@ -167,6 +193,10 @@ Called from `fussy-all-completions'."
      (> (get-text-property 0 'completion-score (nth 0 file-cache-res))
         (get-text-property 0 'completion-score (nth 1 file-cache-res))))))
 
+;;
+;; (@* "`fussy-without-unencodeable-chars'" )
+;;
+
 (ert-deftest fussy-without-unencodeable-chars-test ()
   "Test that unencodeable chars are removed."
   (should
@@ -188,8 +218,20 @@ Called from `fussy-all-completions'."
     (fussy-without-unencodeable-chars (concat "jjbb" (char-to-string #x200000)))
     "jjbb")))
 
+;;
+;; (@* "`fussy-without-tofu-char'" )
+;;
+
 (ert-deftest fussy-without-tofu-char-test ()
   "Test `fussy-without-tofu-char'."
+  ;; Good input.
+  (should
+   (string=
+    (fussy-without-tofu-char "bb") "bb"))
+  (should
+   (string=
+    (fussy-without-tofu-char "jj") "jj"))
+  ;; Bad input.
   (should
    (string=
     (fussy-without-tofu-char (string-make-multibyte "Makefile"))
@@ -210,15 +252,6 @@ Called from `fussy-all-completions'."
      (string-as-multibyte
       ";; This buffer is for text that is not saved, and for Lisp evaluation.øˆ€€"))
     ";; This buffer is for text that is not saved, and for Lisp evaluation.")))
-
-(ert-deftest fussy-without-tofu-char-good-input-test ()
-  "Test `fussy-without-tofu-char'."
-  (should
-   (string=
-    (fussy-without-tofu-char "bb") "bb"))
-  (should
-   (string=
-    (fussy-without-tofu-char "jj") "jj")))
 
 (ert-deftest fussy-without-tofu-char-perf-test ()
   "Test `fussy-without-tofu-char' performance.
@@ -249,8 +282,20 @@ This test asserts `fussy-without-tofu-char''s speed."
       (* performance-factor result-3)
       (car (benchmark-run 1000 (fussy-without-unencodeable-chars string-3)))))))
 
+;;
+;; (@* "`fussy-encode-coding-string'" )
+;;
+
 (ert-deftest fussy-encode-coding-string-test ()
   "Test `fussy-encode-coding-string'."
+  ;; Good input.
+  (should
+   (string=
+    (fussy-encode-coding-string "bb") "bb"))
+  (should
+   (string=
+    (fussy-encode-coding-string "jj") "jj"))
+  ;; Bad input.
   (should
    (string=
     (fussy-encode-coding-string
@@ -267,15 +312,6 @@ This test asserts `fussy-without-tofu-char''s speed."
      (string-as-multibyte
       ";; This buffer is for text that is not saved, and for Lisp evaluation.øˆ€€"))
     ";; This buffer is for text that is not saved, and for Lisp evaluation.\370\210\200\200\201")))
-
-(ert-deftest fussy-encode-coding-string-good-input-test ()
-  "Test `fussy-encode-coding-string'."
-  (should
-   (string=
-    (fussy-encode-coding-string "bb") "bb"))
-  (should
-   (string=
-    (fussy-encode-coding-string "jj") "jj")))
 
 (ert-deftest fussy-encode-coding-string-perf-test ()
   "Test `fussy-encode-coding-string' performance.
@@ -306,6 +342,10 @@ This test asserts `fussy-encode-coding-string' is much much faster than
       (* performance-factor
          (car (benchmark-run 1000 (fussy-encode-coding-string string-3))))
       (car (benchmark-run 1000 (fussy-without-unencodeable-chars string-3)))))))
+
+;;
+;; (@* "`fussy--should-propertize-p'" )
+;;
 
 (ert-deftest fussy--should-propertize-p ()
   "Test `fussy--should-propertize-p' return correct values."
@@ -341,6 +381,10 @@ This test asserts `fussy-encode-coding-string' is much much faster than
     (should
      (fussy--should-propertize-p))))
 
+;;
+;; (@* "`fussy--using-pcm-highlight-p'" )
+;;
+
 (ert-deftest fussy--using-pcm-highlight-p ()
   "Test `fussy--using-pcm-highlight-p' return correct values."
   ;; `fussy-score-fn' returns no indices.
@@ -356,6 +400,10 @@ This test asserts `fussy-encode-coding-string' is much much faster than
         (fussy-filter-fn 'fussy-filter-orderless))
     (should
      (eq (fussy--using-pcm-highlight-p) nil))))
+
+;;
+;; (@* "`fussy-pattern-flex-2-test'" )
+;;
 
 (ert-deftest fussy-pattern-flex-2-test ()
   "Test flex-2 matches flex-rx and `orderless-flex'."
