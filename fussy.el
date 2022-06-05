@@ -124,6 +124,9 @@ highlighting with `completion-pcm--hilit-commonality'."
 
 Takes OBJ \(to be propertized\) and
 SCORE \(list of indices of OBJ to be propertized\).
+
+This function is expected to return OBJ.
+
 If this is nil, don't propertize (e.g. highlight matches) at all.
 This can also be set to nil to assume highlighting from a different source.
 
@@ -511,8 +514,11 @@ pcm-style refers to using `completion-pcm--hilit-commonality' for highlighting."
 (defun fussy-propertize-common-part (obj score)
   "Return propertized copy of OBJ according to score.
 
-SCORE of nil means to clear the properties."
-  (when (> (length score) 1) ;; Has a score and an index to highlight.
+If SCORE does not have indices to highlight, return OBJ unmodified."
+  (if (<= (length score) 1)
+      ;; Has only a score or nil.
+      obj
+    ;; Has a score and an index to highlight.
     (let ((block-started (cadr score))
           (last-char nil)
           ;; Originally we used `substring-no-properties' when setting str but
