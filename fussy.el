@@ -198,7 +198,9 @@ If using `fussy-filter-fast', `fussy-fast-regex-fn' can be configured."
                  ,#'fussy-filter-flex)
           (const :tag "Built in Faster Flex Filtering in C"
                  ,#'fussy-filter-fast)
-          (const :tag "Orderless Filtering"
+          (const :tag "Orderless Flex Filtering"
+                 ,#'fussy-filter-orderless-flex)
+          (const :tag "Orderless"
                  ,#'fussy-filter-orderless)
           (function :tag "Custom function"))
   :group 'fussy)
@@ -622,7 +624,8 @@ Check C1 and C2 in `minibuffer-history-variable'."
 
 (defun fussy--orderless-p ()
   "Return whether or not we're using `orderless' for filtering."
-  (eq fussy-filter-fn 'fussy-filter-orderless))
+  (or (eq fussy-filter-fn 'fussy-filter-orderless)
+      (eq fussy-filter-fn 'fussy-filter-orderless-flex)))
 
 (defun fussy--using-pcm-highlight-p ()
   "Check if highlighting should use `completion-pcm--hilit-commonality'.
@@ -686,6 +689,31 @@ See `fussy-remove-bad-char-fn'."
 ;; `orderless-matching-styles'.
 (defvar orderless-matching-styles)
 
+(defun fussy-filter-orderless-flex (string table pred _point)
+  "Match STRING to the entries in TABLE.
+
+Use `orderless' for filtering by passing STRING, TABLE and PRED to
+
+`orderless-filter'.  _POINT is not used. This version sets up `orderless'
+to only use the `orderless-flex' pattern."
+  (require 'orderless)
+  (when (and (fboundp 'orderless-filter)
+             (fboundp 'orderless-highlight-matches)
+             (fboundp 'orderless--prefix+pattern))
+    (let* ((orderless-matching-styles '(orderless-flex))
+           (completions (orderless-filter string table pred)))
+      (when completions
+        (pcase-let* ((`(,prefix . ,pattern)
+                      (orderless--prefix+pattern string table pred))
+                     (skip-highlighting
+                      (if (functionp orderless-skip-highlighting)
+                          (funcall orderless-skip-highlighting)
+                        orderless-skip-highlighting)))
+          (if skip-highlighting
+              (list completions pattern prefix)
+            (list (orderless-highlight-matches pattern completions)
+                  pattern prefix)))))))
+
 (defun fussy-filter-orderless (string table pred _point)
   "Match STRING to the entries in TABLE.
 
@@ -696,8 +724,7 @@ Use `orderless' for filtering by passing STRING, TABLE and PRED to
   (when (and (fboundp 'orderless-filter)
              (fboundp 'orderless-highlight-matches)
              (fboundp 'orderless--prefix+pattern))
-    (let* ((orderless-matching-styles '(orderless-flex))
-           (completions (orderless-filter string table pred)))
+    (let* ((completions (orderless-filter string table pred)))
       (when completions
         (pcase-let* ((`(,prefix . ,pattern)
                       (orderless--prefix+pattern string table pred))
