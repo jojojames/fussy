@@ -391,8 +391,10 @@ Implement `all-completions' interface with additional fuzzy / `flx' scoring."
              (`(,all ,pattern ,prefix)
               (funcall fussy-filter-fn
                        string table pred point)))
-          ;; (message (format "string: %s prefix: %s infix: %s"
-          ;;                  string prefix infix))
+          ;; (message (format
+          ;;           "fn: %S string: %s prefix: %s infix: %s all: %s"
+          ;;           'fussy-all-completions
+          ;;           string prefix infix all))
           (when all
             (nconc
              (if (or (> (length infix) fussy-max-query-length)
@@ -431,7 +433,10 @@ Implement `all-completions' interface with additional fuzzy / `flx' scoring."
              (length prefix)))))
     ('nil nil)
     ('t nil)
-    (`,collection collection)))
+    (`,collection
+     ;; (message (format "fn: %S collection: %s"
+     ;;                  'fussy-all-completions collection))
+     collection)))
 
 ;;
 ;; (@* "Scoring & Highlighting" )
@@ -455,7 +460,8 @@ Set a text-property \='completion-score on candidates with their score.
                              x string
                              cache)))
          ;; (message
-         ;;  (format "candidate: %s query: %s score %s" x string score))
+         ;;  (format "fn: %S candidate: %s query: %s score %s"
+         ;;          'fussy-score x string score))
          (if (not score)
              (put-text-property 0 1 'completion-score 0 x)
            (put-text-property 0 1 'completion-score (car score) x)
@@ -465,6 +471,8 @@ Set a text-property \='completion-score on candidates with their score.
            (when (fussy--should-propertize-p)
              (setq
               x (funcall fussy-propertize-fn x score)))))))
+     ;; (message (format "fn: %S returning x: %s"
+     ;;                  'fussy-score x))
      x)
    candidates))
 
@@ -487,6 +495,8 @@ If `fussy-propertize-fn' is nil, no highlighting should take place."
   "Highlight COLLECTION using PATTERN.
 
 Only highlight if `fussy--using-pcm-highlight-p' is t."
+  ;; (message (format "fn: %S collection: %s"
+  ;;                  'fussy--maybe-highlight collection))
   (if (fussy--using-pcm-highlight-p)
       (fussy--pcm-highlight pattern collection)
     ;; Assume that the collection's highlighting is handled elsewhere.
