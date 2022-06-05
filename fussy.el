@@ -783,7 +783,7 @@ that's written in C for faster filtering."
                  (substring afterpoint 0 (cdr bounds))))
          (regexp
           (funcall fussy-fast-regex-fn infix))
-         (completion-regexp-list (cons regexp completion-regexp-list))
+         (completion-regexp-list (append regexp completion-regexp-list))
          ;; Commentary on why we prefer prefix over infix.
          ;; For `find-file', if the prefix exists, we're in a different
          ;; directory, so should be retrieving candidates from that directory
@@ -839,21 +839,22 @@ that's written in C for faster filtering."
 ;;
 ;; Random note:
 ;; These return something similar to what `orderless-pattern-compiler'
-;; would return if they were wrapped inside a list.
-;; e.g. \(list \(fussy-pattern-flex-1 "str"\)\)
+;; These can be applied where `orderless-pattern-compiler' can apply.
+;; e.g. They return \(list some-regex\).
 ;;
 
 (defun fussy-pattern-flex-1 (str)
   "Make STR flex pattern.
 
 This may be the fastest regex to use but is not exhaustive."
-  (concat "\\`"
-          (mapconcat
-           (lambda (x)
-             (setq x (string x))
-             (concat "[^" x "]*" (regexp-quote x)))
-           str
-           "")))
+  (list
+   (concat "\\`"
+           (mapconcat
+            (lambda (x)
+              (setf x (string x))
+              (concat "[^" x "]*" (regexp-quote x)))
+            str
+            ""))))
 
 (defun fussy-pattern-flex-2 (str)
   "Make STR flex pattern.
@@ -862,30 +863,34 @@ This is a copy of the `orderless-flex' pattern written without `rx'.
 
 This one may be slower than `fussy-pattern-flex-1' but is more
 exhaustive on matches."
-  (concat
-   (when (> (length str) 1)
-     "\\(?:")
-   (mapconcat
-    (lambda (x)
-      (format "\\(%c\\)" x))
-    str
-    ".*")
-   (when (> (length str) 1)
-     "\\)")))
+  (list
+   (concat
+    (when (> (length str) 1)
+      "\\(?:\\(?:")
+    (mapconcat
+     (lambda (x)
+       (format "\\(%c\\)" x))
+     str
+     ".*")
+    (when (> (length str) 1)
+      "\\)\\)"))))
 
 (defun fussy-pattern-flex-rx (str)
   "Make STR flex pattern using `rx'.
 
 This is a copy of the `orderless-flex' pattern."
   (require 'rx)
-  (rx-to-string
-   `(seq
-     ""
-     ,@(cl-loop
-        for (sexp . more) on (cl-loop for char across str collect char)
-        collect `(group ,sexp)
-        when more collect '(zero-or-more nonl))
-     "")))
+  (list
+   (rx-to-string
+    `(regexp
+      ,(rx-to-string
+        `(seq
+          ""
+          ,@(cl-loop
+             for (sexp . more) on (cl-loop for char across str collect char)
+             collect `(group ,sexp)
+             when more collect '(zero-or-more nonl))
+          ""))))))
 
 ;;
 ;; (@* "Integration with other Packages" )

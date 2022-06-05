@@ -422,22 +422,56 @@ This test asserts `fussy-encode-coding-string' is much much faster than
 ;;
 
 (ert-deftest fussy-pattern-flex-2-test ()
-  "Test flex-2 matches flex-rx and `orderless-flex'."
+  "Test flex-2 matches flex-rx and `orderless-filter'+`orderless-flex'."
   (should
-   (string= (fussy-pattern-flex-2 "a")
-            (fussy-pattern-flex-rx "a")))
+   (string= (fussy-pattern-str (fussy-pattern-flex-2 "a"))
+            (fussy-pattern-str (fussy-pattern-flex-rx "a"))))
   (should
-   (string= (fussy-pattern-flex-2 "abc")
-            (fussy-pattern-flex-rx "abc")))
+   (string= (fussy-pattern-str (fussy-pattern-flex-2 "abc"))
+            (fussy-pattern-str (fussy-pattern-flex-rx "abc"))))
   (should
-   (string= (fussy-pattern-flex-2 "abasd90803423c")
-            (fussy-pattern-flex-rx "abasd90803423c")))
+   (string= (fussy-pattern-str (fussy-pattern-flex-2 "abasd90803423c"))
+            (fussy-pattern-str (fussy-pattern-flex-rx "abasd90803423c"))))
+  (let ((orderless-matching-styles '(orderless-flex)))
+    (should
+     (string= (fussy-pattern-str (fussy-pattern-flex-2 "a"))
+              (fussy-pattern-str (orderless-pattern-compiler "a"))))
+    (should
+     (string= (fussy-pattern-str (fussy-pattern-flex-2 "abc"))
+              (fussy-pattern-str (orderless-pattern-compiler "abc"))))
+    (should
+     (string= (fussy-pattern-str (fussy-pattern-flex-2 "abasd90803423c"))
+              (fussy-pattern-str (orderless-pattern-compiler "abasd90803423c"))))
+    (should
+     (string= (fussy-pattern-str (fussy-pattern-flex-2 "reb"))
+              (fussy-pattern-str (orderless-pattern-compiler "reb"))))))
+
+;;
+;; (@* "`fussy-pattern-flex-rx'" )
+;;
+
+(ert-deftest fussy-pattern-flex-rx-test ()
+  "Test `fussy-pattern-flex-rx-test'.
+
+Test that it matches the output of `orderless-filter'+`orderless-flex'."
   (should
-   (string= (fussy-pattern-flex-2 "a")
-            (orderless-flex "a")))
+   (string=
+    (fussy-pattern-str (let ((orderless-matching-styles '(orderless-flex)))
+                         (orderless-pattern-compiler "reb")))
+    (fussy-pattern-str (fussy-pattern-flex-rx "reb"))))
   (should
-   (string= (fussy-pattern-flex-2 "abc")
-            (orderless-flex "abc")))
+   (string=
+    (fussy-pattern-str (let ((orderless-matching-styles '(orderless-flex)))
+                         (orderless-pattern-compiler "r")))
+    (fussy-pattern-str (fussy-pattern-flex-rx "r"))))
   (should
-   (string= (fussy-pattern-flex-2 "abasd90803423c")
-            (orderless-flex "abasd90803423c"))))
+   (string=
+    (fussy-pattern-str (let ((orderless-matching-styles '(orderless-flex)))
+                         (orderless-pattern-compiler "41234asdfbasdf..adf")))
+    (fussy-pattern-str (fussy-pattern-flex-rx "41234asdfbasdf..adf")))))
+
+(defun fussy-pattern-str (pattern-compiled)
+  "Return PATTERN-COMPILED as a string.
+
+PATTERN-COMPILED is a list so we want to check all strings inside it."
+  (format "%S" pattern-compiled))
