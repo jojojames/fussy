@@ -822,6 +822,7 @@ that's written in C for faster filtering."
           ;; Is there an easier way to check if string is empty or nil?
           (if (= (length prefix) 0)
               ;; Use infix when prefix is empty or nil.
+              ;; If infix is used, searches will not be as exhaustive as prefix.
               (or
                (all-completions infix table pred)
                (all-completions prefix table pred))
