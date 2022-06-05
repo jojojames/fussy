@@ -48,30 +48,51 @@ See `fussy-without-tofu-char'.")
 (ert-deftest fussy-histlen<-test ()
   (setf fussy-history-variable '("first" "second"))
   (let ((minibuffer-history-variable 'fussy-history-variable))
+    (setf fussy--hist-hash (fussy--history-hash-table))
     (should (equal t (fussy-histlen< "first" "second")))
     (should (equal nil (fussy-histlen< "second" "first")))
     (should (equal nil (fussy-histlen< "doesntexist" "first")))
     (should (equal t (fussy-histlen< "second" "doesntexist")))
     (should (equal nil (fussy-histlen< "doesntexist" "doesntexist")))))
 
-(ert-deftest fussy-histlen<-test--benchmark ()
-  (setq fussy-history-variable '("first"
-                                 "second"
-                                 "three"
-                                 "four"
-                                 "five"
-                                 "six"
-                                 "seven"
-                                 "eight"
-                                 "nine"
-                                 "ten"))
-  (should (> .00009
-             (car (benchmark-run 1
-                    (fussy-histlen< "xyz" "abc"))))))
+(defun fussy-histlen<-no-cache (c1 c2)
+  "Return t if C1 occurred more recently than C2.
 
-;;
+Check C1 and C2 in `minibuffer-history-variable'."
+  (let* ((hist (and (not (eq minibuffer-history-variable t))
+                    (symbol-value minibuffer-history-variable))))
+    (catch 'found
+      (dolist (h hist)
+        (when (string= c1 h)
+          (throw 'found t))
+        (when (string= c2 h)
+          (throw 'found nil))))))
+
+(defvar-local fussy-histlen-test-history-variable
+  '("first" "second" "third" "four" "fives" "dfljh" "90909" "23232" "zxj"
+    "a" "b" "c" "d" "e" "f" "g" "h" "i" "j" "fzf" "zbz" "fsd" "2df" "fzm"
+    "k" "l" "m" "n" "o" "p" "q" "r" "s" "t" "123" "345" "333" "4rf" "ffz"
+    "u" "v" "w" "x" "y" "z" "ab" "abc" "cd" "fdf" "ffff" "bzbzb" "abcdef"
+    "us" "av" "dw" "fx" "xy" "az" "ab" "abc" "zyy" "ffffsf" "zvvv" "fjkl"
+    "aus" "adv" "ddw" "afx" "sxy" "ty" "turur" "fskdff" "sso" "jaj" "bbb"
+    "faz" "zb" "abc" "cfsd" "jo" "be" "ja" "mssss" "ugn" "ney" "gon" "is"
+    "fza" "zb" "acb" "cfsd" "oj" "eb" "ja" "smsss" "gnu" "nye" "ogn" "ls"
+    "marp" "guts" "onepi" "looifi" "zoloooro" "namiisea" "lofurobi" "nsj"
+    "san" "jiiee" "mrco" "lpira" "gte" "asdf" "fsdfksjk" "fsfsf" "bcsfsa"
+    "eleven" "twelve" "thirteen" "fourteen" "fifteen" "sixteen" "asdfs"))
+
+(ert-deftest fussy-histlen<-benchmark-test ()
+  "Assert that as the size of the collection grows, the cache is faster."
+  (let ((minibuffer-history-variable 'fussy-histlen-test-history-variable))
+    (setf fussy--hist-hash (fussy--history-hash-table))
+    (should
+     (<
+      (car (benchmark-run 10000
+             (fussy-histlen< "xyz" "abc")))
+      (car (benchmark-run 10000
+             (fussy-histlen<-no-cache "xyz" "abc")))))))
+
 ;; (@* "`fussy-histlen->strlen<'" )
-;;
 
 (ert-deftest fussy-histlen->strlen< ()
   (setf fussy-history-variable '("first" "second"))
@@ -85,20 +106,30 @@ See `fussy-without-tofu-char'.")
     (should (equal nil (fussy-histlen->strlen< "longerstring" "short")))
     (should (equal t (fussy-histlen->strlen< "short" "longerstring")))))
 
+(defun fussy-histlen->strlen<-no-cache (c1 c2)
+  "Return t if C1 occurs more recently than C2 or is shorter than C2."
+  (let* ((hist (and (not (eq minibuffer-history-variable t))
+                    (symbol-value minibuffer-history-variable))))
+    (let ((result (catch 'found
+                    (dolist (h hist)
+                      (when (string= c1 h)
+                        (throw 'found 'c1))
+                      (when (string= c2 h)
+                        (throw 'found 'c2))))))
+      (if result
+          (eq result 'c1)
+        (fussy-strlen< c1 c2)))))
+
 (ert-deftest fussy-histlen->strlen<-benchmark-test ()
-  (setq fussy-history-variable '("first"
-                                 "second"
-                                 "three"
-                                 "four"
-                                 "five"
-                                 "six"
-                                 "seven"
-                                 "eight"
-                                 "nine"
-                                 "ten"))
-  (should (> .00009
-             (car (benchmark-run 1
-                    (fussy-histlen->strlen< "twelve" "eleven"))))))
+  "Assert that as the size of the collection grows, the cache is faster."
+  (let ((minibuffer-history-variable 'fussy-histlen-test-history-variable))
+    (setf fussy--hist-hash (fussy--history-hash-table))
+    (should
+     (<
+      (car (benchmark-run 10000
+             (fussy-histlen->strlen< "twelve" "eleven")))
+      (car (benchmark-run 10000
+             (fussy-histlen->strlen<-no-cache "twelve" "eleven")))))))
 
 ;;
 ;; (@* "`fussy-filter-fast'" )

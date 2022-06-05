@@ -140,7 +140,7 @@ e.g. `fussy-filter-orderless' can also be used for highlighting matches."
   :group 'fussy)
 
 (defcustom fussy-compare-same-score-fn
-  #'fussy-strlen<
+  #'fussy-histlen->strlen<
   "Function used to compare matches with the same 'completion-score.
 
 FN takes in and compares two candidate strings C1 and C2 and
@@ -345,6 +345,18 @@ https://lists.gnu.org/archive/html/help-gnu-emacs/2008-06/msg00087.html"
        result)))
 
 ;;
+;; (@* "Constants and Variables" )
+;;
+
+(defvar-local fussy--hist-hash nil
+  "Hash table representing `minibuffer-history-variable'.
+
+KEYs are values in the list.
+VALUES are positions of the values in the list.
+
+See `fussy--history-hash-table'.")
+
+;;
 ;; (@* "All Completions Interface/API" )
 ;;
 
@@ -358,6 +370,7 @@ Implement `try-completions' interface by using `completion-flex-try-completion'.
   "Get flex-completions of STRING in TABLE, given PRED and POINT.
 
 Implement `all-completions' interface with additional fuzzy / `flx' scoring."
+  (setf fussy--hist-hash (fussy--history-hash-table))
   (when fussy-ignore-case
     ;; `completion-ignore-case' is usually set up in `minibuffer-with-setup-hook'.
     ;; e.g. `read-file-name-default'
@@ -610,29 +623,23 @@ If SCORE does not have indices to highlight, return OBJ unmodified."
 (defun fussy-histlen< (c1 c2)
   "Return t if C1 occurred more recently than C2.
 
-Check C1 and C2 in `minibuffer-history-variable'."
-  (let* ((hist (and (not (eq minibuffer-history-variable t))
-                    (symbol-value minibuffer-history-variable))))
-    (catch 'found
-      (dolist (h hist)
-        (when (string= c1 h)
-          (throw 'found t))
-        (when (string= c2 h)
-          (throw 'found nil))))))
+Check C1 and C2 in `minibuffer-history-variable' which is stored in
+`fussy--hist-hash'."
+  (if-let* ((hist fussy--hist-hash)
+            (c1-pos (or (gethash c1 hist) most-positive-fixnum))
+            (c2-pos (or (gethash c2 hist) most-positive-fixnum)))
+      (< c1-pos c2-pos)
+    nil))
 
 (defun fussy-histlen->strlen< (c1 c2)
   "Return t if C1 occurs more recently than C2 or is shorter than C2."
-  (let* ((hist (and (not (eq minibuffer-history-variable t))
-                    (symbol-value minibuffer-history-variable))))
-    (let ((result (catch 'found
-                    (dolist (h hist)
-                      (when (string= c1 h)
-                        (throw 'found 'c1))
-                      (when (string= c2 h)
-                        (throw 'found 'c2))))))
-      (if result
-          (eq result 'c1)
-        (fussy-strlen< c1 c2)))))
+  (if-let* ((hist fussy--hist-hash)
+            (c1-pos (or (gethash c1 hist) most-positive-fixnum))
+            (c2-pos (or (gethash c2 hist) most-positive-fixnum)))
+      (if (= c1-pos c2-pos)
+          (fussy-strlen< c1 c2)
+        (< c1-pos c2-pos))
+    (fussy-strlen< c1 c2)))
 
 ;;
 ;; (@* "Utils" )
@@ -656,6 +663,19 @@ Check if `orderless' is being used."
    ;; If we're using `orderless' to filter, don't use pcm highlights because
    ;; `orderless' does it on its own.
    (not (fussy--orderless-p))))
+
+(defun fussy--history-hash-table ()
+  "Return hash table representing `minibuffer-history-variable'.
+
+Key is the history string and Value is the history position."
+  (when-let* ((hist (and (not (eq minibuffer-history-variable t))
+                         (symbol-value minibuffer-history-variable)))
+              (table (make-hash-table :test 'equal
+                                      :size (length hist))))
+    (cl-loop for index from 0
+             for item in hist
+             do (puthash item index table))
+    table))
 
 (defun fussy-without-unencodeable-chars (string)
   "Strip invalid chars from STRING.
