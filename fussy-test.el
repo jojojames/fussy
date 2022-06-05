@@ -343,6 +343,22 @@ This test asserts `fussy-encode-coding-string' is much much faster than
          (car (benchmark-run 1000 (fussy-encode-coding-string string-3))))
       (car (benchmark-run 1000 (fussy-without-unencodeable-chars string-3)))))))
 
+
+;;
+;; (@* "`fussy-propertize-common-part'" )
+;;
+
+(ert-deftest fussy-propertize-common-part-test ()
+  "Test `fussy--propertize-common-part'."
+  (should
+   (not (fussy-propertize-common-part "^" '(0))))
+  (should
+   (not (fussy-propertize-common-part "^" '())))
+  (should
+   (not (fussy-propertize-common-part "^" nil)))
+  (should
+   (fussy-propertize-common-part "abc" '(1 2))))
+
 ;;
 ;; (@* "`fussy--should-propertize-p'" )
 ;;

@@ -119,7 +119,7 @@ highlighting with `completion-pcm--hilit-commonality'."
   :type 'integer)
 
 (defcustom fussy-propertize-fn
-  #'fussy--propertize-common-part
+  #'fussy-propertize-common-part
   "Function used to propertize matches.
 
 Takes OBJ \(to be propertized\) and
@@ -131,7 +131,7 @@ e.g. `fussy-filter-orderless' can also be used for highlighting matches."
   :type `(choice
           (const :tag "No highlighting" nil)
           (const :tag "By completions-common face."
-                 ,#'fussy--propertize-common-part)
+                 ,#'fussy-propertize-common-part)
           (const :tag "By flx propertization." ,'flx-propertize)
           (function :tag "Custom function"))
   :group 'fussy)
@@ -496,19 +496,19 @@ Only highlight if `fussy--using-pcm-highlight-p' is t."
 pcm-style refers to using `completion-pcm--hilit-commonality' for highlighting."
   (completion-pcm--hilit-commonality pattern collection))
 
-(defun fussy--propertize-common-part (obj score)
+(defun fussy-propertize-common-part (obj score)
   "Return propertized copy of OBJ according to score.
 
 SCORE of nil means to clear the properties."
-  (let ((block-started (cadr score))
-        (last-char nil)
-        ;; Originally we used `substring-no-properties' when setting str but
-        ;; that strips text properties that other packages may set.
-        ;; One example is `consult', which sprinkles text properties onto
-        ;; the candidate. e.g. `consult--line-prefix' will check for
-        ;; 'consult-location on str candidate.
-        (str (if (consp obj) (car obj) obj)))
-    (when score
+  (when (> (length score) 1) ;; Has a score and an index to highlight.
+    (let ((block-started (cadr score))
+          (last-char nil)
+          ;; Originally we used `substring-no-properties' when setting str but
+          ;; that strips text properties that other packages may set.
+          ;; One example is `consult', which sprinkles text properties onto
+          ;; the candidate. e.g. `consult--line-prefix' will check for
+          ;; 'consult-location on str candidate.
+          (str (if (consp obj) (car obj) obj)))
       (dolist (char (cdr score))
         (when (and last-char
                    (not (= (1+ last-char) char)))
@@ -524,10 +524,10 @@ SCORE of nil means to clear the properties."
         (add-face-text-property (1+ last-char) (+ 2 last-char)
                                 'completions-first-difference
                                 nil
-                                str)))
-    (if (consp obj)
-        (cons str (cdr obj))
-      str)))
+                                str))
+      (if (consp obj)
+          (cons str (cdr obj))
+        str))))
 
 ;;
 ;; (@* "Bootstrap" )
