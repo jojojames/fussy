@@ -453,7 +453,7 @@ Set a text-property \='completion-score on candidates with their score.
                              x string
                              cache)))
          ;; (message
-         ;;  (format "candidate: %s query: %s score %s" x string (car score)))
+         ;;  (format "candidate: %s query: %s score %s" x string score))
          (if (not score)
              (put-text-property 0 1 'completion-score 0 x)
            (put-text-property 0 1 'completion-score (car score) x)
