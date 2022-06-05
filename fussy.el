@@ -410,7 +410,7 @@ Implement `all-completions' interface with additional fuzzy / `flx' scoring."
                  (let ((unscored-candidates '())
                        (candidates-to-score '()))
                    ;; Pre-sort the candidates by length before partitioning.
-                   (setq unscored-candidates
+                   (setf unscored-candidates
                          (if fussy-max-limit-preferred-candidate-fn
                              (sort
                               all fussy-max-limit-preferred-candidate-fn)
@@ -454,7 +454,7 @@ Set a text-property \='completion-score on candidates with their score.
 `completion--adjust-metadata' later uses this \='completion-score for sorting."
   (mapcar
    (lambda (x)
-     (setq x (copy-sequence x))
+     (setf x (copy-sequence x))
      (cond
       ((> (length x) fussy-max-word-length-to-score)
        (put-text-property 0 1 'completion-score 0 x))
@@ -472,7 +472,7 @@ Set a text-property \='completion-score on candidates with their score.
            ;; string here. This is faster than the pcm highlight but doesn't
            ;; seem to work with `find-file'.
            (when (fussy--should-propertize-p)
-             (setq
+             (setf
               x (funcall fussy-propertize-fn x score)))))))
      ;; (message (format "fn: %S returning x: %s"
      ;;                  'fussy-score x))
@@ -532,8 +532,8 @@ If SCORE does not have indices to highlight, return OBJ unmodified."
                    (not (= (1+ last-char) char)))
           (add-face-text-property block-started (1+ last-char)
                                   'completions-common-part nil str)
-          (setq block-started char))
-        (setq last-char char))
+          (setf block-started char))
+        (setf last-char char))
       (add-face-text-property block-started (1+ last-char)
                               'completions-common-part nil str)
       (when (and

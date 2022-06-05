@@ -7,7 +7,7 @@
 
 ;; These tests garbage collect alot so try to avoid garbage collection since
 ;; we're doing benchmark tests.
-(setq gc-cons-threshold most-positive-fixnum
+(setf gc-cons-threshold most-positive-fixnum
       garbage-collection-messages t)
 
 (defconst fussy--consult--tofu-char #x200000
@@ -46,7 +46,7 @@ See `fussy-without-tofu-char'.")
 ;;
 
 (ert-deftest fussy-histlen<-test ()
-  (setq fussy-history-variable '("first" "second"))
+  (setf fussy-history-variable '("first" "second"))
   (let ((minibuffer-history-variable 'fussy-history-variable))
     (should (equal t (fussy-histlen< "first" "second")))
     (should (equal nil (fussy-histlen< "second" "first")))
@@ -74,7 +74,7 @@ See `fussy-without-tofu-char'.")
 ;;
 
 (ert-deftest fussy-histlen->strlen< ()
-  (setq fussy-history-variable '("first" "second"))
+  (setf fussy-history-variable '("first" "second"))
   (let ((minibuffer-history-variable 'fussy-history-variable))
     (should (equal t (fussy-histlen->strlen< "first" "second")))
     (should (equal nil (fussy-histlen->strlen< "second" "first")))
