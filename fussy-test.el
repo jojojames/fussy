@@ -261,7 +261,7 @@ This test asserts `fussy-without-tofu-char''s speed."
          (string-1 (concat "ojjjojjjoojjjjjoojjbb" tofu))
          (string-2 (string-as-multibyte ";; Copyright 2022 Jo Beøˆ€’"))
          (string-3 (string-as-multibyte ";; This buffer is for text that is not saved, and for Lisp evaluation.øˆ€€"))
-         (performance-factor 100)
+         (performance-factor 50)
          ;; Feels like there is some cold/start warm start that may affect the test here.
          (_ (fussy-without-tofu-char string-1))
          (_ (fussy-without-tofu-char string-2))
