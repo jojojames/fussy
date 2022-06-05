@@ -727,8 +727,12 @@ to only use the `orderless-flex' pattern."
                         orderless-skip-highlighting)))
           (if skip-highlighting
               (list completions pattern prefix)
-            (list (orderless-highlight-matches pattern completions)
-                  pattern prefix)))))))
+            (let ((result (list
+                           (orderless-highlight-matches pattern completions)
+                           pattern prefix)))
+              ;; (message "fn: %S result: %S"
+              ;;          'fussy-filter-orderless-flex result)
+              result)))))))
 
 (defun fussy-filter-orderless (string table pred _point)
   "Match STRING to the entries in TABLE.
@@ -824,8 +828,10 @@ that's written in C for faster filtering."
                               (cons 'prefix basic-pattern))))
               (completion-pcm--optimize-pattern
                (completion-flex--make-flex-pattern pattern))))))
-    ;; (message (format "prefix: %s infix: %s regexp: %s pattern %s completions %s"
-    ;;                  prefix infix regexp pattern completions))
+    ;; (message
+    ;;  (format
+    ;;   "prefix: %s infix: %s pattern %s completions %S regexp_list: %S"
+    ;;   prefix infix pattern completions completion-regexp-list))
     (list completions pattern prefix)))
 
 ;;
