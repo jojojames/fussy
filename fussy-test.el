@@ -116,17 +116,17 @@ Called from `fussy-all-completions'."
            (fussy-filter-fn 'fussy-filter-fast)
            (fast-res
             (car
-             (benchmark-run 3
+             (benchmark-run 10
                (fussy-all-completions query table pred point)))))
       (should
        (< fast-res
           (let ((fussy-filter-fn 'fussy-filter-flex))
-            (car (benchmark-run 3
+            (car (benchmark-run 10
                    (fussy-all-completions query table pred point))))))
       (should
        (< fast-res
           (let ((fussy-filter-fn 'fussy-filter-orderless))
-            (car (benchmark-run 3
+            (car (benchmark-run 10
                    (fussy-all-completions query table pred point)))))))))
 
 (ert-deftest fussy-filter-fn-fast-perf-test ()
