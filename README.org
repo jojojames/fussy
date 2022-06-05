@@ -282,7 +282,7 @@ also faster than the default filtering but has a dependency on ~orderless~.
 
 #+begin_src emacs-lisp :tangle yes
   ;; Orderless
-  (setq fussy-filter-fn 'fussy-filter-orderless)
+  (setq fussy-filter-fn 'fussy-filter-orderless-flex)
   ;; Type Letter a
   ;; 0.065390
   ;; Type Letter b
@@ -488,7 +488,7 @@ a different algorithm.
     (fussy :type git :host github :repo "jojojames/fussy")
     :config
     (setq fussy-score-fn 'flx-rs-score)
-    (setq fussy-filter-fn 'fussy-filter-orderless)
+    (setq fussy-filter-fn 'fussy-filter-orderless-flex)
 
     (push 'fussy completion-styles)
     (setq
