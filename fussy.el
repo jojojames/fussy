@@ -1018,7 +1018,7 @@ highlighting."
 
 ;; `fzf-native' integration
 (defvar fussy--fzf-native-slab nil)
-(defun fussy--fzf-native-slab ()
+(defsubst fussy--fzf-native-slab ()
   "Return lazy loaded slab for `fzf-native'."
   (or fussy--fzf-native-slab
       (when (fboundp 'fzf-native-make-default-slab)
