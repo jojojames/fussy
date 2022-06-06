@@ -357,7 +357,7 @@ This test asserts `fussy-encode-coding-string' is much much faster than
          (_ (fussy-encode-coding-string string-1))
          (_ (fussy-encode-coding-string string-2))
          (_ (fussy-encode-coding-string string-3))
-         (performance-factor 100))
+         (performance-factor 50))
     (should
      (<
       (* performance-factor
