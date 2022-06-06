@@ -707,7 +707,7 @@ See `fussy-remove-bad-char-fn'."
       (substring string 0 (- (length string) 1))
     string))
 
-(defun fussy-encode-coding-string (string)
+(defsubst fussy-encode-coding-string (string)
   "Call `encode-coding-string' for STRING."
   (encode-coding-string string 'utf-8 t))
 
