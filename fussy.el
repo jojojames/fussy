@@ -424,9 +424,9 @@ Implement `all-completions' interface with additional fuzzy / `flx' scoring."
               (funcall fussy-filter-fn
                        string table pred point)))
           ;; (message (format
-          ;;           "fn: %S string: %s prefix: %s infix: %s all: %s"
+          ;;           "fn: %S string: %s prefix: %s infix: %s all: %S pattern: %s"
           ;;           'fussy-all-completions
-          ;;           string prefix infix all))
+          ;;           string prefix infix (or all '("nada")) pattern))
           (when all
             (nconc
              (if (or (> (length infix) fussy-max-query-length)
