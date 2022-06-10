@@ -422,7 +422,8 @@ Implement `all-completions' interface with additional fuzzy / `flx' scoring."
                     (fussy-score all infix cache))
                  (let ((unscored-candidates '())
                        (candidates-to-score '()))
-                   ;; Pre-sort the candidates by length before partitioning.
+                   ;; Presort candidates by
+                   ;; `fussy-max-limit-preferred-candidate-fn'.
                    (setf unscored-candidates
                          (if fussy-max-limit-preferred-candidate-fn
                              (sort
