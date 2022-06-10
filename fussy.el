@@ -452,12 +452,13 @@ Implement `all-completions' interface with additional fuzzy / `flx' scoring."
                                    fussy-percent-of-candidates-to-score))
                      (push (pop unscored-candidates) candidates-to-score))
                    (append
-                    ;; Compute all of the fuzzy scores only for cands-to-sort.
+                    ;; Compute all of the fuzzy scores only for candidates.
                     (fussy--maybe-highlight
                      pattern
                      (fussy-score
                       (reverse candidates-to-score)
                       infix cache))
+                    ;; Maybe we should filter (but not score) these?
                     ;; Add the unsorted candidates.
                     ;; We could highlight these too,
                     ;; (e.g. with `fussy--maybe-highlight') but these are
