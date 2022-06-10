@@ -509,7 +509,7 @@ Set a text-property \='completion-score on candidates with their score.
                x (funcall fussy-propertize-fn x score)))
             (push x result)))))
     ;; Returns nil if empty.
-    result))
+    (reverse result)))
 
 (defun fussy--should-propertize-p ()
   "Whether or not to call `fussy-propertize-fn'.
