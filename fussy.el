@@ -448,9 +448,8 @@ Implement `all-completions' interface with additional fuzzy / `flx' scoring."
                            ;; is nil, we'll partition the candidates as is.
                            all))
                    ;; Partition the candidates into sorted and unsorted groups.
-                   (dotimes (_n (min (length unscored-candidates)
-                                     (* fussy-max-candidate-limit
-                                        fussy-percent-of-candidates-to-score)))
+                   (dotimes (_n (* (length unscored-candidates)
+                                   fussy-percent-of-candidates-to-score))
                      (push (pop unscored-candidates) candidates-to-score))
                    (append
                     ;; Compute all of the fuzzy scores only for cands-to-sort.
