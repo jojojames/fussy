@@ -88,22 +88,31 @@ See `fussy-all-completions' for implementation details."
   :group 'fussy
   :type 'integer)
 
-(defcustom fussy-max-candidate-limit 1000
+(defcustom fussy-max-candidate-limit 30000
   "Apply optimizations for collections greater than this limit.
 
 `fussy-all-completions' will apply some optimizations.
 
 N -> this variable's value
 
-1. The collection (to be scored) will initially be filtered based off word
-length.  e.g. The shortest length N words will be filtered to be scored.
+1. The collection (to be scored) will initially be filtered based on
+ `fussy-max-limit-preferred-candidate-fn'.
 
-2. Score only up to N words.  The rest won't be scored.
+2. Score only up to N * `fussy-percent-of-candidates-to-score' words.
+The rest won't be scored.
 
 Additional implementation details:
 https://github.com/abo-abo/swiper/issues/207#issuecomment-141541960"
   :group 'fussy
   :type 'integer)
+
+(defcustom fussy-percent-of-candidates-to-score .7
+  "When `fussy-max-candidate-limit' is hit, this variable determines the %
+of candidates out of all candidates to score. For example, if
+`fussy-max-candidate-limit' is 30000 and the collection is 40000, the # of
+candidates to score will be 28000."
+  :group 'fussy
+  :type 'number)
 
 (defcustom fussy-ignore-case t
   "If t, ignores `completion-ignore-case'.
@@ -433,7 +442,8 @@ Implement `all-completions' interface with additional fuzzy / `flx' scoring."
                            all))
                    ;; Partition the candidates into sorted and unsorted groups.
                    (dotimes (_n (min (length unscored-candidates)
-                                     fussy-max-candidate-limit))
+                                     (* fussy-max-candidate-limit
+                                        fussy-percent-of-candidates-to-score)))
                      (push (pop unscored-candidates) candidates-to-score))
                    (append
                     ;; Compute all of the fuzzy scores only for cands-to-sort.
