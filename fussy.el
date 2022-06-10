@@ -470,7 +470,8 @@ Implement `all-completions' interface with additional fuzzy / `flx' scoring."
     (`,collection
      ;; (message (format "fn: %S collection: %s"
      ;;                  'fussy-all-completions collection))
-     collection)))
+     ;; Collection can be 0 when there are no candidates returned.
+     (if (consp collection) collection nil))))
 
 ;;
 ;; (@* "Scoring & Highlighting" )
@@ -483,32 +484,32 @@ Use CACHE for scoring.
 
 Set a text-property \='completion-score on candidates with their score.
 `completion--adjust-metadata' later uses this \='completion-score for sorting."
-  (mapcar
-   (lambda (x)
-     (setf x (copy-sequence x))
-     (cond
-      ((> (length x) fussy-max-word-length-to-score)
-       (put-text-property 0 1 'completion-score 0 x))
-      (:default
-       (let ((score (funcall fussy-score-fn
-                             x string
-                             cache)))
-         ;; (message
-         ;;  (format "fn: %S candidate: %s query: %s score %s"
-         ;;          'fussy-score x string score))
-         (if (not score)
-             (put-text-property 0 1 'completion-score 0 x)
-           (put-text-property 0 1 'completion-score (car score) x)
-           ;; If we're using pcm highlight, we don't need to propertize the
-           ;; string here. This is faster than the pcm highlight but doesn't
-           ;; seem to work with `find-file'.
-           (when (fussy--should-propertize-p)
-             (setf
-              x (funcall fussy-propertize-fn x score)))))))
-     ;; (message (format "fn: %S returning x: %s"
-     ;;                  'fussy-score x))
-     x)
-   candidates))
+  (let ((result '()))
+    (dolist (x candidates)
+      (setf x (copy-sequence x))
+      (if (> (length x) fussy-max-word-length-to-score)
+          ;; Don't score x but don't filter it out either.
+          (push x result)
+        (let ((score (funcall fussy-score-fn
+                              x string
+                              cache)))
+          ;; Candidates with a score of 0 or less are filtered.
+          (when (and score
+                     (> (car score) 0))
+            ;; (message
+            ;;  (format "fn: %S candidate: %s query: %s score %S"
+            ;;          'fussy-score x string score))
+            (put-text-property 0 1 'completion-score (car score) x)
+
+            ;; If we're using pcm highlight, we don't need to propertize the
+            ;; string here. This is faster than the pcm highlight but doesn't
+            ;; seem to work with `find-file'.
+            (when (fussy--should-propertize-p)
+              (setf
+               x (funcall fussy-propertize-fn x score)))
+            (push x result)))))
+    ;; Returns nil if empty.
+    result))
 
 (defun fussy--should-propertize-p ()
   "Whether or not to call `fussy-propertize-fn'.
@@ -531,10 +532,11 @@ If `fussy-propertize-fn' is nil, no highlighting should take place."
 Only highlight if `fussy--using-pcm-highlight-p' is t."
   ;; (message (format "fn: %S collection: %s"
   ;;                  'fussy--maybe-highlight collection))
-  (if (fussy--using-pcm-highlight-p)
-      (fussy--pcm-highlight pattern collection)
-    ;; Assume that the collection's highlighting is handled elsewhere.
-    collection))
+  (when collection
+    (if (fussy--using-pcm-highlight-p)
+        (fussy--pcm-highlight pattern collection)
+      ;; Assume that the collection's highlighting is handled elsewhere.
+      collection)))
 
 (defun fussy--pcm-highlight (pattern collection)
   "Highlight with pcm-style for COLLECTION using PATTERN.
