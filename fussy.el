@@ -829,18 +829,7 @@ that's written in C for faster filtering."
          ;; the infix will be matched against.
          ;; So, *knock on wood*, it seems safe to prefer prefix completion over
          ;; infix completion.
-         (completions
-          ;; Is there an easier way to check if string is empty or nil?
-          (if (= (length prefix) 0)
-              ;; Use infix when prefix is empty or nil.
-              ;; If infix is used, searches will not be as exhaustive as prefix.
-              (or
-               (all-completions infix table pred)
-               (all-completions prefix table pred))
-            ;; Use prefix if available.
-            (or
-             (all-completions prefix table pred)
-             (all-completions infix table pred))))
+         (completions (all-completions prefix table pred))
          ;; Create this pattern for the sole purpose of highlighting with
          ;; `completion-pcm--hilit-commonality'. We don't actually need this
          ;; for `all-completions' to work since we're just using
