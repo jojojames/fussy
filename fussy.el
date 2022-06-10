@@ -240,6 +240,13 @@ are more exhaustive than Flex 1 functions."
           (function :tag "Custom function"))
   :group 'fussy)
 
+(defcustom fussy-fast-infix-length-before-optimizations 6
+  "Number of characters entered before applying optimizations.
+
+This only applies to `fussy-filter-fast'."
+  :type 'integer
+  :group 'fussy)
+
 (defcustom fussy-score-fn
   'flx-score
   "Function used for scoring candidates.
@@ -812,9 +819,11 @@ that's written in C for faster filtering."
          (infix (concat
                  (substring beforepoint (car bounds))
                  (substring afterpoint 0 (cdr bounds))))
-         (regexp
-          (funcall fussy-fast-regex-fn infix))
-         (completion-regexp-list (append regexp completion-regexp-list))
+         (optimize-p (> (length infix)
+                        fussy-fast-infix-length-before-optimizations))
+         (regexp (if optimize-p nil (funcall fussy-fast-regex-fn infix)))
+         (completion-regexp-list
+          (if optimize-p nil (append regexp completion-regexp-list)))
          ;; Commentary on why we prefer prefix over infix.
          ;; For `find-file', if the prefix exists, we're in a different
          ;; directory, so should be retrieving candidates from that directory
