@@ -81,7 +81,7 @@
   :group 'flx
   :link '(url-link :tag "GitHub" "https://github.com/jojojames/fussy"))
 
-(defcustom fussy-max-query-length 128
+(defcustom fussy-max-query-length 100
   "Collections with queries longer than this are not scored using `flx'.
 
 See `fussy-all-completions' for implementation details."
@@ -113,7 +113,7 @@ highlighting with `completion-pcm--hilit-commonality'."
   :group 'fussy
   :type 'boolean)
 
-(defcustom fussy-max-word-length-to-score 500
+(defcustom fussy-max-word-length-to-score 400
   "Words that are longer than this length are not scored."
   :group 'fussy
   :type 'integer)
