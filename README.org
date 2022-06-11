@@ -325,7 +325,8 @@ matches.
     (if (length< company-prefix 2)
         (let ((completion-styles (remq 'fussy completion-styles)))
           (apply f args))
-      (apply f args)))
+      (let ((fussy-prefer-prefix nil))
+        (apply f args))))
 
   (defun bb-company-transformers (f &rest args)
     "Manage `company-transformers'."
