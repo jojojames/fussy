@@ -169,8 +169,7 @@ If this is nil, do nothing."
           (function :tag "Custom function"))
   :group 'fussy)
 
-(defcustom fussy-max-limit-preferred-candidate-fn
-  #'fussy-strlen<
+(defcustom fussy-max-limit-preferred-candidate-fn nil
   "Function used when collection length is greater than\
 
 `fussy-max-candidate-limit'.
