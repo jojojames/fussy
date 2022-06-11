@@ -347,6 +347,13 @@ can look like."
   :type 'boolean
   :group 'fussy)
 
+(defcustom fussy-filter-unscored-candidates t
+  "Whether or not to filter unscored candidates.
+
+This only applies when `fussy-max-candidate-limit' is reached."
+  :type 'boolean
+  :group 'fussy)
+
 ;;;###autoload
 (defcustom fussy-adjust-metadata-fn
   #'fussy--adjust-metadata
@@ -476,12 +483,16 @@ Implement `all-completions' interface with additional fuzzy / `flx' scoring."
                      (fussy-score
                       (reverse candidates-to-score)
                       infix cache))
-                    ;; Maybe we should filter (but not score) these?
                     ;; Add the unsorted candidates.
                     ;; We could highlight these too,
                     ;; (e.g. with `fussy--maybe-highlight') but these are
                     ;; at the bottom of the pile of candidates.
-                    unscored-candidates))))
+                    (if fussy-filter-unscored-candidates
+                        (let ((r (car (funcall fussy-fast-regex-fn infix))))
+                          (cl-remove-if-not
+                           (lambda (c) (string-match-p r c))
+                           unscored-candidates))
+                      unscored-candidates)))))
              (length prefix)))))
     ('nil nil)
     ('t nil)
