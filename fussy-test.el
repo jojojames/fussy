@@ -145,6 +145,7 @@ Called from `fussy-all-completions'."
            (point 1)
            (fussy-fast-regex-fn 'fussy-pattern-flex-1)
            (fussy-filter-fn 'fussy-filter-fast)
+           (fussy-prefer-prefix nil)
            (fast-res
             (car
              (benchmark-run 10
@@ -166,6 +167,7 @@ Called from `fussy-all-completions'."
     (let* ((table 'help--symbol-completion-table)
            (pred nil)
            (point 1)
+           (fussy-prefer-prefix nil)
            (fussy-fast-regex-fn 'fussy-pattern-flex-1)
            (fast-res
             (car (benchmark-run 3
