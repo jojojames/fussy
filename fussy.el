@@ -401,12 +401,14 @@ See `fussy--history-hash-table'.")
 ;; (@* "All Completions Interface/API" )
 ;;
 
+;;;###autoload
 (defun fussy-try-completions (string table pred point)
   "Try to flex-complete STRING in TABLE given PRED and POINT.
 
 Implement `try-completions' interface by using `completion-flex-try-completion'."
   (completion-flex-try-completion string table pred point))
 
+;;;###autoload
 (defun fussy-all-completions (string table pred point)
   "Get flex-completions of STRING in TABLE, given PRED and POINT.
 
