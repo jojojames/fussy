@@ -122,6 +122,18 @@ highlighting with `completion-pcm--hilit-commonality'."
   :group 'fussy
   :type 'boolean)
 
+(defcustom fussy-score-threshold-to-filter 0
+  "Candidates with scores of N or less are filtered.
+
+Some backends such as `fussy-fuz-score' return negative scores
+for low-quality matches.
+
+If this is set to nil, don't filter out candidates by
+score. Raise N to see fewer candidates. Lower N to see more
+candidates. Keep N at 0 or more for performance."
+  :group 'fussy
+  :type 'integer)
+
 (defcustom fussy-max-word-length-to-score 400
   "Words that are longer than this length are not scored."
   :group 'fussy
@@ -524,9 +536,11 @@ Set a text-property \='completion-score on candidates with their score.
         (let ((score (funcall fussy-score-fn
                               x string
                               cache)))
-          ;; Candidates with a score of 0 or less are filtered.
+          ;; Candidates with a score of N or less are filtered.
           (when (and score
-                     (> (car score) 0))
+                     (if fussy-score-threshold-to-filter
+                         (> (car score) fussy-score-threshold-to-filter)
+                       t))
             ;; (message
             ;;  (format "fn: %S candidate: %s query: %s score %S"
             ;;          'fussy-score x string score))
