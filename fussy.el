@@ -1082,13 +1082,27 @@ highlighting."
       (when (fboundp 'fzf-native-make-default-slab)
         (setf fussy--fzf-native-slab (fzf-native-make-default-slab)))))
 
+(defun fussy--fzf-native-fix-score-indices (str score)
+  "Fix SCORE indices of `fzf-native' if STR is multibyte."
+  (if (or (not (multibyte-string-p str)) (null score))
+      score
+    ;; fzf-native makes score indices as byte position.
+    ;; But we want it as character position.
+    (let ((idx (cl-loop for c across str
+                        for i = 0 then (1+ i)
+                        vconcat (make-vector (string-bytes (char-to-string c)) i))))
+      (cons (car score) (mapcar (lambda (x) (aref idx x)) (cdr score))))))
+
+
 (defun fussy-fzf-native-score (str query &rest _args)
   "Score STR for QUERY using `fzf-native'."
   (require 'fzf-native)
   (when (fboundp 'fzf-native-score)
     (let ((str (funcall fussy-remove-bad-char-fn str))
           (query (fussy-encode-coding-string query)))
-      (fzf-native-score str query (fussy--fzf-native-slab)))))
+      (fussy--fzf-native-fix-score-indices
+       str
+       (fzf-native-score str query (fussy--fzf-native-slab))))))
 
 ;; `hotfuzz' integration
 (declare-function "hotfuzz--cost" "hotfuzz")
