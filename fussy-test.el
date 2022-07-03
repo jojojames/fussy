@@ -508,3 +508,15 @@ Test that it matches the output of `orderless-filter'+`orderless-flex'."
 
 PATTERN-COMPILED is a list so we want to check all strings inside it."
   (format "%S" pattern-compiled))
+
+
+(ert-deftest fussy-fzf-native-score-test ()
+  (unless (require 'fzf-native nil t)
+    (ert-skip "fzf-native not installed"))
+  (fzf-native-load-dyn)
+  (should
+   (equal (cdr (fussy-fzf-native-score "pockemon.txt" "txt"))
+          '(9 10 11)))
+  (should
+   (equal (cdr (fussy-fzf-native-score "ポケモン.txt" "txt"))
+          '(5 6 7))))
