@@ -515,8 +515,8 @@ PATTERN-COMPILED is a list so we want to check all strings inside it."
     (ert-skip "fzf-native not installed"))
   (fzf-native-load-dyn)
   (should
-   (equal (cdr (fussy-fzf-native-score "pockemon.txt" "txt"))
-          '(9 10 11)))
+   (equal (cdr (fussy-fzf-native-score "pokemon.txt" "txt"))
+          '(8 9 10)))
   (should
    (equal (cdr (fussy-fzf-native-score "ポケモン.txt" "txt"))
           '(5 6 7))))
