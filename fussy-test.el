@@ -235,13 +235,13 @@ Called from `fussy-all-completions'."
   (should
    (string=
     (fussy-without-unencodeable-chars
-     (string-as-multibyte  ";; Copyright 2022 Jo Beøˆ€’"))
+     (string-as-multibyte  ";; Copyright 2022 Jo Be\370\210\200\201\222"))
     ";; Copyright 2022 Jo Be"))
   (should
    (string=
     (fussy-without-unencodeable-chars
      (string-as-multibyte
-      ";; This buffer is for text that is not saved, and for Lisp evaluation.øˆ€€"))
+      ";; This buffer is for text that is not saved, and for Lisp evaluation.\370\210\200\200\201"))
     ";; This buffer is for text that is not saved, and for Lisp evaluation.")))
 
 (ert-deftest fussy-without-unencodeable-chars-consult--tofu-char-test ()
@@ -277,13 +277,13 @@ Called from `fussy-all-completions'."
   (should
    (string=
     (fussy-without-tofu-char
-     (string-as-multibyte  ";; Copyright 2022 Jo Beøˆ€’"))
+     (string-as-multibyte  ";; Copyright 2022 Jo Be\370\210\200\201\222"))
     ";; Copyright 2022 Jo Be"))
   (should
    (string=
     (fussy-without-tofu-char
      (string-as-multibyte
-      ";; This buffer is for text that is not saved, and for Lisp evaluation.øˆ€€"))
+      ";; This buffer is for text that is not saved, and for Lisp evaluation.\370\210\200\200\201"))
     ";; This buffer is for text that is not saved, and for Lisp evaluation.")))
 
 (ert-deftest fussy-without-tofu-char-perf-test ()
@@ -292,8 +292,8 @@ Called from `fussy-all-completions'."
 This test asserts `fussy-without-tofu-char''s speed."
   (let* ((tofu (char-to-string fussy--consult--tofu-char))
          (string-1 (concat "ojjjojjjoojjjjjoojjbb" tofu))
-         (string-2 (string-as-multibyte ";; Copyright 2022 Jo Beøˆ€’"))
-         (string-3 (string-as-multibyte ";; This buffer is for text that is not saved, and for Lisp evaluation.øˆ€€"))
+         (string-2 (string-as-multibyte ";; Copyright 2022 Jo Be\370\210\200\201\222"))
+         (string-3 (string-as-multibyte ";; This buffer is for text that is not saved, and for Lisp evaluation.\370\210\200\200\201"))
          (performance-factor 50)
          ;; Feels like there is some cold/start warm start that may affect the test here.
          (_ (fussy-without-tofu-char string-1))
@@ -337,13 +337,13 @@ This test asserts `fussy-without-tofu-char''s speed."
   (should
    (string=
     (fussy-encode-coding-string
-     (string-as-multibyte  ";; Copyright 2022 Jo Beøˆ€’"))
+     (string-as-multibyte  ";; Copyright 2022 Jo Be\370\210\200\201\222"))
     ";; Copyright 2022 Jo Be\370\210\200\201\222"))
   (should
    (string=
     (fussy-encode-coding-string
      (string-as-multibyte
-      ";; This buffer is for text that is not saved, and for Lisp evaluation.øˆ€€"))
+      ";; This buffer is for text that is not saved, and for Lisp evaluation.\370\210\200\200\201"))
     ";; This buffer is for text that is not saved, and for Lisp evaluation.\370\210\200\200\201")))
 
 (ert-deftest fussy-encode-coding-string-perf-test ()
@@ -353,8 +353,8 @@ This test asserts `fussy-encode-coding-string' is much much faster than
 `fussy-without-unencodeable-chars'."
   (let* ((tofu (char-to-string fussy--consult--tofu-char))
          (string-1 (concat "jjbb" tofu))
-         (string-2 (string-as-multibyte ";; Copyright 2022 Jo Beøˆ€’"))
-         (string-3 (string-as-multibyte ";; This buffer is for text that is not saved, and for Lisp evaluation.øˆ€€"))
+         (string-2 (string-as-multibyte ";; Copyright 2022 Jo Be\370\210\200\201\222"))
+         (string-3 (string-as-multibyte ";; This buffer is for text that is not saved, and for Lisp evaluation.\370\210\200\200\201"))
          ;; Warm start?
          (_ (fussy-encode-coding-string string-1))
          (_ (fussy-encode-coding-string string-2))
