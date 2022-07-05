@@ -538,6 +538,8 @@ Set a text-property \='completion-score on candidates with their score.
                               cache)))
           ;; Candidates with a score of N or less are filtered.
           (when (and score
+                     ;; Score of '(nil) can be returned...
+                     (car score)
                      (if fussy-score-threshold-to-filter
                          (> (car score) fussy-score-threshold-to-filter)
                        t))

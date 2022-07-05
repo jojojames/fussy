@@ -226,6 +226,14 @@ Called from `fussy-all-completions'."
      (> (get-text-property 0 'completion-score (nth 0 file-cache-res))
         (get-text-property 0 'completion-score (nth 1 file-cache-res))))))
 
+(ert-deftest fussy-score-input-test ()
+  "Test various[TODO] inputs with `fussy-score'."
+  (let* ((fussy-score-fn (lambda (str query &optional cache)
+                           (list nil)))
+         (candidates '("a" "b")))
+    (should
+     (not (fussy-score candidates "blah")))))
+
 ;;
 ;; (@* "`fussy-without-unencodeable-chars'" )
 ;;
