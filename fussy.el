@@ -534,7 +534,10 @@ Set a text-property \='completion-score on candidates with their score.
           ;; Don't score x but don't filter it out either.
           (push x result)
         (let ((score (funcall fussy-score-fn
-                              x string
+                              x
+                              (if (fussy--orderless-p)
+                                  (replace-regexp-in-string "\\\s" "" string)
+                                string)
                               cache)))
           ;; Candidates with a score of N or less are filtered.
           (when (and score
