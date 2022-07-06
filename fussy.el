@@ -532,7 +532,8 @@ Set a text-property \='completion-score on candidates with their score.
       (setf x (copy-sequence x))
       (if (> (length x) fussy-max-word-length-to-score)
           ;; Don't score x but don't filter it out either.
-          (push x result)
+          (unless fussy-filter-unscored-candidates
+            (push x result))
         (let ((score (funcall fussy-score-fn
                               x
                               (if (fussy--orderless-p)
