@@ -359,7 +359,7 @@ can look like."
   :type 'boolean
   :group 'fussy)
 
-(defcustom fussy-filter-unscored-candidates t
+(defcustom fussy-filter-unscored-candidates nil
   "Whether or not to filter unscored candidates.
 
 This only applies when `fussy-max-candidate-limit' is reached."
@@ -898,8 +898,8 @@ that's written in C for faster filtering."
                   fussy-prefer-prefix)
               ;; Always use prefix if available for correctness.
               ;; For example, `find-file', should always use prefix.
-              (or (all-completions prefix table pred)
-                  (all-completions infix table pred))
+              (or (all-completions "" table pred)
+                  (all-completions "" table pred))
             ;; When prefix is nil, the choice if infix or prefix is preference..
             ;; Infix is much faster than prefix but can be "wrong" or not
             ;; exhaustive for matches. Prefix will be exhaustive and "correct"
@@ -907,8 +907,8 @@ that's written in C for faster filtering."
             ;; correctness.
             ;; We allow an escape hatch to infix for extra performance with
             ;; `fussy-prefer-prefix' set to nil.
-            (or (all-completions infix table pred)
-                (all-completions prefix table pred))))
+            (or (all-completions "" table pred)
+                (all-completions "" table pred))))
          ;; Create this pattern for the sole purpose of highlighting with
          ;; `completion-pcm--hilit-commonality'. We don't actually need this
          ;; for `all-completions' to work since we're just using
