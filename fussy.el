@@ -877,7 +877,9 @@ that's written in C for faster filtering."
                         fussy-fast-infix-length-before-optimizations))
          (regexp (if optimize-p nil (funcall fussy-fast-regex-fn infix)))
          (completion-regexp-list
-          (if optimize-p nil (append regexp completion-regexp-list)))
+          `(,(format "^%s" (substring infix 0 1)) )
+          ;; (if optimize-p nil (append regexp completion-regexp-list))
+          )
          ;; Commentary on why we prefer prefix over infix.
          ;; For `find-file', if the prefix exists, we're in a different
          ;; directory, so should be retrieving candidates from that directory
