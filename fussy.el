@@ -333,7 +333,7 @@ For more information: \(https://github.com/minad/consult/issues/585\)"
           (function :tag "Custom function"))
   :group 'fussy)
 
-(defcustom fussy-completing-at-point nil
+(defcustom fussy-completion-at-point nil
   "When t, `fussy' will consider current completion to be in-buffer.
 
 This should be let-bound in a function and not set permanently."
@@ -341,9 +341,7 @@ This should be let-bound in a function and not set permanently."
   :group 'fussy)
 
 (defcustom fussy-filter-unscored-candidates nil
-  "Whether or not to filter unscored candidates.
-
-This only applies when `fussy-max-candidate-limit' is reached."
+  "Whether or not to filter unscored candidates."
   :type 'boolean
   :group 'fussy)
 
@@ -855,7 +853,7 @@ that's written in C for faster filtering."
                  (substring beforepoint (car bounds))
                  (substring afterpoint 0 (cdr bounds))))
          (completion-regexp-list
-          (when fussy-completing-at-point
+          (when fussy-completion-at-point
             `(,(format "^%s" (substring infix 0 1)) )))
          (completions (all-completions "" table pred))
          ;; Create this pattern for the sole purpose of highlighting with
