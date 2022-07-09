@@ -70,7 +70,7 @@
 
 ;; `fussy-all-completions'
 ;; `fussy-score'
-;; `fussy-filter-fast'
+;; `fussy-filter-default'
 
 ;;
 ;; (@* "Customizations" )
@@ -205,22 +205,22 @@ of candidates that was returned by the completion table."
   :group 'fussy)
 
 (defcustom fussy-filter-fn
-  #'fussy-filter-fast
+  #'fussy-filter-default
   "Function used for filtering candidates before scoring.
 
 FN takes in the same arguments as `fussy-try-completions'.
 
 This FN should not be nil.
 
-Use either `fussy-filter-orderless' or `fussy-filter-fast' for faster
-filtering through the `all-completions' (written in C) interface.
+`fussy-filter-default' does no filtering by default, leaving filtering to
+the scoring portion of `fussy'.
 
-If using `fussy-filter-fast', `fussy-fast-regex-fn' can be configured."
+Use either `fussy-filter-flex' or `fussy-filter-orderless' for pre-filtering."
   :type `(choice
-          (const :tag "Built in Flex Filtering"
+          (const :tag "Default filtering style for fussy."
+                 ,#'fussy-filter-default)
+          (const :tag "Filtering that matches flex completion-style"
                  ,#'fussy-filter-flex)
-          (const :tag "Built in Faster Flex Filtering in C"
-                 ,#'fussy-filter-fast)
           (const :tag "Orderless Flex Filtering"
                  ,#'fussy-filter-orderless-flex)
           (const :tag "Orderless"
@@ -228,9 +228,9 @@ If using `fussy-filter-fast', `fussy-fast-regex-fn' can be configured."
           (function :tag "Custom function"))
   :group 'fussy)
 
-(defcustom fussy-fast-regex-fn
+(defcustom fussy-filter-regex-fn
   #'fussy-pattern-flex-2
-  "Function used to create regex for `fussy-filter-fast'.
+  "Function used for filtering unscored candidates.
 
 It takes in a STR and returns a regex usable with `all-completions'.
 
@@ -246,8 +246,8 @@ are more exhaustive than Flex 1 functions."
                  ,#'fussy-pattern-flex-1)
           (const :tag "Flex 2"
                  ,#'fussy-pattern-flex-2)
-          (const :tag "Flex 2 in RX"
-                 ,#'fussy-pattern-flex-rx)
+          (const :tag "First Letter"
+                 ,#'fussy-pattern-first-letter)
           (function :tag "Custom function"))
   :group 'fussy)
 
@@ -476,12 +476,15 @@ Implement `all-completions' interface with additional fuzzy / `flx' scoring."
                      (fussy-score
                       (reverse candidates-to-score)
                       infix cache))
-                    ;; Add the unsorted candidates.
+                    ;; Add the unscored candidates.
                     ;; We could highlight these too,
                     ;; (e.g. with `fussy--maybe-highlight') but these are
                     ;; at the bottom of the pile of candidates.
                     (if fussy-filter-unscored-candidates
-                        (let ((r (car (funcall fussy-fast-regex-fn infix))))
+                        (let ((r (car
+                                  (if fussy-completion-at-point
+                                      (fussy-pattern-first-letter infix)
+                                    (funcall fussy-filter-regex-fn infix)))))
                           (cl-remove-if-not
                            (lambda (c) (string-match-p r c))
                            unscored-candidates))
@@ -840,7 +843,7 @@ Respect PRED and POINT.  The filter here is the same as in
                 #'completion-flex--make-flex-pattern)))
     (list completions pattern prefix)))
 
-(defun fussy-filter-fast (string table pred point)
+(defun fussy-filter-default (string table pred point)
   "Match STRING to the entries in TABLE.
 
 Respect PRED and POINT.  This filter uses the `all-completions' interface
@@ -854,8 +857,22 @@ that's written in C for faster filtering."
                  (substring afterpoint 0 (cdr bounds))))
          (completion-regexp-list
           (when fussy-completion-at-point
-            `(,(format "^%s" (substring infix 0 1)) )))
-         (completions (all-completions "" table pred))
+            (fussy-pattern-first-letter infix)))
+         ;; Commentary on why we use prefix.
+         ;; For `find-file', if the prefix exists, we're in a different
+         ;; directory, so should be retrieving candidates from that directory
+         ;; instead.
+         ;; ex. We started in ~/ home directory. User starts typing cod.
+         ;; infix will be: c -> co -> cod
+         ;; prefix will be ~/
+         ;; User then enters a directory called ~/Code and types abc.
+         ;; infix will be: a -> ab -> abc
+         ;; prefix will be ~/Code
+         ;; For other functions, prefix will be empty, so we could match
+         ;; against infix or the empty string.
+         (completions (all-completions
+                       (if (/= (length prefix) 0) prefix "")
+                       table pred))
          ;; Create this pattern for the sole purpose of highlighting with
          ;; `completion-pcm--hilit-commonality'. We don't actually need this
          ;; for `all-completions' to work since we're just using
@@ -880,6 +897,8 @@ that's written in C for faster filtering."
     ;;   "prefix: %s infix: %s pattern %s completions %S regexp_list: %S"
     ;;   prefix infix pattern completions completion-regexp-list))
     (list completions pattern prefix)))
+
+(defalias 'fussy-filter-fast 'fussy-filter-default)
 
 ;;
 ;; (@* "Pattern Compiler" )
@@ -922,22 +941,9 @@ exhaustive on matches."
     (when (> (length str) 1)
       "\\)\\)"))))
 
-(defun fussy-pattern-flex-rx (str)
-  "Make STR flex pattern using `rx'.
-
-This is a copy of the `orderless-flex' pattern."
-  (require 'rx)
-  (list
-   (rx-to-string
-    `(regexp
-      ,(rx-to-string
-        `(seq
-          ""
-          ,@(cl-loop
-             for (sexp . more) on (cl-loop for char across str collect char)
-             collect `(group ,sexp)
-             when more collect '(zero-or-more nonl))
-          ""))))))
+(defun fussy-pattern-first-letter (str)
+  "Make pattern for STR."
+  `(,(format "^%s" (substring str 0 1))))
 
 ;;
 ;; (@* "Integration with other Packages" )
