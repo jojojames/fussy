@@ -132,69 +132,122 @@ Check C1 and C2 in `minibuffer-history-variable'."
              (fussy-histlen->strlen<-no-cache "twelve" "eleven")))))))
 
 ;;
-;; (@* "`fussy-filter-fast'" )
+;; (@* "`fussy-filter-default'" )
 ;;
 
-(ert-deftest fussy-filter-fast-in-all-completions-perf-test ()
-  "Assert `fussy-filter-fast' with is the fastest filter method.
+(ert-deftest fussy-filter-default-in-all-completions-capf-perf-test ()
+  "Assert `fussy-filter-fast' is the fastest filter method.
+
+`fussy-completion-at-point' is set to T making this a test for
+capf usecases.
 
 Called from `fussy-all-completions'."
   (dolist (query '("a" "b" "c"))
     (let* ((table 'help--symbol-completion-table)
            (pred nil)
            (point 1)
-           (fussy-fast-regex-fn 'fussy-pattern-flex-1)
-           (fussy-filter-fn 'fussy-filter-fast)
-           (fussy-prefer-prefix nil)
-           (fast-res
+           (fussy-completion-at-point t)
+           (fussy-filter-fn 'fussy-filter-default)
+           (res
             (car
              (benchmark-run 10
                (fussy-all-completions query table pred point)))))
       (should
-       (< fast-res
+       (< res
           (let ((fussy-filter-fn 'fussy-filter-flex))
             (car (benchmark-run 10
                    (fussy-all-completions query table pred point))))))
       (should
-       (< fast-res
+       (< res
           (let ((fussy-filter-fn 'fussy-filter-orderless))
             (car (benchmark-run 10
                    (fussy-all-completions query table pred point)))))))))
 
-(ert-deftest fussy-filter-fn-fast-perf-test ()
-  "Assert `fussy-filter-fast' is the fastest filter method."
+(ert-deftest fussy-filter-default-in-all-completions-short-strings-perf-test ()
+  "Assert `fussy-filter-default' is the fastest filter method.
+
+Called from `fussy-all-completions'."
+  (dolist (query '("a" "b" "c"))
+    (let* ((table 'help--symbol-completion-table)
+           (pred nil)
+           (point 1)
+           (fussy-completion-at-point t)
+           (fussy-filter-fn 'fussy-filter-default)
+           (res
+            (car
+             (benchmark-run 10
+               (fussy-all-completions query table pred point)))))
+      (should
+       (< res
+          (let ((fussy-filter-fn 'fussy-filter-flex))
+            (car (benchmark-run 10
+                   (fussy-all-completions query table pred point))))))
+      (should
+       (< res
+          (let ((fussy-filter-fn 'fussy-filter-orderless-flex))
+            (car (benchmark-run 10
+                   (fussy-all-completions query table pred point)))))))))
+
+(ert-deftest fussy-filter-default-in-all-completions-long-strings-perf-test ()
+  "Assert `fussy-filter-fast' is the fastest filter method.
+
+This is the `completing-read' use case for `fussy-filter-default'.
+
+Called from `fussy-all-completions'."
+  (dolist (query '("abc" "bcd" "cde"))
+    (let* ((table 'help--symbol-completion-table)
+           (pred nil)
+           (point 1)
+           (fussy-prefer-prefix nil)
+           (fussy-filter-fn 'fussy-filter-default)
+           (res
+            (car
+             (benchmark-run 10
+               (fussy-all-completions query table pred point)))))
+      (should
+       (< res
+          (let ((fussy-filter-fn 'fussy-filter-flex))
+            (car (benchmark-run 10
+                   (fussy-all-completions query table pred point))))))
+      (should
+       (< res
+          (let ((fussy-filter-fn 'fussy-filter-orderless-flex))
+            (car (benchmark-run 10
+                   (fussy-all-completions query table pred point)))))))))
+
+(ert-deftest fussy-filter-fn-default-perf-test ()
+  "Assert `fussy-filter-default' is the fastest filter method."
   (dolist (query '("a" "b" "c" "def"))
     (let* ((table 'help--symbol-completion-table)
            (pred nil)
            (point 1)
            (fussy-prefer-prefix nil)
-           (fussy-fast-regex-fn 'fussy-pattern-flex-1)
-           (fast-res
+           (res
             (car (benchmark-run 3
-                   (fussy-filter-fast query table pred point)))))
+                   (fussy-filter-default query table pred point)))))
       (should
        (<
-        fast-res
+        res
         (car (benchmark-run 3
                (fussy-filter-orderless query table pred point)))))
       (should
        (<
-        fast-res
+        res
         (car (benchmark-run 3
                (fussy-filter-flex query table pred point))))))))
 
-(ert-deftest fussy-filter-fn-fast-candidates ()
-  "Assert result of `fussy-filter-fast' matches other filters."
+(ert-deftest fussy-filter-fn-default-candidates ()
+  "Assert result of `fussy-filter-default' matches other filters."
   (dolist (query '("a" "b" "c" "def"))
     (let* ((table 'help--symbol-completion-table)
            (pred nil)
            (point 1)
-           (fast-res (fussy-filter-fast query table pred point)))
+           (res (fussy-filter-default query table pred point)))
       (should
-       (= (length fast-res)
+       (= (length res)
           (length (fussy-filter-flex query table pred point))))
       (should
-       (= (length fast-res)
+       (= (length res)
           (length (fussy-filter-orderless query table pred point)))))))
 
 ;;
@@ -463,16 +516,7 @@ This test asserts `fussy-encode-coding-string' is much much faster than
 ;;
 
 (ert-deftest fussy-pattern-flex-2-test ()
-  "Test flex-2 matches flex-rx and `orderless-filter'+`orderless-flex'."
-  (should
-   (string= (fussy-pattern-str (fussy-pattern-flex-2 "a"))
-            (fussy-pattern-str (fussy-pattern-flex-rx "a"))))
-  (should
-   (string= (fussy-pattern-str (fussy-pattern-flex-2 "abc"))
-            (fussy-pattern-str (fussy-pattern-flex-rx "abc"))))
-  (should
-   (string= (fussy-pattern-str (fussy-pattern-flex-2 "abasd90803423c"))
-            (fussy-pattern-str (fussy-pattern-flex-rx "abasd90803423c"))))
+  "Test flex-2 matches `orderless-filter'+`orderless-flex'."
   (let ((orderless-matching-styles '(orderless-flex)))
     (should
      (string= (fussy-pattern-str (fussy-pattern-flex-2 "a"))
@@ -486,30 +530,6 @@ This test asserts `fussy-encode-coding-string' is much much faster than
     (should
      (string= (fussy-pattern-str (fussy-pattern-flex-2 "reb"))
               (fussy-pattern-str (orderless-pattern-compiler "reb"))))))
-
-;;
-;; (@* "`fussy-pattern-flex-rx'" )
-;;
-
-(ert-deftest fussy-pattern-flex-rx-test ()
-  "Test `fussy-pattern-flex-rx-test'.
-
-Test that it matches the output of `orderless-filter'+`orderless-flex'."
-  (should
-   (string=
-    (fussy-pattern-str (let ((orderless-matching-styles '(orderless-flex)))
-                         (orderless-pattern-compiler "reb")))
-    (fussy-pattern-str (fussy-pattern-flex-rx "reb"))))
-  (should
-   (string=
-    (fussy-pattern-str (let ((orderless-matching-styles '(orderless-flex)))
-                         (orderless-pattern-compiler "r")))
-    (fussy-pattern-str (fussy-pattern-flex-rx "r"))))
-  (should
-   (string=
-    (fussy-pattern-str (let ((orderless-matching-styles '(orderless-flex)))
-                         (orderless-pattern-compiler "41234asdfbasdf..adf")))
-    (fussy-pattern-str (fussy-pattern-flex-rx "41234asdfbasdf..adf")))))
 
 ;;
 ;; (@* "`fussy--history-hash-table'" )

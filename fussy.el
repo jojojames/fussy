@@ -333,6 +333,16 @@ For more information: \(https://github.com/minad/consult/issues/585\)"
           (function :tag "Custom function"))
   :group 'fussy)
 
+(defcustom fussy-prefer-prefix t
+  "When using `fussy-filter-fast', whether to prefer infix or prefix.
+If t, prefix is used with `all-completions', if nil, use infix.
+Infix is generally faster for `all-completions' but is not exhaustive.
+Prefix can be slower but is exhaustive. For `completing-read',exhaustive
+filtering is generally more preferable but for `completion-at-point-functions',
+using infix can be a good tradeoff."
+  :type 'boolean
+  :group 'fussy)
+
 (defcustom fussy-completion-at-point nil
   "When t, `fussy' will consider current completion to be in-buffer.
 
@@ -856,8 +866,9 @@ that's written in C for faster filtering."
                  (substring beforepoint (car bounds))
                  (substring afterpoint 0 (cdr bounds))))
          (completion-regexp-list
-          (when fussy-completion-at-point
-            (fussy-pattern-first-letter infix)))
+          (if fussy-completion-at-point
+              (fussy-pattern-first-letter infix)
+            (funcall fussy-filter-regex-fn infix)))
          ;; Commentary on why we use prefix.
          ;; For `find-file', if the prefix exists, we're in a different
          ;; directory, so should be retrieving candidates from that directory
@@ -870,9 +881,35 @@ that's written in C for faster filtering."
          ;; prefix will be ~/Code
          ;; For other functions, prefix will be empty, so we could match
          ;; against infix or the empty string.
-         (completions (all-completions
-                       (if (/= (length prefix) 0) prefix "")
-                       table pred))
+
+         ;; For `project-find-file', the prefix will usually be empty and only
+         ;; the infix will be matched against.
+         ;; So, *knock on wood*, it seems safe to prefer prefix completion over
+         ;; infix completion.
+         (completions
+          ;; Is there an easier way to check if string is empty or nil?
+          (if (or (/= (length prefix) 0)
+                  fussy-prefer-prefix)
+              ;; Always use prefix if available for correctness.
+              ;; For example, `find-file', should always use prefix.
+              (or (all-completions prefix table pred)
+                  (all-completions infix table pred))
+            ;; When prefix is nil, the choice if infix or prefix is preference..
+            ;; Infix is much faster than prefix but can be "wrong" or not
+            ;; exhaustive for matches. Prefix will be exhaustive and "correct"
+            ;; but can be slow. Generally, we should prefer prefix for
+            ;; correctness.
+            ;; We allow an escape hatch to infix for extra performance with
+            ;; `fussy-prefer-prefix' set to nil.
+            (or (all-completions infix table pred)
+                (all-completions prefix table pred))))
+
+         ;; (completions (all-completions
+         ;;               (if (/= (length prefix) 0)
+         ;;                   prefix
+         ;;                 "")
+         ;;               table pred))
+
          ;; Create this pattern for the sole purpose of highlighting with
          ;; `completion-pcm--hilit-commonality'. We don't actually need this
          ;; for `all-completions' to work since we're just using
