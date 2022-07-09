@@ -511,6 +511,19 @@ Test that it matches the output of `orderless-filter'+`orderless-flex'."
                          (orderless-pattern-compiler "41234asdfbasdf..adf")))
     (fussy-pattern-str (fussy-pattern-flex-rx "41234asdfbasdf..adf")))))
 
+;;
+;; (@* "`fussy--history-hash-table'" )
+;;
+
+(ert-deftest fussy--history-hash-table-test ()
+  "Test `fussy--history-hash-table'."
+  (setf fussy-history-variable '("first" "second" "first"))
+  (let ((minibuffer-history-variable 'fussy-history-variable))
+    (let ((hist (fussy--history-hash-table)))
+      (should (eq (gethash "first" hist) 0))
+      (should (eq (gethash "second" hist) 1)))))
+
+
 (defun fussy-pattern-str (pattern-compiled)
   "Return PATTERN-COMPILED as a string.
 
