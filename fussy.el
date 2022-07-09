@@ -246,8 +246,6 @@ are more exhaustive than Flex 1 functions."
                  ,#'fussy-pattern-flex-1)
           (const :tag "Flex 2"
                  ,#'fussy-pattern-flex-2)
-          (const :tag "Flex 2 in RX"
-                 ,#'fussy-pattern-flex-rx)
           (function :tag "Custom function"))
   :group 'fussy)
 
@@ -974,23 +972,6 @@ exhaustive on matches."
      ".*")
     (when (> (length str) 1)
       "\\)\\)"))))
-
-(defun fussy-pattern-flex-rx (str)
-  "Make STR flex pattern using `rx'.
-
-This is a copy of the `orderless-flex' pattern."
-  (require 'rx)
-  (list
-   (rx-to-string
-    `(regexp
-      ,(rx-to-string
-        `(seq
-          ""
-          ,@(cl-loop
-             for (sexp . more) on (cl-loop for char across str collect char)
-             collect `(group ,sexp)
-             when more collect '(zero-or-more nonl))
-          ""))))))
 
 ;;
 ;; (@* "Integration with other Packages" )
