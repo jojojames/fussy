@@ -745,6 +745,7 @@ Key is the history string and Value is the history position."
                                       :size (length hist))))
     (cl-loop for index from 0
              for item in hist
+             unless (gethash item table)
              do (puthash item index table))
     table))
 
