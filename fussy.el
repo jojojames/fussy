@@ -215,7 +215,9 @@ This FN should not be nil.
 Use either `fussy-filter-orderless' or `fussy-filter-fast' for faster
 filtering through the `all-completions' (written in C) interface.
 
-If using `fussy-filter-fast', `fussy-fast-regex-fn' can be configured."
+If using `fussy-filter-fast', `fussy-fast-regex-fn' can be configured.
+
+Use `fussy-filter-capf' only with `completion-at-point-functions'."
   :type `(choice
           (const :tag "Built in Flex Filtering"
                  ,#'fussy-filter-flex)
@@ -225,6 +227,8 @@ If using `fussy-filter-fast', `fussy-fast-regex-fn' can be configured."
                  ,#'fussy-filter-orderless-flex)
           (const :tag "Orderless"
                  ,#'fussy-filter-orderless)
+          (const :tag "CAPF"
+                 ,#'fussy-filter-capf)
           (function :tag "Custom function"))
   :group 'fussy)
 
@@ -500,7 +504,10 @@ Implement `all-completions' interface with additional fuzzy / `flx' scoring."
                     ;; (e.g. with `fussy--maybe-highlight') but these are
                     ;; at the bottom of the pile of candidates.
                     (if fussy-filter-unscored-candidates
-                        (let ((r (car (funcall fussy-fast-regex-fn infix))))
+                        (let ((r (car
+                                  (if (eq fussy-filter-fn 'fussy-filter-capf)
+                                      (fussy-pattern-first-letter infix)
+                                    (funcall fussy-fast-regex-fn infix)))))
                           (cl-remove-if-not
                            (lambda (c) (string-match-p r c))
                            unscored-candidates))
@@ -932,6 +939,45 @@ that's written in C for faster filtering."
     ;;   prefix infix pattern completions completion-regexp-list))
     (list completions pattern prefix)))
 
+(defun fussy-filter-capf (string table pred point)
+  "Match STRING to the entries in TABLE.
+
+Respect PRED and POINT.  This filter uses the `all-completions' interface
+that's written in C for faster filtering."
+  (let* ((beforepoint (substring string 0 point))
+         (afterpoint (substring string point))
+         (bounds (completion-boundaries beforepoint table pred afterpoint))
+         (prefix (substring beforepoint 0 (car bounds)))
+         (infix (concat
+                 (substring beforepoint (car bounds))
+                 (substring afterpoint 0 (cdr bounds))))
+         (completion-regexp-list (fussy-pattern-first-letter infix))
+         (completions (all-completions "" table pred))
+         ;; Create this pattern for the sole purpose of highlighting with
+         ;; `completion-pcm--hilit-commonality'. We don't actually need this
+         ;; for `all-completions' to work since we're just using
+         ;; `completion-regexp-list' with `all-completions'.
+         ;; In addition to that, we only need this pattern if we're highlighting
+         ;; using `completion-pcm--hilit-commonality' so skip evaluating the
+         ;; pattern if this is not the pcm highlight case.
+         (pattern
+          (when (fussy--using-pcm-highlight-p)
+            ;; Note to self:
+            ;; The way we create the pattern here can be found in
+            ;; `completion-substring--all-completions'.
+            (let* ((basic-pattern (completion-basic--pattern
+                                   beforepoint afterpoint bounds))
+                   (pattern (if (not (stringp (car basic-pattern)))
+                                basic-pattern
+                              (cons 'prefix basic-pattern))))
+              (completion-pcm--optimize-pattern
+               (completion-flex--make-flex-pattern pattern))))))
+    ;; (message
+    ;;  (format
+    ;;   "prefix: %s infix: %s pattern %s completions %S regexp_list: %S"
+    ;;   prefix infix pattern completions completion-regexp-list))
+    (list completions pattern prefix)))
+
 ;;
 ;; (@* "Pattern Compiler" )
 ;;
@@ -972,6 +1018,13 @@ exhaustive on matches."
      ".*")
     (when (> (length str) 1)
       "\\)\\)"))))
+
+(defun fussy-pattern-first-letter (str)
+  "Make pattern for STR.
+
+str: abc
+result: LIST ^a"
+  `(,(format "^%s" (substring str 0 1))))
 
 ;;
 ;; (@* "Integration with other Packages" )
