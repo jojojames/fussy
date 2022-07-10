@@ -1024,7 +1024,9 @@ exhaustive on matches."
 
 str: abc
 result: LIST ^a"
-  `(,(format "^%s" (substring str 0 1))))
+  (if (and str (> (length str) 0))
+      `(,(format "^%s" (substring str 0 1)))
+    nil))
 
 ;;
 ;; (@* "Integration with other Packages" )
