@@ -132,69 +132,69 @@ Check C1 and C2 in `minibuffer-history-variable'."
              (fussy-histlen->strlen<-no-cache "twelve" "eleven")))))))
 
 ;;
-;; (@* "`fussy-filter-fast'" )
+;; (@* "`fussy-filter-default'" )
 ;;
 
-(ert-deftest fussy-filter-fast-in-all-completions-perf-test ()
-  "Assert `fussy-filter-fast' with is the fastest filter method.
+(ert-deftest fussy-filter-default-in-all-completions-perf-test ()
+  "Assert `fussy-filter-default' with is the fastest filter method.
 
 Called from `fussy-all-completions'."
   (dolist (query '("a" "b" "c"))
     (let* ((table 'help--symbol-completion-table)
            (pred nil)
            (point 1)
-           (fussy-fast-regex-fn 'fussy-pattern-flex-1)
-           (fussy-filter-fn 'fussy-filter-fast)
+           (fussy-default-regex-fn 'fussy-pattern-flex-1)
+           (fussy-filter-fn 'fussy-filter-default)
            (fussy-prefer-prefix nil)
-           (fast-res
+           (default-res
             (car
              (benchmark-run 10
                (fussy-all-completions query table pred point)))))
       (should
-       (< fast-res
+       (< default-res
           (let ((fussy-filter-fn 'fussy-filter-flex))
             (car (benchmark-run 10
                    (fussy-all-completions query table pred point))))))
       (should
-       (< fast-res
+       (< default-res
           (let ((fussy-filter-fn 'fussy-filter-orderless))
             (car (benchmark-run 10
                    (fussy-all-completions query table pred point)))))))))
 
-(ert-deftest fussy-filter-fn-fast-perf-test ()
-  "Assert `fussy-filter-fast' is the fastest filter method."
+(ert-deftest fussy-filter-fn-default-perf-test ()
+  "Assert `fussy-filter-default' is the fastest filter method."
   (dolist (query '("a" "b" "c" "def"))
     (let* ((table 'help--symbol-completion-table)
            (pred nil)
            (point 1)
            (fussy-prefer-prefix nil)
-           (fussy-fast-regex-fn 'fussy-pattern-flex-1)
-           (fast-res
+           (fussy-default-regex-fn 'fussy-pattern-flex-1)
+           (default-res
             (car (benchmark-run 3
-                   (fussy-filter-fast query table pred point)))))
+                   (fussy-filter-default query table pred point)))))
       (should
        (<
-        fast-res
+        default-res
         (car (benchmark-run 3
                (fussy-filter-orderless query table pred point)))))
       (should
        (<
-        fast-res
+        default-res
         (car (benchmark-run 3
                (fussy-filter-flex query table pred point))))))))
 
-(ert-deftest fussy-filter-fn-fast-candidates ()
-  "Assert result of `fussy-filter-fast' matches other filters."
+(ert-deftest fussy-filter-fn-default-candidates ()
+  "Assert result of `fussy-filter-default' matches other filters."
   (dolist (query '("a" "b" "c" "def"))
     (let* ((table 'help--symbol-completion-table)
            (pred nil)
            (point 1)
-           (fast-res (fussy-filter-fast query table pred point)))
+           (default-res (fussy-filter-default query table pred point)))
       (should
-       (= (length fast-res)
+       (= (length default-res)
           (length (fussy-filter-flex query table pred point))))
       (should
-       (= (length fast-res)
+       (= (length default-res)
           (length (fussy-filter-orderless query table pred point)))))))
 
 ;;

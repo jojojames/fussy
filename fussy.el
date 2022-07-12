@@ -70,7 +70,7 @@
 
 ;; `fussy-all-completions'
 ;; `fussy-score'
-;; `fussy-filter-fast'
+;; `fussy-filter-default'
 
 ;;
 ;; (@* "Customizations" )
@@ -212,15 +212,15 @@ FN takes in the same arguments as `fussy-try-completions'.
 
 This FN should not be nil.
 
-Use either `fussy-filter-orderless' or `fussy-filter-fast' for faster
+Use either `fussy-filter-orderless' or `fussy-filter-default' for faster
 filtering through the `all-completions' (written in C) interface.
 
-If using `fussy-filter-fast', `fussy-fast-regex-fn' can be configured."
+If using `fussy-filter-default', `fussy-default-regex-fn' can be configured."
   :type `(choice
           (const :tag "Built in Flex Filtering"
                  ,#'fussy-filter-flex)
           (const :tag "Built in Faster Flex Filtering in C"
-                 ,#'fussy-filter-fast)
+                 ,#'fussy-filter-default)
           (const :tag "Orderless Flex Filtering"
                  ,#'fussy-filter-orderless-flex)
           (const :tag "Orderless"
@@ -228,9 +228,15 @@ If using `fussy-filter-fast', `fussy-fast-regex-fn' can be configured."
           (function :tag "Custom function"))
   :group 'fussy)
 
-(defcustom fussy-fast-regex-fn
+(define-obsolete-variable-alias 'fussy-filter-fast 'fussy-filter-default
+  "2022 07 12")
+
+(define-obsolete-variable-alias 'fussy-fast-regex-fn 'fussy-default-regex-fn
+  "2022 07 12")
+
+(defcustom fussy-default-regex-fn
   #'fussy-pattern-flex-2
-  "Function used to create regex for `fussy-filter-fast'.
+  "Function used to create regex for `fussy-filter-default'.
 
 It takes in a STR and returns a regex usable with `all-completions'.
 
@@ -252,7 +258,7 @@ are more exhaustive than Flex 1 functions."
 (defcustom fussy-fast-infix-length-before-optimizations 6
   "Number of characters entered before applying optimizations.
 
-This only applies to `fussy-filter-fast'."
+This only applies to `fussy-filter-default'."
   :type 'integer
   :group 'fussy)
 
@@ -339,7 +345,7 @@ For more information: \(https://github.com/minad/consult/issues/585\)"
   :group 'fussy)
 
 (defcustom fussy-prefer-prefix t
-  "When using `fussy-filter-fast', whether to prefer infix or prefix.
+  "When using `fussy-filter-default', whether to prefer infix or prefix.
 
 If t, prefix is used with `all-completions', if nil, use infix.
 
@@ -352,7 +358,7 @@ This variable should be let-bound/wrapped over `completion-at-point-functions',
 e.g. `company-capf' and set to nil for typing performance and kept to t for
 normal `completing-read' scenarios.
 
-See comments in `fussy-filter-fast' for examples of what infix or prefix
+See comments in `fussy-filter-default' for examples of what infix or prefix
 can look like."
   :type 'boolean
   :group 'fussy)
@@ -500,7 +506,7 @@ Implement `all-completions' interface with additional fuzzy / `flx' scoring."
                     ;; (e.g. with `fussy--maybe-highlight') but these are
                     ;; at the bottom of the pile of candidates.
                     (if fussy-filter-unscored-candidates
-                        (let ((r (car (funcall fussy-fast-regex-fn infix))))
+                        (let ((r (car (funcall fussy-default-regex-fn infix))))
                           (cl-remove-if-not
                            (lambda (c) (string-match-p r c))
                            unscored-candidates))
@@ -859,7 +865,7 @@ Respect PRED and POINT.  The filter here is the same as in
                 #'completion-flex--make-flex-pattern)))
     (list completions pattern prefix)))
 
-(defun fussy-filter-fast (string table pred point)
+(defun fussy-filter-default (string table pred point)
   "Match STRING to the entries in TABLE.
 
 Respect PRED and POINT.  This filter uses the `all-completions' interface
@@ -873,7 +879,7 @@ that's written in C for faster filtering."
                  (substring afterpoint 0 (cdr bounds))))
          (optimize-p (> (length infix)
                         fussy-fast-infix-length-before-optimizations))
-         (regexp (if optimize-p nil (funcall fussy-fast-regex-fn infix)))
+         (regexp (if optimize-p nil (funcall fussy-default-regex-fn infix)))
          (completion-regexp-list
           (if optimize-p nil (append regexp completion-regexp-list)))
          ;; Commentary on why we prefer prefix over infix.

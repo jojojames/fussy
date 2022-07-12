@@ -259,7 +259,7 @@ Implementation may be buggy though, so use with caution.
 
 #+begin_src emacs-lisp :tangle yes
   ;; Fast
-  (setq fussy-filter-fn 'fussy-filter-fast)
+  (setq fussy-filter-fn 'fussy-filter-default)
   ;; Type Letter a
   ;; 0.030671
   ;; Type Letter b
@@ -277,7 +277,7 @@ Implementation may be buggy though, so use with caution.
 #+end_src
 ** Orderless
 [[https://github.com/oantolin/orderless][orderless]] can also be used for
-filtering.  It uses the ~all-completions~ API like ~fussy-filter-fast~ so is
+filtering.  It uses the ~all-completions~ API like ~fussy-filter-default~ so is
 also faster than the default filtering but has a dependency on ~orderless~.
 
 #+begin_src emacs-lisp :tangle yes
@@ -525,7 +525,7 @@ former configuration, this section will be kept up to date with my ~init.el~.
     :straight
     (fussy :type git :host github :repo "jojojames/fussy")
     :config
-    (setq fussy-filter-fn 'fussy-filter-fast)
+    (setq fussy-filter-fn 'fussy-filter-default)
     (setq fussy-score-fn 'fussy-fuz-bin-score)
     (push 'fussy completion-styles)
     (setq
