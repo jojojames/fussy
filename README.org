@@ -310,22 +310,44 @@ To use [[https://github.com/oantolin/orderless][orderless]] filtering:
   (setq fussy-filter-fn 'fussy-filter-orderless)
 #+end_src
 * Company Integration
+Use an advice to enable ~fussy~.
+
+#+begin_src emacs-lisp :tangle yes
+  (defun j-company-capf (f &rest args)
+    "Manage `completion-styles'."
+    (let ((fussy-max-candidate-limit 5000)
+          (fussy-default-regex-fn 'fussy-pattern-first-letter)
+          (fussy-prefer-prefix nil))
+      (apply f args)))
+
+  (defun j-company-transformers (f &rest args)
+    "Manage `company-transformers'."
+    (let ((company-transformers '(fussy-company-sort-by-completion-score)))
+      (apply f args)))
+
+  (advice-add 'company--transform-candidates :around 'j-company-transformers)
+  (advice-add 'company-capf :around 'j-company-capf)
+#+end_src
+
+The ~company-transformer~ advice is needed to actually sort the scored
+matches.
+
 Fuzzy completion may or may not be too slow when completing with
 [[https://github.com/company-mode/company-mode][company-mode]].
 
 For this, we can advise ~company-capf~ to skip ~fussy~ when desired.
 
 The snippet below only uses fuzzy filtering and scoring when the prefix length
-is 2. The ~company-transformer~ advice is needed to actually sort the scored
-matches.
-
+is 2.
 #+begin_src emacs-lisp :tangle yes
   (defun bb-company-capf (f &rest args)
     "Manage `completion-styles'."
     (if (length< company-prefix 2)
         (let ((completion-styles (remq 'fussy completion-styles)))
           (apply f args))
-      (let ((fussy-prefer-prefix nil))
+      (let ((fussy-max-candidate-limit 5000)
+            (fussy-default-regex-fn 'fussy-pattern-first-letter)
+            (fussy-prefer-prefix nil))
         (apply f args))))
 
   (defun bb-company-transformers (f &rest args)
@@ -337,6 +359,14 @@ matches.
 
   (advice-add 'company--transform-candidates :around 'bb-company-transformers)
   (advice-add 'company-capf :around 'bb-company-capf)
+#+end_src
+* Corfu Integration
+#+begin_src emacs-lisp :tangle yes
+  (add-hook 'corfu-mode-hook
+            (lambda ()
+              (setq-local fussy-max-candidate-limit 5000
+                          fussy-default-regex-fn 'fussy-pattern-first-letter
+                          fussy-prefer-prefix nil)))
 #+end_src
 * Eglot Integration
 
