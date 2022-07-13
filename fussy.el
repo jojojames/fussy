@@ -235,7 +235,7 @@ If using `fussy-filter-default', `fussy-default-regex-fn' can be configured."
   "2022 07 12")
 
 (defcustom fussy-default-regex-fn
-  #'fussy-pattern-flex-2
+  #'fussy-pattern-default
   "Function used to create regex for `fussy-filter-default'.
 
 It takes in a STR and returns a regex usable with `all-completions'.
@@ -252,14 +252,11 @@ are more exhaustive than Flex 1 functions."
                  ,#'fussy-pattern-flex-1)
           (const :tag "Flex 2"
                  ,#'fussy-pattern-flex-2)
+          (const :tag "Default"
+                 ,#'fussy-pattern-default)
+          (const :tag "First Letter"
+                 ,#'fussy-pattern-first-letter)
           (function :tag "Custom function"))
-  :group 'fussy)
-
-(defcustom fussy-fast-infix-length-before-optimizations 6
-  "Number of characters entered before applying optimizations.
-
-This only applies to `fussy-filter-default'."
-  :type 'integer
   :group 'fussy)
 
 (defcustom fussy-score-fn
@@ -507,9 +504,11 @@ Implement `all-completions' interface with additional fuzzy / `flx' scoring."
                     ;; at the bottom of the pile of candidates.
                     (if fussy-filter-unscored-candidates
                         (let ((r (car (funcall fussy-default-regex-fn infix))))
-                          (cl-remove-if-not
-                           (lambda (c) (string-match-p r c))
-                           unscored-candidates))
+                          (if r
+                              (cl-remove-if-not
+                               (lambda (c) (string-match-p r c))
+                               unscored-candidates)
+                            unscored-candidates))
                       unscored-candidates)))))
              (length prefix)))))
     ('nil nil)
@@ -877,11 +876,8 @@ that's written in C for faster filtering."
          (infix (concat
                  (substring beforepoint (car bounds))
                  (substring afterpoint 0 (cdr bounds))))
-         (optimize-p (> (length infix)
-                        fussy-fast-infix-length-before-optimizations))
-         (regexp (if optimize-p nil (funcall fussy-default-regex-fn infix)))
-         (completion-regexp-list
-          (if optimize-p nil (append regexp completion-regexp-list)))
+         (regexp (funcall fussy-default-regex-fn infix))
+         (completion-regexp-list regexp)
          ;; Commentary on why we prefer prefix over infix.
          ;; For `find-file', if the prefix exists, we're in a different
          ;; directory, so should be retrieving candidates from that directory
@@ -978,6 +974,24 @@ exhaustive on matches."
      ".*")
     (when (> (length str) 1)
       "\\)\\)"))))
+
+(defun fussy-pattern-default (str)
+  "Make STR flex pattern.
+
+If length if STR is somewhat long, return nil instead as long flex patterns
+can be really slow when filtering."
+  (if (> (length str) 4)
+      nil
+    (fussy-pattern-flex-2 str)))
+
+(defun fussy-pattern-first-letter (str)
+  "Make pattern for STR.
+
+str: abc
+result: LIST ^a"
+  (if (and str (> (length str) 0))
+      `(,(format "^%s" (substring str 0 1)))
+    nil))
 
 ;;
 ;; (@* "Integration with other Packages" )
