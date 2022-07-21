@@ -602,8 +602,14 @@ pcm-style refers to using `completion-pcm--hilit-commonality' for highlighting."
   "Return propertized copy of OBJ according to score.
 
 If SCORE does not have indices to highlight, return OBJ unmodified."
-  (if (<= (length score) 1)
-      ;; Has only a score or nil.
+  (if (or
+       ;; Has only score but no indices or nil.
+       (<= (length score) 1)
+       ;; Indices are higher than the length of obj indicating the indices are
+       ;; incorrect. Skip highlighting to avoid breaking completion.
+       ;; Take the last index to compare against obj because all indices need
+       ;; to be less than the length of obj in order for highlighting to work.
+       (>= (car (last score)) (length obj)))
       obj
     ;; Has a score and an index to highlight.
     (let ((block-started (cadr score))

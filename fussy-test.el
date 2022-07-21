@@ -390,7 +390,7 @@ This test asserts `fussy-encode-coding-string' is much much faster than
 ;;
 
 (ert-deftest fussy-propertize-common-part-test ()
-  "Test `fussy--propertize-common-part'."
+  "Test `fussy-propertize-common-part'."
   (should
    (fussy-propertize-common-part "^" '(0)))
   (should
@@ -398,7 +398,18 @@ This test asserts `fussy-encode-coding-string' is much much faster than
   (should
    (fussy-propertize-common-part "^" nil))
   (should
-   (fussy-propertize-common-part "abc" '(1 2))))
+   (fussy-propertize-common-part "abc" '(1 2)))
+  (should
+   (fussy-propertize-common-part "abcd" '(1 3))))
+
+(ert-deftest fussy-propertize-common-part-bad-indices ()
+  "Test `fussy-propertize-common-part' handles bad indices returned."
+  (should
+   (fussy-propertize-common-part "abcd" '(1 4)))
+  (should
+   (fussy-propertize-common-part "abcd" '(1 199)))
+  (should
+   (fussy-propertize-common-part "abcd" '(1 3 4))))
 
 ;;
 ;; (@* "`fussy--should-propertize-p'" )
