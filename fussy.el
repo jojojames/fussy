@@ -792,6 +792,15 @@ See `fussy-remove-bad-char-fn'."
   "Call `encode-coding-string' for STRING."
   (encode-coding-string string 'utf-8 t))
 
+(defun fussy--print-hash-table (table)
+  "Print TABLE."
+  (message "------------------------------------------------------------------")
+  (maphash (lambda (key value)
+             (message "key: %s length value %s" key (length value)))
+           table)
+  (message "------------------------------------------------------------------"))
+
+
 ;;
 ;; (@* "Filtering" )
 ;;
