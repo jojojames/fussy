@@ -202,7 +202,31 @@ Note, ~hotfuzz~ has its own ~completion-style~ that may be worth using over this
     :config
     (setq fussy-score-fn 'fussy-hotfuzz-score))
 #+end_src
+* Caching
+Results and filtering can be cached for improved performance by setting
+~fussy-use-cache~ to t (NOTE: in the future this will be default to t).
 
+With this set to t:
+
+If user already entered the same query:
+
+e.g. User types "a" -> "ab" and then backspaces into "a" again.
+
+Results from the originally entered "a" will be used for the second entered "a".
+
+If user is entering a new query but there exists results from a previous query
+in the cache:
+
+e.g. User types "a" and then "ab". Results from "a" will then be used for
+filtering in "ab".
+
+To use this with ~company~ and ~corfu~, use an advice to reset the cache upon
+new completion requests.
+
+#+begin_src emacs-lisp :tangle yes
+(advice-add 'corfu--capf-wrapper :before 'fussy-wipe-cache)
+(advice-add 'company-auto-begin :before 'fussy-wipe-cache)
+#+end_src
 * Filtering Choices
 Before scoring and sorting candidates, we must somehow filter them from the
 completion table. The approaches below are several ways to do that, each with
@@ -327,6 +351,9 @@ Use an advice to enable ~fussy~.
 
   (advice-add 'company--transform-candidates :around 'j-company-transformers)
   (advice-add 'company-capf :around 'j-company-capf)
+
+  ;; For cache functionality.
+  (advice-add 'company-auto-begin :before 'fussy-wipe-cache)
 #+end_src
 
 The ~company-transformer~ advice is needed to actually sort the scored
@@ -359,9 +386,15 @@ is 2.
 
   (advice-add 'company--transform-candidates :around 'bb-company-transformers)
   (advice-add 'company-capf :around 'bb-company-capf)
+
+  ;; For cache functionality.
+  (advice-add 'company-auto-begin :before 'fussy-wipe-cache)
 #+end_src
 * Corfu Integration
 #+begin_src emacs-lisp :tangle yes
+  ;; For cache functionality.
+  (advice-add 'corfu--capf-wrapper :before 'fussy-wipe-cache)
+
   (add-hook 'corfu-mode-hook
             (lambda ()
               (setq-local fussy-max-candidate-limit 5000
