@@ -146,6 +146,7 @@ Called from `fussy-all-completions'."
            (fussy-default-regex-fn 'fussy-pattern-flex-1)
            (fussy-filter-fn 'fussy-filter-default)
            (fussy-prefer-prefix nil)
+           (fussy-use-cache nil)
            (default-res
             (car
              (benchmark-run 10
