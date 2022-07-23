@@ -543,6 +543,9 @@ Set a text-property \='completion-score on candidates with their score.
                                   (replace-regexp-in-string "\\\s" "" string)
                                 string)
                               cache)))
+          ;; (message
+          ;;  (format "fn: %S candidate: %s query: %s score %S"
+          ;;          'fussy-score x string score))
           ;; Candidates with a score of N or less are filtered.
           (when (and score
                      ;; Score of '(nil) can be returned...
@@ -550,9 +553,6 @@ Set a text-property \='completion-score on candidates with their score.
                      (if fussy-score-threshold-to-filter
                          (> (car score) fussy-score-threshold-to-filter)
                        t))
-            ;; (message
-            ;;  (format "fn: %S candidate: %s query: %s score %S"
-            ;;          'fussy-score x string score))
             (put-text-property 0 1 'completion-score (car score) x)
 
             ;; If we're using pcm highlight, we don't need to propertize the
