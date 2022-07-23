@@ -923,22 +923,28 @@ that's written in C for faster filtering."
          ;; using `completion-pcm--hilit-commonality' so skip evaluating the
          ;; pattern if this is not the pcm highlight case.
          (pattern
-          (when (fussy--using-pcm-highlight-p)
-            ;; Note to self:
-            ;; The way we create the pattern here can be found in
-            ;; `completion-substring--all-completions'.
-            (let* ((basic-pattern (completion-basic--pattern
-                                   beforepoint afterpoint bounds))
-                   (pattern (if (not (stringp (car basic-pattern)))
-                                basic-pattern
-                              (cons 'prefix basic-pattern))))
-              (completion-pcm--optimize-pattern
-               (completion-flex--make-flex-pattern pattern))))))
+          (fussy-make-pcm-highlight-pattern beforepoint afterpoint bounds)))
     ;; (message
     ;;  (format
     ;;   "prefix: %s infix: %s pattern %s completions %S regexp_list: %S"
     ;;   prefix infix pattern completions completion-regexp-list))
     (list completions pattern prefix)))
+
+(defun fussy-make-pcm-highlight-pattern (beforepoint afterpoint bounds)
+  "Create flex pattern for highlighting.
+
+Respect BEFOREPOINT, AFTERPOINT, and BOUNDS."
+  (when (fussy--using-pcm-highlight-p)
+    ;; Note to self:
+    ;; The way we create the pattern here can be found in
+    ;; `completion-substring--all-completions'.
+    (let* ((basic-pattern (completion-basic--pattern
+                           beforepoint afterpoint bounds))
+           (pattern (if (not (stringp (car basic-pattern)))
+                        basic-pattern
+                      (cons 'prefix basic-pattern))))
+      (completion-pcm--optimize-pattern
+       (completion-flex--make-flex-pattern pattern)))))
 
 ;;
 ;; (@* "Pattern Compiler" )
