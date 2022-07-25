@@ -439,7 +439,9 @@ Implement `try-completions' interface by using `completion-flex-try-completion'.
 Implement `all-completions' interface with additional fuzzy / `flx' scoring."
   (setf fussy--hist-hash (fussy--history-hash-table))
   (when (and fussy-use-cache
-             (not fussy--allcompl-cache))
+             (or
+              (not fussy--allcompl-cache)
+              (equal string "")))
     (setf fussy--allcompl-cache
           (make-hash-table :test 'equal)))
   (when fussy-ignore-case
