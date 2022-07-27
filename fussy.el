@@ -849,6 +849,10 @@ See `fussy-remove-bad-char-fn'."
            table)
   (message "------------------------------------------------------------------"))
 
+(defun fussy-wipe-cache ()
+  "Wipe buffer local `fussy--allcompl-cache'."
+  ;; (message "Setting `fussy--allcompl-cache' to nil..")
+  (setf fussy--allcompl-cache nil))
 
 ;;
 ;; (@* "Filtering" )
