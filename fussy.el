@@ -122,17 +122,39 @@ highlighting with `completion-pcm--hilit-commonality'."
   :group 'fussy
   :type 'boolean)
 
-(defcustom fussy-score-threshold-to-filter 0
+(defcustom fussy-score-threshold-to-filter nil
   "Candidates with scores of N or less are filtered.
 
 Some backends such as `fussy-fuz-score' return negative scores
 for low-quality matches.
 
-If this is set to nil, don't filter out candidates by
-score. Raise N to see fewer candidates. Lower N to see more
+If this is set to nil, threshold is defined by alist of
+thresholds for score functions. Set this to a number to override
+`fussy-score-threshold-to-filter-alist'.
+
+Raise N to see fewer candidates. Lower N to see more
 candidates. Keep N at 0 or more for performance."
   :group 'fussy
   :type 'integer)
+
+(defcustom fussy-score-threshold-to-filter-alist
+  '((flx-score . -100)
+    (fussy-fuz-score . -100)
+    (fussy-fuz-bin-score . -100)
+    (fussy-fzf-native-score . -100))
+  "Candidates with scores of N or less are filtered for a given
+`fussy-score-fn'.
+
+Some backends such as `fussy-fuz-score' return negative scores
+for low-quality matches.
+
+Setting `fussy-score-threshold-to-filter' to a number will
+override this alist.
+
+If `fussy-score-fn' is not in the mapping, default to a threshold
+of 0 wherever alist is used."
+  :group 'fussy
+  :type 'alist)
 
 (defcustom fussy-max-word-length-to-score 400
   "Words that are longer than this length are not scored."
@@ -410,6 +432,14 @@ VALUES are positions of the values in the list.
 
 See `fussy--history-hash-table'.")
 
+(defvar-local fussy--score-threshold-to-filter-alist-cache nil
+  "Cached value of threshold derived from alist for score functions.
+
+If `fussy-score-threshold-to-filter' is non-nil, the cache is
+ignored.
+
+See `fussy-score-threshold-to-filter-alist'.")
+
 ;;
 ;; (@* "All Completions Interface/API" )
 ;;
@@ -550,9 +580,14 @@ Set a text-property \='completion-score on candidates with their score.
           (when (and score
                      ;; Score of '(nil) can be returned...
                      (car score)
-                     (if fussy-score-threshold-to-filter
-                         (> (car score) fussy-score-threshold-to-filter)
-                       t))
+                     (> (car score)
+                        (or fussy-score-threshold-to-filter
+                            fussy--score-threshold-to-filter-alist-cache
+                            (setq fussy--score-threshold-to-filter-alist-cache
+                                  (or (alist-get
+                                       fussy-score-fn
+                                       fussy-score-threshold-to-filter-alist)
+                                      0)))))
             (put-text-property 0 1 'completion-score (car score) x)
 
             ;; If we're using pcm highlight, we don't need to propertize the
