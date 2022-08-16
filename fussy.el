@@ -141,7 +141,7 @@ candidates. Keep N at 0 or more for performance."
   '((flx-score . -100)
     (fussy-fuz-score . -100)
     (fussy-fuz-bin-score . -100)
-    (fussy-fzf-native-score . -100))
+    (fussy-fzf-native-score . 0))
   "Candidates with scores of N or less are filtered for a given
 `fussy-score-fn'.
 
