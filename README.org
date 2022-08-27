@@ -578,35 +578,54 @@ Documenting my configuration for the users that may want to copy. Unlike the
 former configuration, this section will be kept up to date with my ~init.el~.
 
 #+begin_src emacs-lisp :tangle yes
-  (use-package fuz-bin
-    :ensure t
-    :straight
-    (fuz-bin
-     :repo "jcs-elpa/fuz-bin"
-     :fetcher github
-     :files (:defaults "bin"))
-    :config
-    (fuz-bin-load-dyn))
+(use-package fussy
+  :ensure t
+  :straight
+  (fussy :type git :host github :repo "jojojames/fussy")
+  :config
+  (setq fussy-filter-fn 'fussy-filter-default)
+  (setq fussy-use-cache t)
+  (setq fussy-compare-same-score-fn 'fussy-histlen->strlen<)
 
-  (use-package fussy
-    :ensure t
-    :straight
-    (fussy :type git :host github :repo "jojojames/fussy")
-    :config
-    (setq fussy-filter-fn 'fussy-filter-default)
-    (setq fussy-score-fn 'fussy-fuz-bin-score)
-    (push 'fussy completion-styles)
-    (setq
-     ;; For example, project-find-file uses 'project-files which uses
-     ;; substring completion by default. Set to nil to make sure it's using
-     ;; flx.
-     completion-category-defaults nil
-     completion-category-overrides nil)
+  (push 'fussy completion-styles)
+  (setq
+   ;; For example, project-find-file uses 'project-files which uses
+   ;; substring completion by default. Set to nil to make sure it's using
+   ;; flx.
+   completion-category-defaults nil
+   completion-category-overrides nil)
 
-    ;; `eglot' defaults to flex, so set an override to point to flx instead.
-    (with-eval-after-load 'eglot
-      (add-to-list 'completion-category-overrides
-                   '(eglot (styles fussy basic)))))
+  ;; `eglot' defaults to flex, so set an override to point to flx instead.
+  (with-eval-after-load 'eglot
+    (add-to-list 'completion-category-overrides
+                 '(eglot (styles fussy basic)))))
+
+(use-package company
+  :config
+  (defun j-company-capf (f &rest args)
+    "Manage `completion-styles'."
+    (if (length= company-prefix 0)
+        ;; Don't use `company' for 0 length prefixes.
+        (let ((completion-styles (remq 'fussy completion-styles)))
+          (apply f args))
+      (let ((fussy-max-candidate-limit 5000)
+            (fussy-default-regex-fn 'fussy-pattern-first-letter)
+            (fussy-prefer-prefix nil))
+        (apply f args))))
+
+  (defun j-company-transformers (f &rest args)
+    "Manage `company-transformers'."
+    (if (length= company-prefix 0)
+        ;; Don't use `company' for 0 length prefixes.
+        (apply f args)
+      (let ((company-transformers '(fussy-company-sort-by-completion-score)))
+        (apply f args))))
+
+  (advice-add 'company-auto-begin :before 'fussy-wipe-cache)
+  (advice-add 'company--transform-candidates :around 'j-company-transformers)
+  (advice-add 'company-capf :around 'j-company-capf)
+
+  (global-company-mode))
 #+end_src
 * Scoring Samples
 Listed below are samples of scores that backends return given a candidate string and a search string to match against it.
