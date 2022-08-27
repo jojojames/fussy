@@ -339,21 +339,26 @@ Use an advice to enable ~fussy~.
 #+begin_src emacs-lisp :tangle yes
   (defun j-company-capf (f &rest args)
     "Manage `completion-styles'."
-    (let ((fussy-max-candidate-limit 5000)
-          (fussy-default-regex-fn 'fussy-pattern-first-letter)
-          (fussy-prefer-prefix nil))
-      (apply f args)))
+    (if (length= company-prefix 0)
+        ;; Don't use `company' for 0 length prefixes.
+        (let ((completion-styles (remq 'fussy completion-styles)))
+          (apply f args))
+      (let ((fussy-max-candidate-limit 5000)
+            (fussy-default-regex-fn 'fussy-pattern-first-letter)
+            (fussy-prefer-prefix nil))
+        (apply f args))))
 
   (defun j-company-transformers (f &rest args)
     "Manage `company-transformers'."
-    (let ((company-transformers '(fussy-company-sort-by-completion-score)))
-      (apply f args)))
+    (if (length= company-prefix 0)
+        ;; Don't use `company' for 0 length prefixes.
+        (apply f args)
+      (let ((company-transformers '(fussy-company-sort-by-completion-score)))
+        (apply f args))))
 
+  (advice-add 'company-auto-begin :before 'fussy-wipe-cache)
   (advice-add 'company--transform-candidates :around 'j-company-transformers)
   (advice-add 'company-capf :around 'j-company-capf)
-
-  ;; For cache functionality.
-  (advice-add 'company-auto-begin :before 'fussy-wipe-cache)
 #+end_src
 
 The ~company-transformer~ advice is needed to actually sort the scored
