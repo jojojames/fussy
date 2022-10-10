@@ -508,7 +508,7 @@ Implement `all-completions' interface with additional fuzzy / `flx' scoring."
       (pcase
           (while-no-input
             (pcase-let*
-                ((`(,all ,pattern ,prefix)
+                ((`(,all ,pattern ,_prefix)
                   (if-let ((cached-all
                             (and
                              fussy-use-cache
