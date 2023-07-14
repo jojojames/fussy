@@ -274,7 +274,7 @@ The only disadvantage is that it's the slowest of the filtering methods.
 #+end_src
 
 ** Fast
-This is another useable filtering method and leverages the ~all-completions~ API
+This is another usable filtering method and leverages the ~all-completions~ API
 written in C to do its filtering. It seems to be the fastest of the filtering
 methods from quick benchmarking as well as requiring no additional dependencies
 (e.g. ~orderless~).

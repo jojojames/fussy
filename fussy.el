@@ -349,7 +349,7 @@ Another option is to use `fussy-encode-coding-string' which dumbly converts
 a multibytestring without considering what the final string will look like.
 Using this may work for the purpose of matching too as the final candidate
 string may go from something like abcX to abcR where X was the multibyte char
-that is not useable with the above scoring backends and R is a random ascii
+that is not usable with the above scoring backends and R is a random ascii
 character encoded from X.
 
 For more information: \(https://github.com/minad/consult/issues/585\)"
