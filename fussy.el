@@ -292,15 +292,15 @@ FN should at least take in STR and QUERY."
           (const :tag "Score using Flx-RS"
                  ,'flx-rs-score)
           (const :tag "Score using Fuz"
-                 #'fussy-fuz-score)
+                 ,#'fussy-fuz-score)
           (const :tag "Score using Fuz-Bin"
-                 #'fussy-fuz-bin-score)
+                 ,#'fussy-fuz-bin-score)
           (const :tag "Score using LiquidMetal"
-                 #'fussy-liquidmetal-score)
+                 ,#'fussy-liquidmetal-score)
           (const :tag "Score using Sublime-Fuzzy"
-                 #'fussy-sublime-fuzzy-score)
+                 ,#'fussy-sublime-fuzzy-score)
           (const :tag "Score using Hotfuzz"
-                 #'fussy-hotfuzz-score)
+                 ,#'fussy-hotfuzz-score)
           (function :tag "Custom function"))
   :group 'fussy)
 
@@ -328,7 +328,7 @@ Scoring functions in this list's highlighting are then taken care of by either
 `fussy--using-pcm-highlight-p'.
 
 Functions in this list should match `fussy-score-fn'."
-  :type 'list
+  :type '(list function)
   :group 'fussy)
 
 (defcustom fussy-remove-bad-char-fn
@@ -391,7 +391,7 @@ This only applies when `fussy-max-candidate-limit' is reached."
 
 (defcustom fussy-use-cache nil
   "Whether or not to use cache in `fussy-all-completions'."
-  :type 'bool
+  :type 'boolean
   :group 'fussy)
 
 ;;;###autoload
