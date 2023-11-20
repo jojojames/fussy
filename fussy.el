@@ -290,7 +290,7 @@ FN should at least take in STR and QUERY."
           (const :tag "Score using Flx"
                  ,'flx-score)
           (const :tag "Score using Flx-RS"
-                 ,'flx-rs-score)
+                 ,#'fussy-flx-rs-score)
           (const :tag "Score using Fuz"
                  ,#'fussy-fuz-score)
           (const :tag "Score using Fuz-Bin"
@@ -1117,6 +1117,10 @@ result: LIST ^a"
 (declare-function "fuz-calc-score-skim" "fuz")
 (declare-function "fuz-fuzzy-match-clangd" "fuz")
 (declare-function "fuz-calc-score-clangd" "fuz")
+
+(defun fussy-flx-rs-score (str query &rest args)
+  "Score STR for QUERY with ARGS using `flx-rs-score'."
+  (flx-rs-score (funcall fussy-remove-bad-char-fn str) query args))
 
 (defun fussy-fuz-score (str query &rest _args)
   "Score STR for QUERY using `fuz'.

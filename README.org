@@ -83,7 +83,7 @@ lisp implementation.
      :fetcher github
      :files (:defaults "bin"))
     :config
-    (setq fussy-score-fn 'flx-rs-score)
+    (setq fussy-score-fn 'fussy-flx-rs-score)
     (flx-rs-load-dyn))
 #+end_src
 
@@ -548,7 +548,7 @@ a different algorithm.
      :fetcher github
      :files (:defaults "bin"))
     :config
-    (setq fussy-score-fn 'flx-rs-score)
+    (setq fussy-score-fn 'fussy-flx-rs-score)
     (flx-rs-load-dyn))
 
   (use-package fussy
@@ -556,7 +556,7 @@ a different algorithm.
     :straight
     (fussy :type git :host github :repo "jojojames/fussy")
     :config
-    (setq fussy-score-fn 'flx-rs-score)
+    (setq fussy-score-fn 'fussy-flx-rs-score)
     (setq fussy-filter-fn 'fussy-filter-orderless-flex)
 
     (push 'fussy completion-styles)
