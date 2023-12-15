@@ -1120,7 +1120,9 @@ result: LIST ^a"
 
 (defun fussy-flx-rs-score (str query &rest args)
   "Score STR for QUERY with ARGS using `flx-rs-score'."
-  (flx-rs-score (funcall fussy-remove-bad-char-fn str) query args))
+  (require 'flx-rs)
+  (when (fboundp 'flx-rs-score)
+    (flx-rs-score (funcall fussy-remove-bad-char-fn str) query args)))
 
 (defun fussy-fuz-score (str query &rest _args)
   "Score STR for QUERY using `fuz'.
