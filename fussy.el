@@ -141,7 +141,8 @@ candidates. Keep N at 0 or more for performance."
   '((flx-score . -100)
     (fussy-fuz-score . -100)
     (fussy-fuz-bin-score . -100)
-    (fussy-fzf-native-score . 0))
+    (fussy-fzf-native-score . 0)
+    (fussy-hotfuzz-score . 0))
   "Candidates with scores of N or less are filtered for a given
 `fussy-score-fn'.
 
@@ -1214,7 +1215,7 @@ highlighting."
   (when (fboundp 'hotfuzz--cost)
     ;; Looks like the score is flipped for `hotfuzz'.
     ;; See `hotfuzz-all-completions'.
-    (list (- (hotfuzz--cost query str)))))
+    (list (+ 10000 (- (hotfuzz--cost query str))))))
 
 (provide 'fussy)
 ;;; fussy.el ends here
