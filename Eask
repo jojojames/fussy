@@ -1,8 +1,13 @@
 (package "fussy"
-         "0.1"
+         "1.0"
          "Fuzzy completion style using `flx'")
 
+(website-url "https://github.com/jojojames/fussy")
+(keywords "matching")
+
 (package-file "fussy.el")
+
+(script "test" "echo \"Error: no test specified\" && exit 1")
 
 (source "gnu")
 (source "melpa")
