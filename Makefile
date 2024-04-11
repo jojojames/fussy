@@ -17,6 +17,10 @@ install:
 compile:
 	eask compile
 
+.PHONY: clean
+clean:
+	eask clean all
+
 .PHONY: test
 test:
 	eask install-deps --dev
