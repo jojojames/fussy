@@ -185,7 +185,7 @@ e.g. `fussy-filter-orderless' can also be used for highlighting matches."
 
 (defcustom fussy-compare-same-score-fn
   #'fussy-histlen->strlen<
-  "Function used to compare matches with the same 'completion-score.
+  "Function used to compare matches with the same \\='completion-score.
 
 FN takes in and compares two candidate strings C1 and C2 and
 returns which candidates should have precedence.
