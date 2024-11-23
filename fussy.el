@@ -514,6 +514,8 @@ Implement `all-completions' interface with additional fuzzy / `flx' scoring."
                             (and
                              fussy-use-cache
                              (> (length string) 0)
+                             ;; e.g. ~/.emacs.d/url/ should not use entry from "~/.emacs.d/url".
+                             (not (string-suffix-p "/" string))
                              (cl-copy-list
                               (gethash
                                (substring string 0 (- (length string) 1))
