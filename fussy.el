@@ -614,6 +614,28 @@ Implement `all-completions' interface with additional fuzzy / `flx' scoring."
                          fussy-score-threshold-to-filter-alist)
                         0))))))
 
+(defun fussy-fzf-score (candidates string &optional cache)
+  "Score and propertize CANDIDATES using STRING.
+
+This implementation uses `fzf-native-score-all' to do all its scoring in one go.
+
+Ignore CACHE. This is only added to match `fussy-score'.
+
+Set a text-property \='completion-score on candidates with their score.
+`completion--adjust-metadata' later uses this \='completion-score for sorting."
+  (let ((result '())
+        (scored-candidates (fzf-native-score-all
+                            candidates string (fussy--fzf-native-slab))))
+    (dolist (candidate scored-candidates)
+      (let ((x (car candidate))
+            (score (cdr candidate)))
+        (when (fussy-valid-score-p score)
+          (setf x (copy-sequence x))
+          (put-text-property 0 1 'completion-score (car score) x)
+          (setf x (funcall fussy-propertize-fn x score))
+          (push x result))))
+    result))
+
 (defun fussy-score (candidates string &optional cache)
   "Score and propertize CANDIDATES using STRING.
 
