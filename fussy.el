@@ -600,6 +600,20 @@ Implement `all-completions' interface with additional fuzzy / `flx' scoring."
 ;; (@* "Scoring & Highlighting" )
 ;;
 
+(defun fussy-valid-score-p (score)
+  "Return whether SCORE is valid."
+  (and score
+       ;; Score of '(nil) can be returned...
+       (car score)
+       (> (car score)
+          (or fussy-score-threshold-to-filter
+              fussy--score-threshold-to-filter-alist-cache
+              (setq fussy--score-threshold-to-filter-alist-cache
+                    (or (alist-get
+                         fussy-score-fn
+                         fussy-score-threshold-to-filter-alist)
+                        0))))))
+
 (defun fussy-score (candidates string &optional cache)
   "Score and propertize CANDIDATES using STRING.
 
@@ -624,17 +638,7 @@ Set a text-property \='completion-score on candidates with their score.
           ;;  (format "fn: %S candidate: %s query: %s score %S"
           ;;          'fussy-score x string score))
           ;; Candidates with a score of N or less are filtered.
-          (when (and score
-                     ;; Score of '(nil) can be returned...
-                     (car score)
-                     (> (car score)
-                        (or fussy-score-threshold-to-filter
-                            fussy--score-threshold-to-filter-alist-cache
-                            (setq fussy--score-threshold-to-filter-alist-cache
-                                  (or (alist-get
-                                       fussy-score-fn
-                                       fussy-score-threshold-to-filter-alist)
-                                      0)))))
+          (when (fussy-valid-score-p score)
             (put-text-property 0 1 'completion-score (car score) x)
 
             ;; If we're using pcm highlight, we don't need to propertize the
