@@ -340,7 +340,7 @@ Use an advice to enable ~fussy~.
   (defun j-company-capf (f &rest args)
     "Manage `completion-styles'."
     (if (length= company-prefix 0)
-        ;; Don't use `company' for 0 length prefixes.
+        ;; Don't use `fussy' for 0 length prefixes.
         (let ((completion-styles (remq 'fussy completion-styles)))
           (apply f args))
       (let ((fussy-max-candidate-limit 5000)
@@ -351,7 +351,7 @@ Use an advice to enable ~fussy~.
   (defun j-company-transformers (f &rest args)
     "Manage `company-transformers'."
     (if (length= company-prefix 0)
-        ;; Don't use `company' for 0 length prefixes.
+        ;; Don't use `fussy' for 0 length prefixes.
         (apply f args)
       (let ((company-transformers '(fussy-company-sort-by-completion-score)))
         (apply f args))))
@@ -614,7 +614,7 @@ former configuration, this section will be kept up to date with my ~init.el~.
   (defun j-company-capf (f &rest args)
     "Manage `completion-styles'."
     (if (length= company-prefix 0)
-        ;; Don't use `company' for 0 length prefixes.
+        ;; Don't use `fussy' for 0 length prefixes.
         (let ((completion-styles (remq 'fussy completion-styles)))
           (apply f args))
       (let ((fussy-max-candidate-limit 5000)
@@ -625,7 +625,7 @@ former configuration, this section will be kept up to date with my ~init.el~.
   (defun j-company-transformers (f &rest args)
     "Manage `company-transformers'."
     (if (length= company-prefix 0)
-        ;; Don't use `company' for 0 length prefixes.
+        ;; Don't use `fussy' for 0 length prefixes.
         (apply f args)
       (let ((company-transformers '(fussy-company-sort-by-completion-score)))
         (apply f args))))
