@@ -358,7 +358,14 @@ Use an advice to enable ~fussy~.
 
   (advice-add 'company-auto-begin :before 'fussy-wipe-cache)
   (advice-add 'company--transform-candidates :around 'j-company-transformers)
-  (advice-add 'company-capf :around 'j-company-capf)
+
+  (defun company-map-backends-to-fussy (backends)
+    (dolist (x backends)
+      (if (listp x)
+          (company-map-backends-to-fussy x)
+        (when (functionp x)
+          (advice-add x :override 'j-company-capf)))))
+  (company-map-backends-to-fussy company-backends)
 #+end_src
 
 The ~company-transformer~ advice is needed to actually sort the scored
@@ -579,14 +586,16 @@ former configuration, this section will be kept up to date with my ~init.el~.
 
 #+begin_src emacs-lisp :tangle yes
 (use-package fussy
-  :ensure t
-  :straight
-  (fussy :type git :host github :repo "jojojames/fussy")
+  :ensure
+  (fussy :host github :repo "jojojames/fussy")
   :config
+  ;; Replace `fussy-score'.
+  (advice-add 'fussy-score :override 'fussy-fzf-score)
+  (advice-add 'fussy--using-pcm-highlight-p
+              :override (defun fussy-always-true (&rest _) t))
   (setq fussy-filter-fn 'fussy-filter-default)
   (setq fussy-use-cache t)
   (setq fussy-compare-same-score-fn 'fussy-histlen->strlen<)
-
   (push 'fussy completion-styles)
   (setq
    ;; For example, project-find-file uses 'project-files which uses
@@ -623,7 +632,13 @@ former configuration, this section will be kept up to date with my ~init.el~.
 
   (advice-add 'company-auto-begin :before 'fussy-wipe-cache)
   (advice-add 'company--transform-candidates :around 'j-company-transformers)
-  (advice-add 'company-capf :around 'j-company-capf)
+  (defun company-map-backends-to-fussy (backends)
+    (dolist (x backends)
+      (if (listp x)
+          (company-map-backends-to-fussy x)
+        (when (functionp x)
+          (advice-add x :override 'j-company-capf)))))
+  (company-map-backends-to-fussy company-backends)
 
   (global-company-mode))
 #+end_src
