@@ -619,22 +619,8 @@ Implement `all-completions' interface with additional fuzzy / `flx' scoring."
 
 This implementation uses `fzf-native-score-all' to do all its scoring in one go.
 
-Ignore CACHE. This is only added to match `fussy-score'.
-
-Set a text-property \='completion-score on candidates with their score.
-`completion--adjust-metadata' later uses this \='completion-score for sorting."
-  (let ((result '())
-        (scored-candidates (fzf-native-score-all
-                            candidates string (fussy--fzf-native-slab))))
-    (dolist (candidate scored-candidates)
-      (let ((x (car candidate))
-            (score (cdr candidate)))
-        (when (fussy-valid-score-p score)
-          (setf x (copy-sequence x))
-          (put-text-property 0 1 'completion-score (car score) x)
-          (setf x (funcall fussy-propertize-fn x score))
-          (push x result))))
-    result))
+Ignore CACHE. This is only added to match `fussy-score'."
+  (fzf-native-score-all candidates string))
 
 (defun fussy-score (candidates string &optional cache)
   "Score and propertize CANDIDATES using STRING.
@@ -779,6 +765,24 @@ If SCORE does not have indices to highlight, return OBJ unmodified."
              `((display-sort-function . fussy--sort)))
       ,@(and flex-is-filtering-p
              `((cycle-sort-function . fussy--sort)))
+      ,@(cdr metadata))))
+
+(defun fussy--adjust-metadata-fzf-native-all-scoring (metadata)
+  "`fussy-fzf-score' takes care of sorting, just return as is."
+  (let ((flex-is-filtering-p
+         ;; JT@2019-12-23: FIXME: this is kinda wrong.  What we need
+         ;; to test here is "some input that actually leads/led to
+         ;; flex filtering", not "something after the minibuffer
+         ;; prompt".  E.g. The latter is always true for file
+         ;; searches, meaning we'll be doing extra work when we
+         ;; needn't.
+         (or (not (window-minibuffer-p))
+             (> (point-max) (minibuffer-prompt-end)))))
+    `(metadata
+      ,@(and flex-is-filtering-p
+             `((display-sort-function . identity)))
+      ,@(and flex-is-filtering-p
+             `((cycle-sort-function . identity)))
       ,@(cdr metadata))))
 
 (defun fussy--sort (completions)
