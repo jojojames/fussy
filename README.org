@@ -364,7 +364,7 @@ Use an advice to enable ~fussy~.
       (if (listp x)
           (company-map-backends-to-fussy x)
         (when (functionp x)
-          (advice-add x :override 'j-company-capf)))))
+          (advice-add x :around 'j-company-capf)))))
   (company-map-backends-to-fussy company-backends)
 #+end_src
 
@@ -637,7 +637,7 @@ former configuration, this section will be kept up to date with my ~init.el~.
       (if (listp x)
           (company-map-backends-to-fussy x)
         (when (functionp x)
-          (advice-add x :override 'j-company-capf)))))
+          (advice-add x :around 'j-company-capf)))))
   (company-map-backends-to-fussy company-backends)
 
   (global-company-mode))
