@@ -617,13 +617,14 @@ Implement `all-completions' interface with additional fuzzy / `flx' scoring."
                          fussy-score-threshold-to-filter-alist)
                         0))))))
 
-(defun fussy-fzf-score (candidates string &optional cache)
+(defun fussy-fzf-score (candidates string &optional _cache)
   "Score and propertize CANDIDATES using STRING.
 
 This implementation uses `fzf-native-score-all' to do all its scoring in one go.
 
 Ignore CACHE. This is only added to match `fussy-score'."
-  (fzf-native-score-all candidates string))
+  (when (fboundp 'fzf-native-score-all)
+    (fzf-native-score-all candidates string)))
 
 (defun fussy-score (candidates string &optional cache)
   "Score and propertize CANDIDATES using STRING.
