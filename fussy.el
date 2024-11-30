@@ -930,7 +930,7 @@ See `fussy-remove-bad-char-fn'."
 (declare-function "orderless--prefix+pattern" "orderless")
 (defvar orderless-matching-styles)
 
-(defun fussy-filter-orderless-flex (string table pred _point)
+(defun fussy-filter-orderless-flex (string table pred point)
   "Match STRING to the entries in TABLE.
 
 Use `orderless' for filtering by passing STRING, TABLE and PRED to
@@ -938,20 +938,8 @@ Use `orderless' for filtering by passing STRING, TABLE and PRED to
 `orderless-filter'.  _POINT is not used. This version sets up `orderless'
 to only use the `orderless-flex' pattern."
   (require 'orderless)
-  (when (and (fboundp 'orderless-filter)
-             (fboundp 'orderless-highlight-matches)
-             (fboundp 'orderless--prefix+pattern))
-    (let* ((orderless-matching-styles '(orderless-flex))
-           (completions (orderless-filter string table pred)))
-      (when completions
-        (pcase-let* ((`(,prefix . ,pattern)
-                      (orderless--prefix+pattern string table pred)))
-          (let ((result (list
-                         (orderless-highlight-matches pattern completions)
-                         pattern prefix)))
-            ;; (message "fn: %S result: %S"
-            ;;          'fussy-filter-orderless-flex result)
-            result))))))
+  (let ((orderless-matching-styles '(orderless-flex)))
+    (fussy-filter-orderless string table pred point)))
 
 (defun fussy-filter-orderless (string table pred _point)
   "Match STRING to the entries in TABLE.
