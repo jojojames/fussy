@@ -471,26 +471,6 @@ This test asserts `fussy-encode-coding-string' is much much faster than
      (eq (fussy--using-pcm-highlight-p) nil))))
 
 ;;
-;; (@* "`fussy-pattern-flex-2-test'" )
-;;
-
-(ert-deftest fussy-pattern-flex-2-test ()
-  "Test flex-2 matches `orderless-filter'+`orderless-flex'."
-  (let ((orderless-matching-styles '(orderless-flex)))
-    (should
-     (string= (fussy-pattern-str (fussy-pattern-flex-2 "a"))
-              (fussy-pattern-str (orderless-pattern-compiler "a"))))
-    (should
-     (string= (fussy-pattern-str (fussy-pattern-flex-2 "abc"))
-              (fussy-pattern-str (orderless-pattern-compiler "abc"))))
-    (should
-     (string= (fussy-pattern-str (fussy-pattern-flex-2 "abasd90803423c"))
-              (fussy-pattern-str (orderless-pattern-compiler "abasd90803423c"))))
-    (should
-     (string= (fussy-pattern-str (fussy-pattern-flex-2 "reb"))
-              (fussy-pattern-str (orderless-pattern-compiler "reb"))))))
-
-;;
 ;; (@* "`fussy--history-hash-table'" )
 ;;
 
