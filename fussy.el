@@ -286,6 +286,8 @@ FN should at least take in STR and QUERY."
                  ,'flx-score)
           (const :tag "Score using Flx-RS"
                  ,#'fussy-flx-rs-score)
+          (const :tag "Score using FZF"
+                 ,'fzf-native-score)
           (const :tag "Score using Fuz"
                  ,#'fussy-fuz-score)
           (const :tag "Score using Fuz-Bin"
