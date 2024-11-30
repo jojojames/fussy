@@ -1125,6 +1125,17 @@ result: LIST ^a"
 ;; (@* "Integration with other Packages" )
 ;;
 
+;; `eglot' integration
+;;;###autoload
+(defun fussy-eglot-setup ()
+  "Set up `fussy' with `eglot'."
+  (with-eval-after-load 'eglot
+    ;; `eglot' defaults to flex, so set an override to point `fussy' instead.
+    (add-to-list 'completion-category-overrides
+                 '(eglot-capf (styles fussy eglot--dumb-flex)))
+    (add-to-list 'completion-category-overrides
+                 '(eglot (styles fussy basic)))))
+
 ;; `company' integration.
 (defvar company-backend)
 ;; Use with `company-transformers'.

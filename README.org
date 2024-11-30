@@ -408,14 +408,8 @@ is 2.
                           fussy-prefer-prefix nil)))
 #+end_src
 * Eglot Integration
-
-Eglot by default uses ~flex~ in ~completion-category-defaults~.
-Use this to override that.
-
 #+begin_src emacs-lisp :tangle yes
-  (with-eval-after-load 'eglot
-    (add-to-list 'completion-category-overrides
-                 '(eglot (styles fussy basic))))
+  (fussy-eglot-setup)
 #+end_src
 * Helm Integration
 Integration with [[https://github.com/emacs-helm/helm][helm]] is possible by
@@ -559,19 +553,8 @@ a different algorithm.
     :config
     (setq fussy-score-fn 'fussy-flx-rs-score)
     (setq fussy-filter-fn 'fussy-filter-orderless-flex)
-
-    (push 'fussy completion-styles)
-    (setq
-     ;; For example, project-find-file uses 'project-files which uses
-     ;; substring completion by default. Set to nil to make sure it's using
-     ;; flx.
-     completion-category-defaults nil
-     completion-category-overrides nil)
-
-    ;; `eglot' defaults to flex, so set an override to point to fussy instead.
-    (with-eval-after-load 'eglot
-      (add-to-list 'completion-category-overrides
-                   '(eglot (styles fussy basic)))))
+    (fussy-setup)
+    (fussy-eglot-setup))
 
 #+end_src
 * My Configuration
@@ -579,6 +562,15 @@ Documenting my configuration for the users that may want to copy. Unlike the
 former configuration, this section will be kept up to date with my ~init.el~.
 
 #+begin_src emacs-lisp :tangle yes
+(use-package fzf-native
+  :ensure
+  (:repo "dangduc/fzf-native"
+         :host github
+         :files (:defaults "bin"))
+  :config
+  (fzf-native-load-dyn)
+  (setq fussy-score-fn 'fussy-fzf-native-score))
+
 (use-package fussy
   :ensure
   (fussy :host github :repo "jojojames/fussy")
@@ -590,18 +582,8 @@ former configuration, this section will be kept up to date with my ~init.el~.
   (setq fussy-filter-fn 'fussy-filter-default)
   (setq fussy-use-cache t)
   (setq fussy-compare-same-score-fn 'fussy-histlen->strlen<)
-  (push 'fussy completion-styles)
-  (setq
-   ;; For example, project-find-file uses 'project-files which uses
-   ;; substring completion by default. Set to nil to make sure it's using
-   ;; flx.
-   completion-category-defaults nil
-   completion-category-overrides nil)
-
-  ;; `eglot' defaults to flex, so set an override to point to flx instead.
-  (with-eval-after-load 'eglot
-    (add-to-list 'completion-category-overrides
-                 '(eglot (styles fussy basic)))))
+  (fussy-setup)
+  (fussy-eglot-setup))
 
 (use-package company
   :config
