@@ -411,6 +411,11 @@ This only applies when `fussy-max-candidate-limit' is reached."
   :type 'boolean
   :group 'fussy)
 
+(defcustom fussy-company-prefix-length 4
+  "The prefix length before using `fussy' with `company'."
+  :group 'fussy
+  :type 'integer)
+
 ;;;###autoload
 (defcustom fussy-adjust-metadata-fn
   #'fussy--adjust-metadata
@@ -1140,14 +1145,69 @@ result: LIST ^a"
 
 ;; `company' integration.
 (defvar company-backend)
-;; Use with `company-transformers'.
-;; (setq company-transformers
-;;           '(fussy-company-sort-by-completion-score))
+(defvar company-prefix)
+
 (defun fussy-company-sort-by-completion-score (candidates)
   "`company' transformer to sort CANDIDATES."
   (if (functionp company-backend)
       candidates
     (fussy--sort candidates)))
+
+(defun fussy-company--transformer (f &rest args)
+  "Advise `company--transform-candidates'."
+  (if (length< company-prefix fussy-company-prefix-length)
+      ;; Transform normally for short prefixes.
+      (let ((fussy-can-adjust-metadata-p nil))
+        (apply f args))
+    (let ((company-transformers
+           ;; `fussy-score' still needs to do sorting.
+           ;; `fussy-fzf-score' sorts on its own.
+           (if (eq 'fussy-score-ALL-fn 'fussy-score)
+               '(fussy-company-sort-by-completion-score)
+             '())))
+      ;; Warning: Unused lexical variable `company-transformers'
+      (ignore company-transformers)
+      (apply f args))))
+
+(defun fussy-company--fetch-candidates (f &rest args)
+  "Advise `company--fetch-candidates'."
+  (let ((prefix (nth 0 args))
+        (_suffix (nth 1 args)))
+    (if (length< prefix fussy-company-prefix-length)
+        ;; Don't use `fussy' for 0 length prefixes.
+        (let ((completion-styles (remq 'fussy completion-styles))
+              (completion-category-overrides nil)
+              (fussy-can-adjust-metadata-p nil))
+          (apply f args))
+      (let ((fussy-max-candidate-limit 5000)
+            (fussy-default-regex-fn 'fussy-pattern-first-letter)
+            (fussy-prefer-prefix nil))
+        (apply f args)))))
+
+(defun fussy-company--preprocess-candidates (candidates)
+  "Advise `company--preprocess-candidates'.
+
+This is to try to avoid a additional sort step."
+  ;; (cl-assert (cl-every #'stringp candidates))
+  ;; (unless (company-call-backend 'sorted)
+  ;;   (setq candidates (sort candidates 'string<)))
+  (when (and (fboundp 'company-call-backend)
+             (fboundp 'company--strip-duplicates))
+    (when (company-call-backend 'duplicates)
+      (company--strip-duplicates candidates)))
+  candidates)
+
+(defun fussy-company-setup ()
+  "Set up `company' with `fussy'."
+  (with-eval-after-load 'company
+    (when (eq 'fussy-score-fn 'fussy-score)
+      (advice-add 'company-auto-begin :before 'fussy-wipe-cache))
+    (advice-add 'company--transform-candidates
+                :around 'fussy-company--transformer)
+    (advice-add 'company--fetch-candidates
+                :around 'fussy-company--fetch-candidates)
+    (advice-add 'company--preprocess-candidates
+                :override 'fussy-company--preprocess-candidates)))
 
 ;; `fuz' integration.
 (declare-function "fuz-fuzzy-match-skim" "fuz")

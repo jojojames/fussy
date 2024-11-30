@@ -16,7 +16,7 @@ This package is intended to be used with packages that leverage
 ~completion-styles~, e.g. ~completing-read~ and ~completion-at-point-functions~.
 
 It is usable with ~icomplete~ (as well as ~fido-mode~), ~selectrum~,
-~vertico~, ~corfu~, ~helm~ and ~company-mode~'s ~company-capf~.
+~vertico~, ~corfu~, ~helm~ and ~company-mode~'.
 
 It is not currently usable with ~ido~ which doesn't support
 ~completion-styles~ and has its own sorting and filtering system.
@@ -196,205 +196,10 @@ Note, ~hotfuzz~ has its own ~completion-style~ that may be worth using over this
     :config
     (setq fussy-score-fn 'fussy-hotfuzz-score))
 #+end_src
-* Caching
-Results and filtering can be cached for improved performance by setting
-~fussy-use-cache~ to t.
-
-With this set to t:
-
-If user already entered the same query:
-
-e.g. User types "a" -> "ab" and then backspaces into "a" again.
-
-Results from the originally entered "a" will be used for the second entered "a".
-
-If user is entering a new query but there exists results from a previous query
-in the cache:
-
-e.g. User types "a" and then "ab". Results from "a" will then be used for
-filtering in "ab".
-
-To use this with ~company~ and ~corfu~, use an advice to reset the cache upon
-new completion requests.
-
-#+begin_src emacs-lisp :tangle yes
-(advice-add 'corfu--capf-wrapper :before 'fussy-wipe-cache)
-(advice-add 'company-auto-begin :before 'fussy-wipe-cache)
-#+end_src
-* Filtering Choices
-Before scoring and sorting candidates, we must somehow filter them from the
-completion table. The approaches below are several ways to do that, each with
-varying advantages and disadvantages.
-
-For the choices below, we benchmark the functions by benchmarking the entire
-~fussy-all-completions~ function with the below macro calling ~M-x
-describe-symbol (30000 candidates)~ in the scratch buffer.
-
-#+begin_src emacs-lisp :tangle yes
-  (defmacro fussy--measure-time (&rest body)
-    "Measure the time it takes to evaluate BODY.
-  https://lists.gnu.org/archive/html/help-gnu-emacs/2008-06/msg00087.html"
-    `(let ((time (current-time)))
-       (let ((result ,@body))
-         (message "%.06f" (float-time (time-since time)))
-         result)))
-#+end_src
-
-** Flex
-This is the default filtering method and is 1:1 to the filtering done
-when using the ~flex~ ~completion-style~. Advantages are no additional
-dependencies (e.g. ~orderless~) and likely bug-free/stable to use.
-
-The only disadvantage is that it's the slowest of the filtering methods.
-
-#+begin_src emacs-lisp :tangle yes
-
-  ;; Flex
-  (setq fussy-filter-fn 'fussy-filter-flex)
-  ;; Type Letter a
-  ;; 0.078952
-  ;; Type Letter b
-  ;; 0.052590
-  ;; Type Letter c
-  ;; 0.065808
-  ;; Type Letter d
-  ;; 0.061254
-  ;; Type Letter e
-  ;; 0.098000
-  ;; Type Letter f
-  ;; 0.053321
-  ;; Type Letter g
-  ;; 0.050180
-#+end_src
-
-** Fast
-This is another usable filtering method and leverages the ~all-completions~ API
-written in C to do its filtering. It seems to be the fastest of the filtering
-methods from quick benchmarking as well as requiring no additional dependencies
-(e.g. ~orderless~).
-
-Implementation may be buggy though, so use with caution.
-
-#+begin_src emacs-lisp :tangle yes
-  ;; Fast
-  (setq fussy-filter-fn 'fussy-filter-default)
-  ;; Type Letter a
-  ;; 0.030671
-  ;; Type Letter b
-  ;; 0.030247
-  ;; Type Letter c
-  ;; 0.036047
-  ;; Type Letter d
-  ;; 0.032071
-  ;; Type Letter e
-  ;; 0.034785
-  ;; Type Letter f
-  ;; 0.030392
-  ;; Type Letter g
-  ;; 0.033473
-#+end_src
-** Orderless
-[[https://github.com/oantolin/orderless][orderless]] can also be used for
-filtering.  It uses the ~all-completions~ API like ~fussy-filter-default~ so is
-also faster than the default filtering but has a dependency on ~orderless~.
-
-#+begin_src emacs-lisp :tangle yes
-  ;; Orderless
-  (setq fussy-filter-fn 'fussy-filter-orderless-flex)
-  ;; Type Letter a
-  ;; 0.065390
-  ;; Type Letter b
-  ;; 0.036942
-  ;; Type Letter c
-  ;; 0.054091
-  ;; Type Letter d
-  ;; 0.048816
-  ;; Type Letter e
-  ;; 0.074258
-  ;; Type Letter f
-  ;; 0.040900
-  ;; Type Letter g
-  ;; 0.037928
-#+end_src
-
-To use [[https://github.com/oantolin/orderless][orderless]] filtering:
-
-#+begin_src emacs-lisp :tangle yes
-  (use-package orderless
-    :straight t
-    :ensure t
-    :commands (orderless-filter))
-
-  (setq fussy-filter-fn 'fussy-filter-orderless)
-#+end_src
 * Company Integration
-Use an advice to enable ~fussy~.
-
+Call ~fussy-company-setup~. This function advises a few ~company-mode~ functions.
 #+begin_src emacs-lisp :tangle yes
-  (defun j-company-capf (f &rest args)
-    "Manage `completion-styles'."
-    (if (length= company-prefix 0)
-        ;; Don't use `fussy' for 0 length prefixes.
-        (let ((completion-styles (remq 'fussy completion-styles)))
-          (apply f args))
-      (let ((fussy-max-candidate-limit 5000)
-            (fussy-default-regex-fn 'fussy-pattern-first-letter)
-            (fussy-prefer-prefix nil))
-        (apply f args))))
-
-  (defun j-company-transformers (f &rest args)
-    "Manage `company-transformers'."
-    (if (length= company-prefix 0)
-        ;; Don't use `fussy' for 0 length prefixes.
-        (apply f args)
-      (let ((company-transformers '(fussy-company-sort-by-completion-score)))
-        (apply f args))))
-
-  (advice-add 'company-auto-begin :before 'fussy-wipe-cache)
-  (advice-add 'company--transform-candidates :around 'j-company-transformers)
-
-  (defun company-map-backends-to-fussy (backends)
-    (dolist (x backends)
-      (if (listp x)
-          (company-map-backends-to-fussy x)
-        (when (functionp x)
-          (advice-add x :around 'j-company-capf)))))
-  (company-map-backends-to-fussy company-backends)
-#+end_src
-
-The ~company-transformer~ advice is needed to actually sort the scored
-matches.
-
-Fuzzy completion may or may not be too slow when completing with
-[[https://github.com/company-mode/company-mode][company-mode]].
-
-For this, we can advise ~company-capf~ to skip ~fussy~ when desired.
-
-The snippet below only uses fuzzy filtering and scoring when the prefix length
-is 2.
-#+begin_src emacs-lisp :tangle yes
-  (defun bb-company-capf (f &rest args)
-    "Manage `completion-styles'."
-    (if (length< company-prefix 2)
-        (let ((completion-styles (remq 'fussy completion-styles)))
-          (apply f args))
-      (let ((fussy-max-candidate-limit 5000)
-            (fussy-default-regex-fn 'fussy-pattern-first-letter)
-            (fussy-prefer-prefix nil))
-        (apply f args))))
-
-  (defun bb-company-transformers (f &rest args)
-    "Manage `company-transformers'."
-    (if (length< company-prefix 2)
-        (apply f args)
-      (let ((company-transformers '(fussy-company-sort-by-completion-score)))
-        (apply f args))))
-
-  (advice-add 'company--transform-candidates :around 'bb-company-transformers)
-  (advice-add 'company-capf :around 'bb-company-capf)
-
-  ;; For cache functionality.
-  (advice-add 'company-auto-begin :before 'fussy-wipe-cache)
+  (fussy-company-setup)
 #+end_src
 * Corfu Integration
 #+begin_src emacs-lisp :tangle yes
@@ -554,8 +359,8 @@ a different algorithm.
     (setq fussy-score-fn 'fussy-flx-rs-score)
     (setq fussy-filter-fn 'fussy-filter-orderless-flex)
     (fussy-setup)
-    (fussy-eglot-setup))
-
+    (fussy-eglot-setup)
+    (fussy-company-setup))
 #+end_src
 * My Configuration
 Documenting my configuration for the users that may want to copy. Unlike the
@@ -571,52 +376,21 @@ former configuration, this section will be kept up to date with my ~init.el~.
   (fzf-native-load-dyn)
   (setq fussy-score-fn 'fussy-fzf-native-score))
 
+(use-package company
+  :config
+  (global-company-mode))
+
 (use-package fussy
   :ensure
   (fussy :host github :repo "jojojames/fussy")
   :config
-  ;; Replace `fussy-score'.
-  (advice-add 'fussy-score :override 'fussy-fzf-score)
-  (advice-add 'fussy--using-pcm-highlight-p
-              :override (defun fussy-always-true (&rest _) t))
+  (setq fussy-score-ALL-fn 'fussy-fzf-score)
   (setq fussy-filter-fn 'fussy-filter-default)
   (setq fussy-use-cache t)
   (setq fussy-compare-same-score-fn 'fussy-histlen->strlen<)
   (fussy-setup)
-  (fussy-eglot-setup))
-
-(use-package company
-  :config
-  (defun j-company-capf (f &rest args)
-    "Manage `completion-styles'."
-    (if (length= company-prefix 0)
-        ;; Don't use `fussy' for 0 length prefixes.
-        (let ((completion-styles (remq 'fussy completion-styles)))
-          (apply f args))
-      (let ((fussy-max-candidate-limit 5000)
-            (fussy-default-regex-fn 'fussy-pattern-first-letter)
-            (fussy-prefer-prefix nil))
-        (apply f args))))
-
-  (defun j-company-transformers (f &rest args)
-    "Manage `company-transformers'."
-    (if (length= company-prefix 0)
-        ;; Don't use `fussy' for 0 length prefixes.
-        (apply f args)
-      (let ((company-transformers '(fussy-company-sort-by-completion-score)))
-        (apply f args))))
-
-  (advice-add 'company-auto-begin :before 'fussy-wipe-cache)
-  (advice-add 'company--transform-candidates :around 'j-company-transformers)
-  (defun company-map-backends-to-fussy (backends)
-    (dolist (x backends)
-      (if (listp x)
-          (company-map-backends-to-fussy x)
-        (when (functionp x)
-          (advice-add x :around 'j-company-capf)))))
-  (company-map-backends-to-fussy company-backends)
-
-  (global-company-mode))
+  (fussy-eglot-setup)
+  (fussy-company-setup))
 #+end_src
 * Scoring Samples
 Listed below are samples of scores that backends return given a candidate string and a search string to match against it.
@@ -635,6 +409,153 @@ Another way to do it is to feed candidates and queries into ~fussy-score~ with t
   ;; candidate: fork/yasnippet-snippets/snippets/chef-mode/cookbook_file query: mkfile 128
 #+end_src
 
+* Filtering Choices
+Before scoring and sorting candidates, we must somehow filter them from the
+completion table. The approaches below are several ways to do that, each with
+varying advantages and disadvantages.
+
+For the choices below, we benchmark the functions by benchmarking the entire
+~fussy-all-completions~ function with the below macro calling ~M-x
+describe-symbol (30000 candidates)~ in the scratch buffer.
+
+#+begin_src emacs-lisp :tangle yes
+  (defmacro fussy--measure-time (&rest body)
+    "Measure the time it takes to evaluate BODY.
+  https://lists.gnu.org/archive/html/help-gnu-emacs/2008-06/msg00087.html"
+    `(let ((time (current-time)))
+       (let ((result ,@body))
+         (message "%.06f" (float-time (time-since time)))
+         result)))
+#+end_src
+
+** Flex
+This is the default filtering method and is 1:1 to the filtering done
+when using the ~flex~ ~completion-style~. Advantages are no additional
+dependencies (e.g. ~orderless~) and likely bug-free/stable to use.
+
+The only disadvantage is that it's the slowest of the filtering methods.
+
+#+begin_src emacs-lisp :tangle yes
+
+  ;; Flex
+  (setq fussy-filter-fn 'fussy-filter-flex)
+  ;; Type Letter a
+  ;; 0.078952
+  ;; Type Letter b
+  ;; 0.052590
+  ;; Type Letter c
+  ;; 0.065808
+  ;; Type Letter d
+  ;; 0.061254
+  ;; Type Letter e
+  ;; 0.098000
+  ;; Type Letter f
+  ;; 0.053321
+  ;; Type Letter g
+  ;; 0.050180
+#+end_src
+
+** Fast
+This is another usable filtering method and leverages the ~all-completions~ API
+written in C to do its filtering. It seems to be the fastest of the filtering
+methods from quick benchmarking as well as requiring no additional dependencies
+(e.g. ~orderless~).
+
+Implementation may be buggy though, so use with caution.
+
+#+begin_src emacs-lisp :tangle yes
+  ;; Fast
+  (setq fussy-filter-fn 'fussy-filter-default)
+  ;; Type Letter a
+  ;; 0.030671
+  ;; Type Letter b
+  ;; 0.030247
+  ;; Type Letter c
+  ;; 0.036047
+  ;; Type Letter d
+  ;; 0.032071
+  ;; Type Letter e
+  ;; 0.034785
+  ;; Type Letter f
+  ;; 0.030392
+  ;; Type Letter g
+  ;; 0.033473
+#+end_src
+** Orderless
+[[https://github.com/oantolin/orderless][orderless]] can also be used for
+filtering.  It uses the ~all-completions~ API like ~fussy-filter-default~ so is
+also faster than the default filtering but has a dependency on ~orderless~.
+
+#+begin_src emacs-lisp :tangle yes
+  ;; Orderless
+  (setq fussy-filter-fn 'fussy-filter-orderless-flex)
+  ;; Type Letter a
+  ;; 0.065390
+  ;; Type Letter b
+  ;; 0.036942
+  ;; Type Letter c
+  ;; 0.054091
+  ;; Type Letter d
+  ;; 0.048816
+  ;; Type Letter e
+  ;; 0.074258
+  ;; Type Letter f
+  ;; 0.040900
+  ;; Type Letter g
+  ;; 0.037928
+#+end_src
+
+To use [[https://github.com/oantolin/orderless][orderless]] filtering:
+
+#+begin_src emacs-lisp :tangle yes
+  (use-package orderless
+    :straight t
+    :ensure t
+    :commands (orderless-filter))
+
+  (setq fussy-filter-fn 'fussy-filter-orderless)
+#+end_src
+* Caching
+Results and filtering can be cached for improved performance by setting
+~fussy-use-cache~ to t.
+
+With this set to t:
+
+If user already entered the same query:
+
+e.g. User types "a" -> "ab" and then backspaces into "a" again.
+
+Results from the originally entered "a" will be used for the second entered "a".
+
+If user is entering a new query but there exists results from a previous query
+in the cache:
+
+e.g. User types "a" and then "ab". Results from "a" will then be used for
+filtering in "ab".
+
+To use this with ~company~ and ~corfu~, use an advice to reset the cache upon
+new completion requests.
+
+#+begin_src emacs-lisp :tangle yes
+(advice-add 'corfu--capf-wrapper :before 'fussy-wipe-cache)
+(fussy-company-setup)
+#+end_src
+* Benchmarking
+#+begin_src emacs-lisp :tangle yes
+(setq random-col (all-completions "" 'help--symbol-completion-table nil))
+
+(benchmark-run 10 (dolist (x random-col)
+                    (flx-score x "a")))
+(29.064313 37 3.8456069999999993)
+
+(benchmark-run 10 (dolist (x random-col)
+                    (fussy-fzf-native-score x "a")))
+(5.763323 2 0.2168050000000008)
+
+ ;; Handles entire list at once.
+(benchmark-run 10 (fussy-fzf-score random-col "a"))
+(0.33876900000000004 0 0.0)
+#+end_src
 * Contributing
 Set up ~eask~.
 #+begin_src sh :tangle yes
