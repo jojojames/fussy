@@ -9,7 +9,7 @@
 
 This is a package to provide a ~completion-style~ to Emacs that is able to
 leverage [[https://github.com/lewang/flx][flx]] as well as various other
-libraries such like [[https://github.com/dangduc/fzf-native][fzf-native]]
+libraries such as [[https://github.com/dangduc/fzf-native][fzf-native]]
 to provide intelligent scoring and sorting.
 
 This package is intended to be used with packages that leverage
@@ -51,7 +51,8 @@ Or clone / download this repository and modify your ~load-path~:
 
 * Scoring Backends
 ~fussy~ defaults to [[https://github.com/lewang/flx][flx]] for scoring matches
-but it has the most integration with [[https://github.com/dangduc/fzf-native][fzf-native]]
+but it has the most integration with [[https://github.com/dangduc/fzf-native][fzf-native]].
+
 Additional (listed below) scoring libraries can also be used.
 ** Flx
 [[https://github.com/lewang/flx][flx]] is a dependency of ~fussy~ and the default
@@ -362,6 +363,9 @@ a different algorithm.
     (fussy-eglot-setup)
     (fussy-company-setup))
 #+end_src
+
+For the most performant option, use [[https://github.com/dangduc/fzf-native][fzf-native]]
+and see my configuration for an example. See Benchmarking below for basic runs.
 * My Configuration
 Documenting my configuration for the users that may want to copy. Unlike the
 former configuration, this section will be kept up to date with my ~init.el~.
