@@ -4,7 +4,7 @@
 
 ;; Author: James Nguyen <james@jojojames.com>
 ;; Version: 1.0
-;; Package-Requires: ((emacs "28.1") (flx "0.5"))
+;; Package-Requires: ((emacs "28.2") (flx "0.5"))
 ;; Keywords: matching
 ;; Homepage: https://github.com/jojojames/fussy
 
