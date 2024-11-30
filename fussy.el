@@ -446,6 +446,13 @@ See `fussy-score-threshold-to-filter-alist'.")
 (defvar-local fussy--all-cache nil
   "Hash table representing a cache for `fussy-all-completions'.")
 
+(defvar-local fussy-can-adjust-metadata-p t
+  "Variable to flip whether or not `fussy' can adjust metadata.
+
+This is intended to be let-bound by users when they don't want any sorting.
+
+See `fussy--adjust-metadata' for more details.")
+
 ;;
 ;; (@* "All Completions Interface/API" )
 ;;
@@ -756,8 +763,10 @@ If SCORE does not have indices to highlight, return OBJ unmodified."
          ;; prompt".  E.g. The latter is always true for file
          ;; searches, meaning we'll be doing extra work when we
          ;; needn't.
-         (or (not (window-minibuffer-p))
-             (> (point-max) (minibuffer-prompt-end)))))
+         (and
+          fussy-can-adjust-metadata-p
+          (or (not (window-minibuffer-p))
+              (> (point-max) (minibuffer-prompt-end))))))
     `(metadata
       ,@(and flex-is-filtering-p
              `((display-sort-function . fussy--sort)))
@@ -774,8 +783,10 @@ If SCORE does not have indices to highlight, return OBJ unmodified."
          ;; prompt".  E.g. The latter is always true for file
          ;; searches, meaning we'll be doing extra work when we
          ;; needn't.
-         (or (not (window-minibuffer-p))
-             (> (point-max) (minibuffer-prompt-end)))))
+         (and
+          fussy-can-adjust-metadata-p
+          (or (not (window-minibuffer-p))
+              (> (point-max) (minibuffer-prompt-end))))))
     `(metadata
       ,@(and flex-is-filtering-p
              `((display-sort-function . identity)))
