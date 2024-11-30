@@ -430,6 +430,9 @@ https://lists.gnu.org/archive/html/help-gnu-emacs/2008-06/msg00087.html"
 ;; (@* "Constants and Variables" )
 ;;
 
+(defvar completion-lazy-hilit)
+(defvar completion-lazy-hilit-fn)
+
 (defvar-local fussy--hist-hash nil
   "Hash table representing `minibuffer-history-variable'.
 
@@ -956,15 +959,20 @@ Use `orderless' for filtering by passing STRING, TABLE and PRED to
 
 `orderless-filter'.  _POINT is not used."
   (require 'orderless)
-  (when (and (fboundp 'orderless-filter)
-             (fboundp 'orderless-highlight-matches)
-             (fboundp 'orderless--prefix+pattern))
-    (let* ((completions (orderless-filter string table pred)))
-      (when completions
-        (pcase-let* ((`(,prefix . ,pattern)
-                      (orderless--prefix+pattern string table pred)))
-          (list (orderless-highlight-matches pattern completions)
-                pattern prefix))))))
+  (when (and (fboundp 'orderless--filter)
+             (fboundp 'orderless--highlight)
+             (fboundp 'orderless--compile))
+    (pcase-let ((`(,prefix ,regexps ,ignore-case ,pred)
+                 (orderless--compile string table pred)))
+      (when-let ((completions (orderless--filter
+                               prefix regexps ignore-case table pred)))
+        (if completion-lazy-hilit
+            (setq completion-lazy-hilit-fn
+                  (apply-partially #'orderless--highlight regexps ignore-case))
+          (cl-loop for str in-ref completions do
+                   (setf str (orderless--highlight
+                              regexps ignore-case (substring str)))))
+        (list completions regexps prefix)))))
 
 (defun fussy-filter-flex (string table pred point)
   "Match STRING to the entries in TABLE.
