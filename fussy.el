@@ -251,12 +251,6 @@ If using `fussy-filter-default', `fussy-default-regex-fn' can be configured."
           (function :tag "Custom function"))
   :group 'fussy)
 
-(define-obsolete-variable-alias 'fussy-filter-fast 'fussy-filter-default
-  "2022 07 12")
-
-(define-obsolete-variable-alias 'fussy-fast-regex-fn 'fussy-default-regex-fn
-  "2022 07 12")
-
 (defcustom fussy-default-regex-fn
   #'fussy-pattern-default
   "Function used to create regex for `fussy-filter-default'.
