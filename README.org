@@ -9,7 +9,8 @@
 
 This is a package to provide a ~completion-style~ to Emacs that is able to
 leverage [[https://github.com/lewang/flx][flx]] as well as various other
-fuzzy matching scoring packages to provide intelligent scoring and sorting.
+libraries such like [[https://github.com/dangduc/fzf-native][fzf-native]]
+to provide intelligent scoring and sorting.
 
 This package is intended to be used with packages that leverage
 ~completion-styles~, e.g. ~completing-read~ and ~completion-at-point-functions~.
@@ -18,9 +19,8 @@ It is usable with ~icomplete~ (as well as ~fido-mode~), ~selectrum~,
 ~vertico~, ~corfu~, ~helm~ and ~company-mode~'s ~company-capf~.
 
 It is not currently usable with ~ido~ which doesn't support
-~completion-styles~ and has its own sorting and filtering system.  In
-addition to those packages, other ~company-mode~ backends will not hook into
-this package.  ~ivy~ support can be somewhat baked in following
+~completion-styles~ and has its own sorting and filtering system.
+~ivy~ support can be somewhat baked in following
 https://github.com/jojojames/fussy#ivy-integration but the
 performance gains may not be as high as the other ~completion-read~ APIs.
 * Installation
@@ -39,25 +39,20 @@ Or clone / download this repository and modify your ~load-path~:
 
   (unless (package-installed-p 'fussy)
     (package-install 'fussy))
-  (add-to-list 'completion-styles 'fussy t)
+  (fussy-setup)
 #+end_src
 ** Use-Package Example
 #+begin_src emacs-lisp :tangle yes
   (use-package fussy
     :ensure t
     :config
-    (push 'fussy completion-styles)
-    (setq
-     ;; For example, project-find-file uses 'project-files which uses
-     ;; substring completion by default. Set to nil to make sure it's using
-     ;; flx.
-     completion-category-defaults nil
-     completion-category-overrides nil))
+    (fussy-setup))
 #+end_src
 
 * Scoring Backends
-We default to [[https://github.com/lewang/flx][flx]] for scoring matches but
-additional (listed below) scoring functions/backends can be used.
+~fussy~ defaults to [[https://github.com/lewang/flx][flx]] for scoring matches
+but it has the most integration with [[https://github.com/dangduc/fzf-native][fzf-native]]
+Additional (listed below) scoring libraries can also be used.
 ** Flx
 [[https://github.com/lewang/flx][flx]] is a dependency of ~fussy~ and the default
 scoring algorithm.
@@ -86,7 +81,6 @@ lisp implementation.
     (setq fussy-score-fn 'fussy-flx-rs-score)
     (flx-rs-load-dyn))
 #+end_src
-
 ** Fzf-Native
 Use [[https://github.com/dangduc/fzf-native][fzf-native]] for scoring.
 
@@ -204,7 +198,7 @@ Note, ~hotfuzz~ has its own ~completion-style~ that may be worth using over this
 #+end_src
 * Caching
 Results and filtering can be cached for improved performance by setting
-~fussy-use-cache~ to t (NOTE: in the future this will be default to t).
+~fussy-use-cache~ to t.
 
 With this set to t:
 
