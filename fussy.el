@@ -280,7 +280,9 @@ are more exhaustive than Flex 1 functions."
   'flx-score
   "Function used for scoring candidates.
 
-FN should at least take in STR and QUERY."
+FN should at least take in STR and QUERY.
+
+This may or may not be used by `fussy-score-ALL-fn'."
   :type `(choice
           (const :tag "Score using Flx"
                  ,'flx-score)
@@ -298,6 +300,24 @@ FN should at least take in STR and QUERY."
                  ,#'fussy-sublime-fuzzy-score)
           (const :tag "Score using Hotfuzz"
                  ,#'fussy-hotfuzz-score)
+          (function :tag "Custom function"))
+  :group 'fussy)
+
+(defcustom fussy-score-ALL-fn 'fussy-score
+  "Function used for score ALL candidates.
+
+FN should take in ARGS: candidates string &optional cache.
+
+This function may call out to `fussy-score-fn' to score matches or
+does the heavy lifting itself.
+
+For example `fussy-score' makes use of `fussy-score-fn' but
+`fussy-fzf-native-score' sends its entire collection to `fzf-native' instead."
+  :type `(choice
+          (const :tag "Default scoring"
+                 ,'fussy-score)
+          (const :tag "Scoring using `fzf-native-score-all'."
+                 ,#'fussy-fzf-native-score)
           (function :tag "Custom function"))
   :group 'fussy)
 
@@ -546,7 +566,7 @@ Implement `all-completions' interface with additional fuzzy / `flx' scoring."
                   (if (< (length all) fussy-max-candidate-limit)
                       (fussy--maybe-highlight
                        pattern
-                       (fussy-score all infix cache))
+                       (fussy-outer-score all infix cache))
                     (let ((unscored-candidates '())
                           (candidates-to-score '()))
                       ;; Presort candidates by
@@ -566,7 +586,7 @@ Implement `all-completions' interface with additional fuzzy / `flx' scoring."
                        ;; Compute all of the fuzzy scores only for candidates.
                        (fussy--maybe-highlight
                         pattern
-                        (fussy-score
+                        (fussy-outer-score
                          (reverse candidates-to-score)
                          infix cache))
                        ;; Add the unsorted candidates.
@@ -619,6 +639,10 @@ Implement `all-completions' interface with additional fuzzy / `flx' scoring."
                          fussy-score-fn
                          fussy-score-threshold-to-filter-alist)
                         0))))))
+
+(defun fussy-outer-score (candidates string &optional cache)
+  "Function used to wrap `fussy-score-ALL-fn'."
+  (funcall fussy-score-ALL-fn candidates string cache))
 
 (defun fussy-fzf-score (candidates string &optional _cache)
   "Score and propertize CANDIDATES using STRING.
@@ -859,13 +883,15 @@ Check C1 and C2 in `minibuffer-history-variable' which is stored in
 Check if TABLE needs to be specially highlighted.
 Check if `fussy-score-fn' used doesn't return match indices.
 Check if `orderless' is being used."
-  (and
-   ;; These don't generate match indices to highlight at all so we should
-   ;; highlight with `completion-pcm--hilit-commonality'.
-   (memq fussy-score-fn fussy-score-fns-without-indices)
-   ;; If we're using `orderless' to filter, don't use pcm highlights because
-   ;; `orderless' does it on its own.
-   (not (fussy--orderless-p))))
+  (or
+   (eq 'fussy-score-ALL-fn 'fussy-fzf-score)
+   (and
+    ;; These don't generate match indices to highlight at all so we should
+    ;; highlight with `completion-pcm--hilit-commonality'.
+    (memq fussy-score-fn fussy-score-fns-without-indices)
+    ;; If we're using `orderless' to filter, don't use pcm highlights because
+    ;; `orderless' does it on its own.
+    (not (fussy--orderless-p)))))
 
 (defun fussy--history-hash-table ()
   "Return hash table representing `minibuffer-history-variable'.
