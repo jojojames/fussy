@@ -567,9 +567,9 @@ Implement `all-completions' interface with additional fuzzy / `flx' scoring."
               (when all
                 (if (or (> (length infix) fussy-max-query-length)
                         (string= infix ""))
-                    (fussy--pcm-highlight pattern all)
+                    (fussy--highlight-collection pattern all :force)
                   (if (< (length all) fussy-max-candidate-limit)
-                      (fussy--maybe-highlight
+                      (fussy--highlight-collection
                        pattern
                        (fussy-outer-score all infix cache))
                     (let ((unscored-candidates '())
@@ -589,14 +589,14 @@ Implement `all-completions' interface with additional fuzzy / `flx' scoring."
                         (push (pop unscored-candidates) candidates-to-score))
                       (append
                        ;; Compute all of the fuzzy scores only for candidates.
-                       (fussy--maybe-highlight
+                       (fussy--highlight-collection
                         pattern
                         (fussy-outer-score
                          (reverse candidates-to-score)
                          infix cache))
                        ;; Add the unsorted candidates.
                        ;; We could highlight these too,
-                       ;; (e.g. with `fussy--maybe-highlight') but these are
+                       ;; (e.g. with `fussy--highlight-collection') but these are
                        ;; at the bottom of the pile of candidates.
                        (if fussy-filter-unscored-candidates
                            (let ((r (car (funcall fussy-default-regex-fn infix))))
@@ -710,14 +710,12 @@ If `fussy-propertize-fn' is nil, no highlighting should take place."
    (not (fussy--orderless-p))
    fussy-propertize-fn))
 
-(defun fussy--maybe-highlight (pattern collection)
+(defun fussy--highlight-collection (pattern collection &optional force)
   "Highlight COLLECTION using PATTERN.
 
-Only highlight if `fussy--using-pcm-highlight-p' is t."
-  ;; (message (format "fn: %S collection: %s"
-  ;;                  'fussy--maybe-highlight collection))
+  Only highlight if `fussy--using-pcm-highlight-p' is t or FORCE is t."
   (when collection
-    (if (fussy--using-pcm-highlight-p)
+    (if (or force (fussy--using-pcm-highlight-p))
         (fussy--pcm-highlight pattern collection)
       ;; Assume that the collection's highlighting is handled elsewhere.
       collection)))
