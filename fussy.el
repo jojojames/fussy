@@ -867,7 +867,7 @@ Check if TABLE needs to be specially highlighted.
 Check if `fussy-score-fn' used doesn't return match indices.
 Check if `orderless' is being used."
   (or
-   (eq 'fussy-score-ALL-fn 'fussy-fzf-score)
+   (eq fussy-score-ALL-fn 'fussy-fzf-score)
    (and
     ;; These don't generate match indices to highlight at all so we should
     ;; highlight with `completion-pcm--hilit-commonality'.
@@ -1160,7 +1160,7 @@ result: LIST ^a"
     (let ((company-transformers
            ;; `fussy-score' still needs to do sorting.
            ;; `fussy-fzf-score' sorts on its own.
-           (if (eq 'fussy-score-ALL-fn 'fussy-score)
+           (if (eq fussy-score-ALL-fn 'fussy-score)
                '(fussy-company-sort-by-completion-score)
              '())))
       ;; Warning: Unused lexical variable `company-transformers'
@@ -1172,7 +1172,6 @@ result: LIST ^a"
   (let ((prefix (nth 0 args))
         (_suffix (nth 1 args)))
     (if (length< prefix fussy-company-prefix-length)
-        ;; Don't use `fussy' for 0 length prefixes.
         (let ((completion-styles (remq 'fussy completion-styles))
               (completion-category-overrides nil)
               (fussy-can-adjust-metadata-p nil))
@@ -1198,7 +1197,7 @@ This is to try to avoid a additional sort step."
 (defun fussy-company-setup ()
   "Set up `company' with `fussy'."
   (with-eval-after-load 'company
-    (when (eq 'fussy-score-fn 'fussy-score)
+    (when (eq fussy-score-fn 'fussy-score)
       (advice-add 'company-auto-begin :before 'fussy-wipe-cache))
     (advice-add 'company--transform-candidates
                 :around 'fussy-company--transformer)
