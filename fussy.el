@@ -1230,8 +1230,7 @@ This is to try to avoid a additional sort step."
 (defun fussy-company-setup ()
   "Set up `company' with `fussy'."
   (with-eval-after-load 'company
-    (when (eq fussy-score-fn 'fussy-score)
-      (advice-add 'company-auto-begin :before 'fussy-wipe-cache))
+    (advice-add 'company-auto-begin :before 'fussy-wipe-cache)
     (advice-add 'company--transform-candidates
                 :around 'fussy-company--transformer)
     (advice-add 'company--fetch-candidates
