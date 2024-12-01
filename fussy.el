@@ -779,6 +779,27 @@ If SCORE does not have indices to highlight, return STR unmodified."
                '(fussy fussy-try-completions fussy-all-completions
                        "Smart Fuzzy completion with scoring.")))
 
+;;;###autoload
+(defun fussy-setup ()
+  "Set up `fussy'."
+  (unless (memq 'fussy completion-styles)
+    (push 'fussy completion-styles))
+  ;; For example, project-find-file uses 'project-files which uses
+  ;; substring completion by default. Set our own defaults.
+  (setq completion-category-overrides
+        '((buffer
+           (styles fussy basic))
+          (unicode-name
+           (styles fussy basic))
+          (project-file
+           (styles fussy))
+          (xref-location
+           (styles fussy))
+          (info-menu
+           (styles fussy basic))
+          (symbol-help
+           (styles fussy basic)))))
+
 ;;
 ;; (@* "Sorting" )
 ;;
@@ -1326,31 +1347,6 @@ highlighting."
     ;; Looks like the score is flipped for `hotfuzz'.
     ;; See `hotfuzz-all-completions'.
     (list (+ 10000 (- (hotfuzz--cost query str))))))
-
-;;
-;; (@* "Bootstrap" )
-;;
-
-;;;###autoload
-(defun fussy-setup ()
-  "Set up `fussy'."
-  (unless (memq 'fussy completion-styles)
-    (push 'fussy completion-styles))
-  ;; For example, project-find-file uses 'project-files which uses
-  ;; substring completion by default. Set our own defaults.
-  (setq completion-category-overrides
-        '((buffer
-           (styles fussy basic))
-          (unicode-name
-           (styles fussy basic))
-          (project-file
-           (styles fussy))
-          (xref-location
-           (styles fussy))
-          (info-menu
-           (styles fussy basic))
-          (symbol-help
-           (styles fussy basic)))))
 
 (provide 'fussy)
 ;;; fussy.el ends here
