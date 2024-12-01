@@ -16,7 +16,7 @@ This package is intended to be used with packages that leverage
 ~completion-styles~, e.g. ~completing-read~ and ~completion-at-point-functions~.
 
 It is usable with ~icomplete~ (as well as ~fido-mode~), ~selectrum~,
-~vertico~, ~corfu~, ~helm~ and ~company-mode~'.
+~vertico~, ~corfu~, ~helm~ and ~company-mode~.
 
 It is not currently usable with ~ido~ which doesn't support
 ~completion-styles~ and has its own sorting and filtering system.

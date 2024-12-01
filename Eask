@@ -14,6 +14,7 @@
 
 (depends-on "emacs" "28.2")
 (depends-on "flx")
+(depends-on "compat")
 
 (development
  (depends-on "f")
