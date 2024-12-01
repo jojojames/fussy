@@ -342,7 +342,7 @@ Scoring functions in this list's highlighting are then taken care of by either
 
 `fussy-filter-orderless' or `completion-pcm--hilit-commonality'.  See
 
-`fussy--using-pcm-highlight-p'.
+`fussy--use-pcm-highlight-p'.
 
 Functions in this list should match `fussy-score-fn'."
   :type '(list function)
@@ -698,7 +698,7 @@ Set a text-property \='completion-score on candidates with their score.
 (defun fussy--should-propertize-p ()
   "Whether or not to call `fussy-propertize-fn'.
 
-If `fussy--using-pcm-highlight-p' is t, highlighting will be handled in
+If `fussy--use-pcm-highlight-p' is t, highlighting will be handled in
 `fussy--maybe-highlight'.
 
 If `fussy--orderless-p' is t, `fussy-filter-orderless' will take care of
@@ -706,16 +706,16 @@ highlighting.
 
 If `fussy-propertize-fn' is nil, no highlighting should take place."
   (and
-   (not (fussy--using-pcm-highlight-p))
+   (not (fussy--use-pcm-highlight-p))
    (not (fussy--orderless-p))
    fussy-propertize-fn))
 
 (defun fussy--highlight-collection (pattern collection &optional force)
   "Highlight COLLECTION using PATTERN.
 
-  Only highlight if `fussy--using-pcm-highlight-p' is t or FORCE is t."
+  Only highlight if `fussy--use-pcm-highlight-p' is t or FORCE is t."
   (when collection
-    (if (or force (fussy--using-pcm-highlight-p))
+    (if (or force (fussy--use-pcm-highlight-p))
         (fussy--pcm-highlight pattern collection)
       ;; Assume that the collection's highlighting is handled elsewhere.
       collection)))
@@ -881,7 +881,7 @@ Check C1 and C2 in `minibuffer-history-variable' which is stored in
   (or (eq fussy-filter-fn 'fussy-filter-orderless)
       (eq fussy-filter-fn 'fussy-filter-orderless-flex)))
 
-(defun fussy--using-pcm-highlight-p ()
+(defun fussy--use-pcm-highlight-p ()
   "Check if highlighting should use `completion-pcm--hilit-commonality'.
 
 Check if TABLE needs to be specially highlighted.
@@ -1076,7 +1076,7 @@ that's written in C for faster filtering."
   "Create flex pattern for highlighting.
 
 Respect BEFOREPOINT, AFTERPOINT, and BOUNDS."
-  (when (fussy--using-pcm-highlight-p)
+  (when (fussy--use-pcm-highlight-p)
     ;; Note to self:
     ;; The way we create the pattern here can be found in
     ;; `completion-substring--all-completions'.

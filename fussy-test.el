@@ -69,17 +69,17 @@ Check C1 and C2 in `minibuffer-history-variable'."
           (throw 'found nil))))))
 
 (defvar-local fussy-histlen-test-history-variable
-  '("first" "second" "third" "four" "fives" "dfljh" "90909" "23232" "zxj"
-    "a" "b" "c" "d" "e" "f" "g" "h" "i" "j" "fzf" "zbz" "fsd" "2df" "fzm"
-    "k" "l" "m" "n" "o" "p" "q" "r" "s" "t" "123" "345" "333" "4rf" "ffz"
-    "u" "v" "w" "x" "y" "z" "ab" "abc" "cd" "fdf" "ffff" "bzbzb" "abcdef"
-    "us" "av" "dw" "fx" "xy" "az" "ab" "abc" "zyy" "ffffsf" "zvvv" "fjkl"
-    "aus" "adv" "ddw" "afx" "sxy" "ty" "turur" "fskdff" "sso" "jaj" "bbb"
-    "faz" "zb" "abc" "cfsd" "jo" "be" "ja" "mssss" "ugn" "ney" "gon" "is"
-    "fza" "zb" "acb" "cfsd" "oj" "eb" "ja" "smsss" "gnu" "nye" "ogn" "ls"
-    "marp" "guts" "onepi" "looifi" "zoloooro" "namiisea" "lofurobi" "nsj"
-    "san" "jiiee" "mrco" "lpira" "gte" "asdf" "fsdfksjk" "fsfsf" "bcsfsa"
-    "eleven" "twelve" "thirteen" "fourteen" "fifteen" "sixteen" "asdfs"))
+    '("first" "second" "third" "four" "fives" "dfljh" "90909" "23232" "zxj"
+      "a" "b" "c" "d" "e" "f" "g" "h" "i" "j" "fzf" "zbz" "fsd" "2df" "fzm"
+      "k" "l" "m" "n" "o" "p" "q" "r" "s" "t" "123" "345" "333" "4rf" "ffz"
+      "u" "v" "w" "x" "y" "z" "ab" "abc" "cd" "fdf" "ffff" "bzbzb" "abcdef"
+      "us" "av" "dw" "fx" "xy" "az" "ab" "abc" "zyy" "ffffsf" "zvvv" "fjkl"
+      "aus" "adv" "ddw" "afx" "sxy" "ty" "turur" "fskdff" "sso" "jaj" "bbb"
+      "faz" "zb" "abc" "cfsd" "jo" "be" "ja" "mssss" "ugn" "ney" "gon" "is"
+      "fza" "zb" "acb" "cfsd" "oj" "eb" "ja" "smsss" "gnu" "nye" "ogn" "ls"
+      "marp" "guts" "onepi" "looifi" "zoloooro" "namiisea" "lofurobi" "nsj"
+      "san" "jiiee" "mrco" "lpira" "gte" "asdf" "fsdfksjk" "fsfsf" "bcsfsa"
+      "eleven" "twelve" "thirteen" "fourteen" "fifteen" "sixteen" "asdfs"))
 
 (ert-deftest fussy-histlen<-benchmark-test ()
   "Assert that as the size of the collection grows, the cache is faster."
@@ -419,7 +419,7 @@ This test asserts `fussy-encode-coding-string' is much much faster than
 (ert-deftest fussy--should-propertize-p ()
   "Test `fussy--should-propertize-p' return correct values."
   ;; use-pcm-highlight is t.
-  (cl-letf* (((symbol-function 'fussy--using-pcm-highlight-p)
+  (cl-letf* (((symbol-function 'fussy--use-pcm-highlight-p)
               (lambda () t))
              (fussy-filter-fn 'not-orderless)
              (fussy-propertize-fn 'something))
@@ -427,7 +427,7 @@ This test asserts `fussy-encode-coding-string' is much much faster than
      (eq (fussy--should-propertize-p) nil)))
 
   ;; `fussy-fitler-fn' is `orderless'.
-  (cl-letf* (((symbol-function 'fussy--using-pcm-highlight-p)
+  (cl-letf* (((symbol-function 'fussy--use-pcm-highlight-p)
               (lambda () nil))
              (fussy-filter-fn 'fussy-filter-orderless)
              (fussy-propertize-fn 'something))
@@ -435,7 +435,7 @@ This test asserts `fussy-encode-coding-string' is much much faster than
      (eq (fussy--should-propertize-p) nil)))
 
   ;; `fussy-propertize-fn' is nil.
-  (cl-letf* (((symbol-function 'fussy--using-pcm-highlight-p)
+  (cl-letf* (((symbol-function 'fussy--use-pcm-highlight-p)
               (lambda () nil))
              (fussy-filter-fn 'not-orderless)
              (fussy-propertize-fn nil))
@@ -443,7 +443,7 @@ This test asserts `fussy-encode-coding-string' is much much faster than
      (eq (fussy--should-propertize-p) nil)))
 
   ;; Should return something.
-  (cl-letf* (((symbol-function 'fussy--using-pcm-highlight-p)
+  (cl-letf* (((symbol-function 'fussy--use-pcm-highlight-p)
               (lambda () nil))
              (fussy-filter-fn 'not-orderless)
              (fussy-propertize-fn 'something))
@@ -451,24 +451,26 @@ This test asserts `fussy-encode-coding-string' is much much faster than
      (fussy--should-propertize-p))))
 
 ;;
-;; (@* "`fussy--using-pcm-highlight-p'" )
+;; (@* "`fussy--use-pcm-highlight-p'" )
 ;;
 
-(ert-deftest fussy--using-pcm-highlight-p ()
-  "Test `fussy--using-pcm-highlight-p' return correct values."
+(ert-deftest fussy--use-pcm-highlight-p ()
+  "Test `fussy--use-pcm-highlight-p' return correct values."
   ;; `fussy-score-fn' returns no indices.
-  (let ((fussy-score-fn 'fn-without-indices)
+  (let ((fussy-score-ALL-fn 'fussy-score)
+        (fussy-score-fn 'fn-without-indices)
         (fussy-score-fns-without-indices '(fn-without-indices))
         (fussy-filter-fn 'not-orderless))
     (should
-     (fussy--using-pcm-highlight-p)))
+     (fussy--use-pcm-highlight-p)))
 
   ;; `fussy-filter-fn' is using `orderless'.
-  (let ((fussy-score-fn 'fn-without-indices)
+  (let ((fussy-score-ALL-fn 'fussy-score)
+        (fussy-score-fn 'fn-without-indices)
         (fussy-score-fns-without-indices '(fn-without-indices))
         (fussy-filter-fn 'fussy-filter-orderless))
     (should
-     (eq (fussy--using-pcm-highlight-p) nil))))
+     (eq (fussy--use-pcm-highlight-p) nil))))
 
 ;;
 ;; (@* "`fussy--history-hash-table'" )
