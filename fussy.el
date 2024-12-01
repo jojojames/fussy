@@ -166,10 +166,10 @@ of 0 wherever alist is used."
   #'fussy-propertize-common-part
   "Function used to propertize matches.
 
-Takes OBJ \(to be propertized\) and
-SCORE \(list of indices of OBJ to be propertized\).
+Takes STR \(to be propertized\) and
+SCORE \(list of indices of STR to be propertized\).
 
-This function is expected to return OBJ.
+This function is expected to return STR.
 
 If this is nil, don't propertize (e.g. highlight matches) at all.
 This can also be set to nil to assume highlighting from a different source.
@@ -726,19 +726,19 @@ If `fussy-propertize-fn' is nil, no highlighting should take place."
 pcm-style refers to using `completion-pcm--hilit-commonality' for highlighting."
   (completion-pcm--hilit-commonality pattern collection))
 
-(defun fussy-propertize-common-part (obj score)
-  "Return propertized copy of OBJ according to score.
+(defun fussy-propertize-common-part (str score)
+  "Return propertized copy of STR according to score.
 
-If SCORE does not have indices to highlight, return OBJ unmodified."
+If SCORE does not have indices to highlight, return STR unmodified."
   (if (or
        ;; Has only score but no indices or nil.
        (<= (length score) 1)
-       ;; Indices are higher than the length of obj indicating the indices are
+       ;; Indices are higher than the length of str indicating the indices are
        ;; incorrect. Skip highlighting to avoid breaking completion.
-       ;; Take the last index to compare against obj because all indices need
-       ;; to be less than the length of obj in order for highlighting to work.
-       (>= (car (last score)) (length obj)))
-      obj
+       ;; Take the last index to compare against str because all indices need
+       ;; to be less than the length of str in order for highlighting to work.
+       (>= (car (last score)) (length str)))
+      str
     ;; Has a score and an index to highlight.
     (let ((block-started (cadr score))
           (last-char nil)
@@ -747,7 +747,7 @@ If SCORE does not have indices to highlight, return OBJ unmodified."
           ;; One example is `consult', which sprinkles text properties onto
           ;; the candidate. e.g. `consult--line-prefix' will check for
           ;; 'consult-location on str candidate.
-          (str (if (consp obj) (car obj) obj)))
+          (str (if (consp str) (car str) str)))
       (dolist (char (cdr score))
         (when (and last-char
                    (not (= (1+ last-char) char)))
@@ -764,8 +764,8 @@ If SCORE does not have indices to highlight, return OBJ unmodified."
                                 'completions-first-difference
                                 nil
                                 str))
-      (if (consp obj)
-          (cons str (cdr obj))
+      (if (consp str)
+          (cons str (cdr str))
         str))))
 
 ;;
