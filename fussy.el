@@ -290,7 +290,7 @@ This may or may not be used by `fussy-score-ALL-fn'."
           (const :tag "Score using Flx-RS"
                  ,#'fussy-flx-rs-score)
           (const :tag "Score using FZF"
-                 ,'fzf-native-score)
+                 ,'fussy-fzf-native-score)
           (const :tag "Score using Fuz"
                  ,#'fussy-fuz-score)
           (const :tag "Score using Fuz-Bin"
@@ -313,12 +313,12 @@ This function may call out to `fussy-score-fn' to score matches or
 does the heavy lifting itself.
 
 For example `fussy-score' makes use of `fussy-score-fn' but
-`fussy-fzf-native-score' sends its entire collection to `fzf-native' instead."
+`fussy-fzf-score' sends its entire collection to `fzf-native' instead."
   :type `(choice
           (const :tag "Default scoring"
                  ,'fussy-score)
           (const :tag "Scoring using `fzf-native-score-all'."
-                 ,#'fussy-fzf-native-score)
+                 ,#'fussy-fzf-score)
           (function :tag "Custom function"))
   :group 'fussy)
 
