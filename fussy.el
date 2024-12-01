@@ -949,7 +949,7 @@ See `fussy-remove-bad-char-fn'."
   "Print TABLE."
   (message "------------------------------------------------------------------")
   (maphash (lambda (key value)
-             (message "key: %s length value %s" key (length value)))
+             (message "key: %s # of elements: %s" key (length value)))
            table)
   (message "------------------------------------------------------------------"))
 
