@@ -876,6 +876,18 @@ Check C1 and C2 in `minibuffer-history-variable' which is stored in
 ;; (@* "Utils" )
 ;;
 
+(defun fussy--length< (sequence n)
+  "Return non-nil if SEQUENCE has fewer than N elements.
+Handle sequences like lists, vectors, and strings.
+Terminate early if the condition is met."
+  (< (length sequence) n))
+
+(defun fussy--length> (sequence n)
+  "Return non-nil if SEQUENCE has more than N elements.
+Handle sequences like lists, vectors, and strings.
+Terminate early if the condition is met."
+  (> (length sequence) n))
+
 (defun fussy--orderless-p ()
   "Return whether or not we're using `orderless' for filtering."
   (or (eq fussy-filter-fn 'fussy-filter-orderless)
@@ -1174,7 +1186,7 @@ result: LIST ^a"
 
 (defun fussy-company--transformer (f &rest args)
   "Advise `company--transform-candidates'."
-  (if (length< company-prefix fussy-company-prefix-length)
+  (if (fussy--length< company-prefix fussy-company-prefix-length)
       ;; Transform normally for short prefixes.
       (let ((fussy-can-adjust-metadata-p nil))
         (apply f args))
@@ -1192,7 +1204,7 @@ result: LIST ^a"
   "Advise `company--fetch-candidates'."
   (let ((prefix (nth 0 args))
         (_suffix (nth 1 args)))
-    (if (length< prefix fussy-company-prefix-length)
+    (if (fussy--length< prefix fussy-company-prefix-length)
         (let ((completion-styles (remq 'fussy completion-styles))
               (completion-category-overrides nil)
               (fussy-can-adjust-metadata-p nil))
