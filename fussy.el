@@ -65,6 +65,11 @@
 
 ;;; Code:
 
+(declare-function "orderless-filter" "orderless")
+(declare-function "orderless-highlight-matches" "orderless")
+(declare-function "orderless--prefix+pattern" "orderless")
+(defvar orderless-matching-styles)
+
 ;;
 ;; (@* "Landmarks" )
 ;;
@@ -967,11 +972,6 @@ See `fussy-remove-bad-char-fn'."
 ;;
 ;; (@* "Filtering" )
 ;;
-
-(declare-function "orderless-filter" "orderless")
-(declare-function "orderless-highlight-matches" "orderless")
-(declare-function "orderless--prefix+pattern" "orderless")
-(defvar orderless-matching-styles)
 
 (defun fussy-filter-orderless-flex (string table pred point)
   "Match STRING to the entries in TABLE.
