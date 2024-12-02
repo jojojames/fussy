@@ -721,15 +721,45 @@ If `fussy-propertize-fn' is nil, no highlighting should take place."
    (not (fussy--orderless-p))
    fussy-propertize-fn))
 
+(defun fussy-orderless--highlight-collection (regexps completions ignore-case)
+  "Highlight COMPLETIONS using REGEXPS respecting IGNORE-CASE.
+
+This is extracted from `orderless-all-completions' to do highlighting.
+`orderless' returns the filtered collection immediately which lets it do its
+highlighting after filtering. Since we sort and score the collection afterwards,
+we need to highlight the collection later.
+
+E.g. In `orderless': filter -> highlight -> return collection
+In `fussy', filter* -> score# -> sort# -> highlight* -> return collection.
+
+The * is taken care of by `orderless' and the # is taken care of by `fussy'.
+
+The names of the parameters REGEXPS and COMPLETIONS match `orderless' to make it
+easy to compare with the original but they are 1:1 with
+`fussy--highlight-collection''s PATTERN and COLLECTION parameters."
+  (when (fboundp 'orderless--highlight)
+    (if completion-lazy-hilit
+        (setq completion-lazy-hilit-fn
+              (apply-partially #'orderless--highlight regexps ignore-case))
+      (cl-loop for str in-ref completions do
+               (setf str (orderless--highlight
+                          regexps ignore-case (substring str))))))
+  completions)
+
 (defun fussy--highlight-collection (pattern collection)
   "Highlight COLLECTION using PATTERN.
 
   Only highlight if `fussy--use-pcm-highlight-p' is t."
   (when collection
-    (if (fussy--use-pcm-highlight-p)
-        (fussy--pcm-highlight pattern collection)
+    (cond
+     ((fussy--use-pcm-highlight-p)
+      (fussy--pcm-highlight pattern collection))
+     ((fussy--orderless-p)
+      (fussy-orderless--highlight-collection
+       pattern collection completion-ignore-case))
+     (:default
       ;; Assume that the collection's highlighting is handled elsewhere.
-      collection)))
+      collection))))
 
 (defun fussy--pcm-highlight (pattern collection)
   "Highlight with pcm-style for COLLECTION using PATTERN.
@@ -992,18 +1022,11 @@ Use `orderless' for filtering by passing STRING, TABLE and PRED to
 `orderless-filter'.  _POINT is not used."
   (require 'orderless)
   (when (and (fboundp 'orderless--filter)
-             (fboundp 'orderless--highlight)
              (fboundp 'orderless--compile))
     (pcase-let ((`(,prefix ,regexps ,ignore-case ,pred)
                  (orderless--compile string table pred)))
       (when-let ((completions (orderless--filter
                                prefix regexps ignore-case table pred)))
-        (if completion-lazy-hilit
-            (setq completion-lazy-hilit-fn
-                  (apply-partially #'orderless--highlight regexps ignore-case))
-          (cl-loop for str in-ref completions do
-                   (setf str (orderless--highlight
-                              regexps ignore-case (substring str)))))
         (list completions regexps prefix)))))
 
 (defun fussy-filter-flex (string table pred point)
