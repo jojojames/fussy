@@ -304,6 +304,11 @@ This may or may not be used by `fussy-score-ALL-fn'."
           (function :tag "Custom function"))
   :group 'fussy)
 
+(defcustom fussy-whitespace-ok-fns '(fussy-fzf-native-score)
+  "List of `fussy-score-fn's that can accept whitespace."
+  :type '(list function)
+  :group 'fussy)
+
 (defcustom fussy-score-ALL-fn 'fussy-score
   "Function used for score ALL candidates.
 
@@ -675,9 +680,9 @@ Set a text-property \='completion-score on candidates with their score.
             (push x result))
         (let ((score (funcall fussy-score-fn
                               x
-                              (if (fussy--orderless-p)
-                                  (replace-regexp-in-string "\\\s" "" string)
-                                string)
+                              (if (memq fussy-score-fn fussy-whitespace-ok-fns)
+                                  string
+                                (replace-regexp-in-string "\\\s" "" string))
                               cache)))
           ;; (message
           ;;  (format "fn: %S candidate: %s query: %s score %S"
