@@ -573,7 +573,7 @@ Implement `all-completions' interface with additional fuzzy / `flx' scoring."
               (when all
                 (if (or (> (length infix) fussy-max-query-length)
                         (string= infix ""))
-                    (fussy--highlight-collection pattern all :force)
+                    (fussy--highlight-collection pattern all)
                   (if (< (length all) fussy-max-candidate-limit)
                       (fussy--highlight-collection
                        pattern
@@ -716,12 +716,12 @@ If `fussy-propertize-fn' is nil, no highlighting should take place."
    (not (fussy--orderless-p))
    fussy-propertize-fn))
 
-(defun fussy--highlight-collection (pattern collection &optional force)
+(defun fussy--highlight-collection (pattern collection)
   "Highlight COLLECTION using PATTERN.
 
-  Only highlight if `fussy--use-pcm-highlight-p' is t or FORCE is t."
+  Only highlight if `fussy--use-pcm-highlight-p' is t."
   (when collection
-    (if (or force (fussy--use-pcm-highlight-p))
+    (if (fussy--use-pcm-highlight-p)
         (fussy--pcm-highlight pattern collection)
       ;; Assume that the collection's highlighting is handled elsewhere.
       collection)))
@@ -890,18 +890,18 @@ Check C1 and C2 in `minibuffer-history-variable' which is stored in
 (defun fussy--use-pcm-highlight-p ()
   "Check if highlighting should use `completion-pcm--hilit-commonality'.
 
-Check if TABLE needs to be specially highlighted.
 Check if `fussy-score-fn' used doesn't return match indices.
 Check if `orderless' is being used."
-  (or
-   (eq fussy-score-ALL-fn 'fussy-fzf-score)
-   (and
-    ;; These don't generate match indices to highlight at all so we should
-    ;; highlight with `completion-pcm--hilit-commonality'.
-    (memq fussy-score-fn fussy-score-fns-without-indices)
-    ;; If we're using `orderless' to filter, don't use pcm highlights because
-    ;; `orderless' does it on its own.
-    (not (fussy--orderless-p)))))
+  (cond
+   ;; If we're using `orderless' to filter, don't use pcm highlights because
+   ;; `orderless' does it on its own.
+   ((fussy--orderless-p) nil)
+   ;; `fussy-fzf-score' doesn't highlight on its own.
+   ((eq fussy-score-ALL-fn 'fussy-fzf-score) t)
+   ;; These don't generate match indices to highlight at all so we should
+   ;; highlight with `completion-pcm--hilit-commonality'.
+   ((memq fussy-score-fn fussy-score-fns-without-indices) t)
+   (:default nil)))
 
 (defun fussy--history-hash-table ()
   "Return hash table representing `minibuffer-history-variable'.
