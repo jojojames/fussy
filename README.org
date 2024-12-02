@@ -518,6 +518,17 @@ To use [[https://github.com/oantolin/orderless][orderless]] filtering:
     :commands (orderless-filter))
 
   (setq fussy-filter-fn 'fussy-filter-orderless)
+
+  ;; Highlight matches with `company-mode'.
+  (with-eval-after-load 'orderless
+    ;; https://www.reddit.com/r/emacs/comments/nichkl/how_to_use_different_completion_styles_in_the/
+    ;; https://github.com/oantolin/orderless#company
+    (defun orderless-just-one-face (fn &rest args)
+      (let ((orderless-match-faces [completions-common-part]))
+        (ignore orderless-match-faces)
+        (apply fn args)))
+    (advice-add 'company-capf--candidates
+                :around #'orderless-just-one-face))
 #+end_src
 * Caching
 Results and filtering can be cached for improved performance by setting

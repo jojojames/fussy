@@ -566,8 +566,11 @@ Implement `all-completions' interface with additional fuzzy / `flx' scoring."
                         ;; (message "using cache for filter")
                         (list
                          cached-all
-                         (fussy-make-pcm-highlight-pattern
-                          beforepoint afterpoint bounds)
+                         (if (fussy--orderless-p)
+                             (fussy--recreate-orderless-pattern
+                              string table pred point)
+                           (fussy--recreate-regex-pattern
+                            beforepoint afterpoint bounds))
                          prefix))
                     (funcall fussy-filter-fn
                              string table pred point))))
@@ -916,6 +919,45 @@ Check C1 and C2 in `minibuffer-history-variable' which is stored in
 ;;
 ;; (@* "Utils" )
 ;;
+
+(defun fussy--recreate-orderless-pattern (string table pred _point)
+  "See `fussy--recreate-regex-pattern'."
+  ;; This implementation from `orderless-all-completions'.
+  (if (fboundp 'orderless--compile)
+      (pcase-let
+          ((`(,_prefix ,regexps ,_ignore-case ,_pred)
+            (if (eq fussy-filter-fn 'fussy-filter-orderless-flex)
+                (let ((orderless-matching-styles '(orderless-flex)))
+                  (ignore orderless-matching-styles)
+                  (orderless--compile string table pred))
+              (orderless--compile string table pred))))
+        regexps)
+    nil))
+
+(defun fussy--recreate-regex-pattern (beforepoint afterpoint bounds)
+  "Utility function to create regex pattern for highlighting.
+
+`fussy--highlight-collection' consumes this pattern.
+This usually comes out as a result of the initial filtering of candidates,
+but when we're pulling from the cache, the pattern is not there, so we
+rebuild it here. We could also try caching the pattern instead of creating it
+again."
+  (cond
+   ((eq fussy-filter-fn 'fussy-filter-flex)
+    ;; This comes from `completion-substring--all-completions'
+    ;; Look at `fussy-filter-flex'.
+    (let* ((basic-pattern (completion-basic--pattern
+                           beforepoint afterpoint bounds))
+           (pattern (if (not (stringp (car basic-pattern)))
+                        basic-pattern
+                      (cons 'prefix basic-pattern)))
+           (pattern
+            (completion-pcm--optimize-pattern
+             (completion-flex--make-flex-pattern pattern))))
+      pattern))
+   (:default ;; `fussy-filter-default'
+    (fussy-make-pcm-highlight-pattern
+     beforepoint afterpoint bounds))))
 
 (defun fussy--orderless-p ()
   "Return whether or not we're using `orderless' for filtering."
