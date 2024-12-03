@@ -459,6 +459,15 @@ https://lists.gnu.org/archive/html/help-gnu-emacs/2008-06/msg00087.html"
        result)))
 
 ;;
+;; (@* "defsubst" )
+;;
+
+
+(defsubst fussy-encode-coding-string (string)
+  "Call `encode-coding-string' for STRING."
+  (encode-coding-string string 'utf-8 t))
+
+;;
 ;; (@* "Constants and Variables" )
 ;;
 
@@ -668,7 +677,8 @@ This implementation uses `fzf-native-score-all' to do all its scoring in one go.
 
 Ignore CACHE. This is only added to match `fussy-score'."
   (when (fboundp 'fzf-native-score-all)
-    (fzf-native-score-all candidates string)))
+    (let ((string (fussy-encode-coding-string string)))
+      (fzf-native-score-all candidates string))))
 
 (defun fussy-score (candidates string &optional cache)
   "Score and propertize CANDIDATES using STRING.
@@ -677,19 +687,18 @@ Use CACHE for scoring.
 
 Set a text-property \='completion-score on candidates with their score.
 `completion--adjust-metadata' later uses this \='completion-score for sorting."
-  (let ((result '()))
+  (let ((result '())
+        (string (fussy-encode-coding-string
+                 (if (memq fussy-score-fn fussy-whitespace-ok-fns)
+                     string
+                   (replace-regexp-in-string "\\\s" "" string)))))
     (dolist (x candidates)
       (setf x (copy-sequence x))
       (if (> (length x) fussy-max-word-length-to-score)
           ;; Don't score x but don't filter it out either.
           (unless fussy-filter-unscored-candidates
             (push x result))
-        (let ((score (funcall fussy-score-fn
-                              x
-                              (if (memq fussy-score-fn fussy-whitespace-ok-fns)
-                                  string
-                                (replace-regexp-in-string "\\\s" "" string))
-                              cache)))
+        (let ((score (funcall fussy-score-fn x string cache)))
           ;; (message
           ;;  (format "fn: %S candidate: %s query: %s score %S"
           ;;          'fussy-score x string score))
@@ -1022,10 +1031,6 @@ See `fussy-remove-bad-char-fn'."
       (substring string 0 (- (length string) 1))
     string))
 
-(defsubst fussy-encode-coding-string (string)
-  "Call `encode-coding-string' for STRING."
-  (encode-coding-string string 'utf-8 t))
-
 (defun fussy--print-hash-table (table)
   "Print TABLE."
   (message "------------------------------------------------------------------")
@@ -1315,10 +1320,7 @@ skim or clangd algorithm can be used.
 If `orderless' is used for filtering, we skip calculating matches
 for more speed."
   (require 'fuz)
-  (let ((str (funcall fussy-remove-bad-char-fn str))
-        (query
-         ;; Assume query can just be passed in as a unibyte string.
-         (fussy-encode-coding-string query)))
+  (let ((str (funcall fussy-remove-bad-char-fn str)))
     (if fussy-fuz-use-skim-p
         (if (fussy--orderless-p)
             (when (fboundp 'fuz-calc-score-skim)
@@ -1346,10 +1348,7 @@ If `orderless' is used for filtering, we skip calculating matches
 for more speed."
   (require 'fuz-bin)
   ;; (message (format "before: str: %s query: %s" str query))
-  (let ((str (funcall fussy-remove-bad-char-fn str))
-        (query
-         ;; Assume query can just be passed in as a unibyte string.
-         (fussy-encode-coding-string query)))
+  (let ((str (funcall fussy-remove-bad-char-fn str)))
     ;; (message (format "after: str: %s query: %s" str query))
     (if fussy-fuz-use-skim-p
         (if (fussy--orderless-p)
@@ -1382,11 +1381,7 @@ highlighting."
   "Score STR for QUERY using `sublime-fuzzy'."
   (require 'sublime-fuzzy)
   (when (fboundp 'sublime-fuzzy-score)
-    (let ((str
-           (funcall fussy-remove-bad-char-fn str))
-          (query
-           ;; Assume query can just be passed in as a unibyte string.
-           (fussy-encode-coding-string query)))
+    (let ((str (funcall fussy-remove-bad-char-fn str)))
       (list (sublime-fuzzy-score query str)))))
 
 ;; `fzf-native' integration
@@ -1401,8 +1396,7 @@ highlighting."
   "Score STR for QUERY using `fzf-native'."
   (require 'fzf-native)
   (when (fboundp 'fzf-native-score)
-    (let ((str (funcall fussy-remove-bad-char-fn str))
-          (query (fussy-encode-coding-string query)))
+    (let ((str (funcall fussy-remove-bad-char-fn str)))
       (fzf-native-score str query (fussy--fzf-native-slab)))))
 
 ;; `hotfuzz' integration
