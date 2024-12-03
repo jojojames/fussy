@@ -582,7 +582,7 @@ Implement `all-completions' interface with additional fuzzy / `flx' scoring."
                 (if (or (> (length infix) fussy-max-query-length)
                         (string= infix ""))
                     (fussy--highlight-collection pattern all)
-                  (if (< (length all) fussy-max-candidate-limit)
+                  (if (length< all fussy-max-candidate-limit)
                       (fussy--highlight-collection
                        pattern
                        (fussy-outer-score all infix cache))
