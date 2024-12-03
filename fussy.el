@@ -605,9 +605,7 @@ Implement `all-completions' interface with additional fuzzy / `flx' scoring."
                        ;; Compute all of the fuzzy scores only for candidates.
                        (fussy--highlight-collection
                         pattern
-                        (fussy-outer-score
-                         (reverse candidates-to-score)
-                         infix cache))
+                        (fussy-outer-score candidates-to-score infix cache))
                        ;; Add the unsorted candidates.
                        ;; We could highlight these too,
                        ;; (e.g. with `fussy--highlight-collection') but these are
@@ -707,7 +705,7 @@ Set a text-property \='completion-score on candidates with their score.
                x (funcall fussy-propertize-fn x score)))
             (push x result)))))
     ;; Returns nil if empty.
-    (reverse result)))
+    result))
 
 (defun fussy--should-propertize-p ()
   "Whether or not to call `fussy-propertize-fn'.
