@@ -217,15 +217,15 @@ Called from `fussy-all-completions'."
     ;; With `flx-strings-cache' candidate 1 loses to candidate 2 which is
     ;; not desirable for filenames.
     (should
-     (< (get-text-property 0 'completion-score (nth 0 string-cache-res))
-        (get-text-property 0 'completion-score (nth 1 string-cache-res))))
+     (< (get-text-property 0 'completion-score (nth 1 string-cache-res))
+        (get-text-property 0 'completion-score (nth 0 string-cache-res))))
 
     ;; With `flx-file-cache', candidate 1 wins against candidate 2 which shows
     ;; `flx-file-cache' is more appropriate than `flx-strings-cache' for
     ;; filenames.
     (should
-     (> (get-text-property 0 'completion-score (nth 0 file-cache-res))
-        (get-text-property 0 'completion-score (nth 1 file-cache-res))))))
+     (> (get-text-property 0 'completion-score (nth 1 file-cache-res))
+        (get-text-property 0 'completion-score (nth 0 file-cache-res))))))
 
 (ert-deftest fussy-score-input-test ()
   "Test various[TODO] inputs with `fussy-score'."
