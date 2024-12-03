@@ -850,22 +850,14 @@ If SCORE does not have indices to highlight, return STR unmodified."
 
 (defun fussy--adjust-metadata (metadata)
   "If actually doing filtering, adjust METADATA's sorting."
-  (let ((flex-is-filtering-p
-         ;; JT@2019-12-23: FIXME: this is kinda wrong.  What we need
-         ;; to test here is "some input that actually leads/led to
-         ;; flex filtering", not "something after the minibuffer
-         ;; prompt".  E.g. The latter is always true for file
-         ;; searches, meaning we'll be doing extra work when we
-         ;; needn't.
-         (and
-          fussy-can-adjust-metadata-p
-          (or (not (window-minibuffer-p))
-              (> (point-max) (minibuffer-prompt-end))))))
+  (if (eq fussy-score-ALL-fn 'fussy-fzf-score)
+      `(metadata
+        ((display-sort-function . identity)
+         (cycle-sort-function . identity))
+        ,@(cdr metadata))
     `(metadata
-      ,@(and flex-is-filtering-p
-             `((display-sort-function . fussy--sort)))
-      ,@(and flex-is-filtering-p
-             `((cycle-sort-function . fussy--sort)))
+      ((display-sort-function . fussy--sort)
+       (cycle-sort-function . fussy--sort))
       ,@(cdr metadata))))
 
 (defun fussy--sort (completions)
@@ -1247,8 +1239,7 @@ result: LIST ^a"
   "Advise `company--transform-candidates'."
   (if (length< company-prefix fussy-company-prefix-length)
       ;; Transform normally for short prefixes.
-      (let ((fussy-can-adjust-metadata-p nil))
-        (apply f args))
+      (apply f args)
     (let ((company-transformers
            ;; `fussy-score' still needs to do sorting.
            ;; `fussy-fzf-score' sorts on its own.
@@ -1265,8 +1256,7 @@ result: LIST ^a"
         (_suffix (nth 1 args)))
     (if (length< prefix fussy-company-prefix-length)
         (let ((completion-styles (remq 'fussy completion-styles))
-              (completion-category-overrides nil)
-              (fussy-can-adjust-metadata-p nil))
+              (completion-category-overrides nil))
           (apply f args))
       (let ((fussy-max-candidate-limit 5000)
             (fussy-default-regex-fn 'fussy-pattern-first-letter)
@@ -1278,8 +1268,9 @@ result: LIST ^a"
 
 This is to try to avoid a additional sort step."
   ;; (cl-assert (cl-every #'stringp candidates))
-  ;; (unless (company-call-backend 'sorted)
-  ;;   (setq candidates (sort candidates 'string<)))
+  (when (fboundp 'company-call-backend)
+    (unless (company-call-backend 'sorted)
+      (setq candidates (sort candidates 'string<))))
   (when (and (fboundp 'company-call-backend)
              (fboundp 'company--strip-duplicates))
     (when (company-call-backend 'duplicates)
