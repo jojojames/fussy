@@ -380,6 +380,11 @@ string may go from something like abcX to abcR where X was the multibyte char
 that is not usable with the above scoring backends and R is a random ascii
 character encoded from X.
 
+This is set to nil if `fussy-setup' is called as we use the workaround
+described here:
+https://github.com/axelf4/hotfuzz?tab=readme-ov-file#dynamic-module
+You can set this again if another encoding proves to be a problem.
+
 For more information: \(https://github.com/minad/consult/issues/585\)"
   :type `(choice
           (const :tag "Remove Tofu"
@@ -388,6 +393,8 @@ For more information: \(https://github.com/minad/consult/issues/585\)"
                  ,#'fussy-without-unencodeable-chars)
           (const :tag "Convert to Unibyte"
                  ,#'fussy-encode-coding-string)
+          (const :tag "Don't convert"
+                 nil)
           (function :tag "Custom function"))
   :group 'fussy)
 
@@ -466,6 +473,12 @@ https://lists.gnu.org/archive/html/help-gnu-emacs/2008-06/msg00087.html"
 (defsubst fussy-encode-coding-string (string)
   "Call `encode-coding-string' for STRING."
   (encode-coding-string string 'utf-8 t))
+
+(defsubst fussy-without-bad-char (str)
+  "Return STR without bad characters in them."
+  (or (and fussy-remove-bad-char-fn
+           (funcall fussy-remove-bad-char-fn str))
+      str))
 
 ;;
 ;; (@* "Constants and Variables" )
@@ -835,6 +848,16 @@ If SCORE does not have indices to highlight, return STR unmodified."
   "Set up `fussy'."
   (unless (memq 'fussy completion-styles)
     (push 'fussy completion-styles))
+
+  ;; https://github.com/minad/consult/issues/585
+  ;; https://github.com/axelf4/hotfuzz?tab=readme-ov-file#dynamic-module
+  (setq fussy-remove-bad-char-fn nil)
+  (with-eval-after-load 'consult
+    (defvar consult--tofu-char)
+    (defvar consult--tofu-range)
+    (setq consult--tofu-char #x100000
+          consult--tofu-range #x00fffe))
+
   ;; For example, project-find-file uses 'project-files which uses
   ;; substring completion by default. Set our own defaults.
   (setq completion-category-overrides
@@ -1310,7 +1333,7 @@ This is to try to avoid a additional sort step."
   "Score STR for QUERY with ARGS using `flx-rs-score'."
   (require 'flx-rs)
   (when (fboundp 'flx-rs-score)
-    (flx-rs-score (funcall fussy-remove-bad-char-fn str) query args)))
+    (flx-rs-score (fussy-without-bad-char str) query args)))
 
 (defun fussy-fuz-score (str query &rest _args)
   "Score STR for QUERY using `fuz'.
@@ -1320,7 +1343,7 @@ skim or clangd algorithm can be used.
 If `orderless' is used for filtering, we skip calculating matches
 for more speed."
   (require 'fuz)
-  (let ((str (funcall fussy-remove-bad-char-fn str)))
+  (let ((str (fussy-without-bad-char str)))
     (if fussy-fuz-use-skim-p
         (if (fussy--orderless-p)
             (when (fboundp 'fuz-calc-score-skim)
@@ -1348,7 +1371,7 @@ If `orderless' is used for filtering, we skip calculating matches
 for more speed."
   (require 'fuz-bin)
   ;; (message (format "before: str: %s query: %s" str query))
-  (let ((str (funcall fussy-remove-bad-char-fn str)))
+  (let ((str (fussy-without-bad-char str)))
     ;; (message (format "after: str: %s query: %s" str query))
     (if fussy-fuz-use-skim-p
         (if (fussy--orderless-p)
@@ -1372,7 +1395,7 @@ This should be paired with `fussy-filter-orderless' to obtain match
 highlighting."
   (require 'liquidmetal)
   (when (fboundp 'liquidmetal-score)
-    (list (liquidmetal-score str query))))
+    (list (liquidmetal-score (fussy-without-bad-char str) query))))
 
 ;; `sublime-fuzzy' integration
 (declare-function "sublime-fuzzy-score" "sublime-fuzzy")
@@ -1381,8 +1404,7 @@ highlighting."
   "Score STR for QUERY using `sublime-fuzzy'."
   (require 'sublime-fuzzy)
   (when (fboundp 'sublime-fuzzy-score)
-    (let ((str (funcall fussy-remove-bad-char-fn str)))
-      (list (sublime-fuzzy-score query str)))))
+    (list (sublime-fuzzy-score query (fussy-without-bad-char str)))))
 
 ;; `fzf-native' integration
 (defvar fussy--fzf-native-slab nil)
@@ -1396,8 +1418,8 @@ highlighting."
   "Score STR for QUERY using `fzf-native'."
   (require 'fzf-native)
   (when (fboundp 'fzf-native-score)
-    (let ((str (funcall fussy-remove-bad-char-fn str)))
-      (fzf-native-score str query (fussy--fzf-native-slab)))))
+    (fzf-native-score
+     (fussy-without-bad-char str) query (fussy--fzf-native-slab))))
 
 ;; `hotfuzz' integration
 (declare-function "hotfuzz--cost" "hotfuzz")
