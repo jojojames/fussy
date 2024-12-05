@@ -628,18 +628,7 @@ Implement `all-completions' interface with additional fuzzy / `flx' scoring."
                        (fussy--highlight-collection
                         pattern
                         (fussy-outer-score candidates-to-score infix cache))
-                       ;; Add the unsorted candidates.
-                       ;; We could highlight these too,
-                       ;; (e.g. with `fussy--highlight-collection') but these are
-                       ;; at the bottom of the pile of candidates.
-                       (if fussy-filter-unscored-candidates
-                           (let ((r (car (funcall fussy-default-regex-fn infix))))
-                             (if r
-                                 (cl-remove-if-not
-                                  (lambda (c) (string-match-p r c))
-                                  unscored-candidates)
-                               unscored-candidates))
-                         unscored-candidates))))))))
+                       unscored-candidates)))))))
         ('nil
          ;; (message "fn: %S nil" 'fussy-all-completions)
          nil)
