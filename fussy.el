@@ -569,7 +569,14 @@ Implement `all-completions' interface with additional fuzzy / `flx' scoring."
           ;; (message "%s from hash with length %d"
           ;;          string (length cached-all))
           ;; (fussy--print-hash-table fussy--all-cache)
-          (nconc cached-all (length prefix)))
+          (nconc (fussy--highlight-collection
+                  (if (fussy--orderless-p)
+                      (fussy--recreate-orderless-pattern
+                       string table pred point)
+                    (fussy--recreate-regex-pattern
+                     beforepoint afterpoint bounds))
+                  cached-all)
+                 (length prefix)))
       (pcase
           (while-no-input
             (pcase-let*
