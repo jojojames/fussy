@@ -577,7 +577,7 @@ Implement `all-completions' interface with additional fuzzy / `flx' scoring."
                   (if-let ((cached-all
                             (and
                              fussy-use-cache
-                             (> (length string) 0)
+                             (length> string 0)
                              ;; e.g. ~/.emacs.d/url/ should not use entry from "~/.emacs.d/url".
                              (not (string-suffix-p "/" string))
                              (cl-copy-list
@@ -601,7 +601,7 @@ Implement `all-completions' interface with additional fuzzy / `flx' scoring."
               ;;           'fussy-all-completions
               ;;           string prefix infix (or all '("nada")) pattern))
               (when all
-                (if (or (> (length infix) fussy-max-query-length)
+                (if (or (length> infix fussy-max-query-length)
                         (string= infix ""))
                     (fussy--highlight-collection pattern all)
                   (if (length< all fussy-max-candidate-limit)
