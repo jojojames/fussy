@@ -639,16 +639,14 @@ Implement `all-completions' interface with additional fuzzy / `flx' scoring."
          ;; (message (format "fn: %S collection: %s"
          ;;                  'fussy-all-completions collection))
          ;; Collection can be 0 when there are no candidates returned.
-         (if (consp collection)
-             (progn
-               (when fussy-use-cache
-                 ;; (message "putting %s into hash with coll length %s"
-                 ;;          string (length collection))
-                 ;; (fussy--print-hash-table fussy--all-cache)
-                 (puthash string (cl-copy-list collection)
-                          fussy--all-cache))
-               (nconc collection (length prefix)))
-           nil))))))
+         (when (consp collection)
+           (when fussy-use-cache
+             ;; (message "putting %s into hash with coll length %s"
+             ;;          string (length collection))
+             ;; (fussy--print-hash-table fussy--all-cache)
+             (puthash string (cl-copy-list collection)
+                      fussy--all-cache))
+           (nconc collection (length prefix))))))))
 
 ;;
 ;; (@* "Scoring & Highlighting" )
