@@ -1,3 +1,5 @@
+;; -*- mode: eask; lexical-binding: t -*-
+
 (package "fussy"
          "1.0"
          "Fuzzy completion style using `flx'")
