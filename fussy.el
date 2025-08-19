@@ -145,6 +145,7 @@ candidates. Keep N at 0 or more for performance."
 
 (defcustom fussy-score-threshold-to-filter-alist
   '((flx-score . -100)
+    (fussy-flx-rs-score . -100)
     (fussy-fuz-score . -100)
     (fussy-fuz-bin-score . -100)
     (fussy-fzf-native-score . 0)
