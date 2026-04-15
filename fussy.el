@@ -1,4 +1,4 @@
-;;; fussy.el --- Fuzzy completion style using `flx' -*- lexical-binding: t; -*-
+;;; fussy.el --- Fuzzy completion style using `flx' and/or `fzf-native' -*- lexical-binding: t; -*-
 
 ;; Copyright 2022 James Nguyen
 
@@ -24,8 +24,8 @@
 ;;; Commentary:
 
 ;; This is a fuzzy Emacs completion style similar to the built-in
-;; `flex' style, but using `flx' for scoring.  It also supports various other
-;; fuzzy scoring systems in place of `flx'.
+;; `flex' style, but using `flx' (or `fzf-native') for scoring.
+;; It also supports various other fuzzy scoring systems in place of those two.
 
 ;; This package is intended to be used with packages that leverage
 ;; `completion-styles', e.g. `completing-read' and
@@ -54,6 +54,7 @@
 ;; Other notable scoring backends supported by this package:
 ;; flx: https://github.com/lewang/flx
 ;; fzf: https://github.com/junegunn/fzf
+;;   (e.g. https://github.com/dangduc/fzf-native)
 ;; skim: https://github.com/lotabout/fuzzy-matcher
 
 ;; For an exhaustive list of scoring backends, take a look at
