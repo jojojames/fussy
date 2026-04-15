@@ -527,46 +527,12 @@ Implement `try-completions' interface by using `completion-flex-try-completion'.
   ;; (message "called `fussy-try-completions'...")
   (completion-flex-try-completion string table pred point))
 
-(defvar-local fussy--current-result nil
-  "Current result of `fussy-all-completions'.")
-(defvar-local fussy--current-prefix nil
-  "Current prefix of `fussy-all-completions'.")
-
 ;;;###autoload
 (defun fussy-all-completions (string table pred point)
-  "Wrap `fussy-all-completions-v1' with `while-no-input'.
-
-If another input arrived -> t -> return current result.
-If input was cancelled -> nil -> return nil.
-If result came back -> :default -> return result."
-  (pcase
-      (while-no-input (fussy-all-completions-v1 string table pred point))
-    ('nil
-     ;; (message "fn: %S nil" 'fussy-all-completions)
-     nil)
-    ('t
-     ;; (message "fn: %S quoteT" 'fussy-all-completions)
-     (nconc fussy--current-result (length fussy--current-prefix)))
-    (`,collection
-     (when (consp collection)
-       ;; (message (format "fn: %S collection: %s"
-       ;;                  'fussy-all-completions collection))
-       ;; Collection can be 0 when there are no candidates returned.
-       (when fussy-use-cache
-         ;; (message "putting %s into hash with coll length %s"
-         ;;          string (length collection))
-         ;; (fussy--print-hash-table fussy--all-cache)
-         (puthash string (cl-copy-list collection)
-                  fussy--all-cache))
-       (nconc collection (length fussy--current-prefix))))))
-
-;;;###autoload
-(defun fussy-all-completions-v1 (string table pred point)
   "Get flex-completions of STRING in TABLE, given PRED and POINT.
 
 Implement `all-completions' interface with additional fuzzy / `flx' scoring."
   ;; (message "called `fussy-all-completions'...")
-  (setf fussy--current-result nil)
   (setf fussy--hist-hash (fussy--history-hash-table))
   (when (and fussy-use-cache
              (or
@@ -598,12 +564,10 @@ Implement `all-completions' interface with additional fuzzy / `flx' scoring."
          (infix (concat
                  (substring beforepoint (car bounds))
                  (substring afterpoint 0 (cdr bounds)))))
-    (setf fussy--current-prefix prefix)
     (if-let ((cached-all (and fussy-use-cache
                               (cl-copy-list
                                (gethash string fussy--all-cache)))))
         (progn
-          (setf fussy--current-result cached-all)
           ;; (message "%s from hash with length %d"
           ;;          string (length cached-all))
           ;; (fussy--print-hash-table fussy--all-cache)
@@ -615,66 +579,83 @@ Implement `all-completions' interface with additional fuzzy / `flx' scoring."
                      beforepoint afterpoint bounds))
                   cached-all)
                  (length prefix)))
-      (pcase-let*
-          ((`(,all ,pattern ,_prefix)
-            (if-let ((cached-all
-                      (and
-                       fussy-use-cache
-                       (length> string 0)
-                       ;; e.g. ~/.emacs.d/url/ should not use entry from "~/.emacs.d/url".
-                       (not (string-suffix-p "/" string))
-                       (cl-copy-list
-                        (gethash
-                         (substring string 0 (- (length string) 1))
-                         fussy--all-cache)))))
-                (progn
-                  ;; (message "using cache for filter")
-                  (setf fussy--current-result cached-all)
-                  (list
-                   cached-all
-                   (if (fussy--orderless-p)
-                       (fussy--recreate-orderless-pattern
-                        string table pred point)
-                     (fussy--recreate-regex-pattern
-                      beforepoint afterpoint bounds))
-                   prefix))
-              (funcall fussy-filter-fn
-                       string table pred point))))
-        ;; (message (format
-        ;;           "fn: %S string: %s prefix: %s infix: %s all: %S pattern: %s"
-        ;;           'fussy-all-completions
-        ;;           string prefix infix (or all '("nada")) pattern))
-        (when all
-          (setf fussy--current-result all)
-          (if (or (length> infix fussy-max-query-length)
-                  (string= infix ""))
-              (fussy--highlight-collection pattern all)
-            (if (length< all fussy-max-candidate-limit)
-                (fussy--highlight-collection
-                 pattern
-                 (fussy-outer-score all infix cache))
-              (let ((unscored-candidates '())
-                    (candidates-to-score '()))
-                ;; Presort candidates by
-                ;; `fussy-max-limit-preferred-candidate-fn'.
-                (setf unscored-candidates
-                      (if fussy-max-limit-preferred-candidate-fn
-                          (sort
-                           all fussy-max-limit-preferred-candidate-fn)
-                        ;; If `fussy-max-limit-preferred-candidate-fn'
-                        ;; is nil, we'll partition the candidates as is.
-                        all))
-                ;; Partition the candidates into sorted and unsorted groups.
-                (dotimes (_n (* (length unscored-candidates)
-                                fussy-percent-of-candidates-to-score))
-                  (push (pop unscored-candidates) candidates-to-score)
-                  (setf fussy--current-result candidates-to-score))
-                (append
-                 ;; Compute all of the fuzzy scores only for candidates.
-                 (fussy--highlight-collection
-                  pattern
-                  (fussy-outer-score candidates-to-score infix cache))
-                 unscored-candidates)))))))))
+      (pcase
+          (while-no-input
+            (pcase-let*
+                ((`(,all ,pattern ,_prefix)
+                  (if-let ((cached-all
+                            (and
+                             fussy-use-cache
+                             (length> string 0)
+                             ;; e.g. ~/.emacs.d/url/ should not use entry from "~/.emacs.d/url".
+                             (not (string-suffix-p "/" string))
+                             (cl-copy-list
+                              (gethash
+                               (substring string 0 (- (length string) 1))
+                               fussy--all-cache)))))
+                      (progn
+                        ;; (message "using cache for filter")
+                        (list
+                         cached-all
+                         (if (fussy--orderless-p)
+                             (fussy--recreate-orderless-pattern
+                              string table pred point)
+                           (fussy--recreate-regex-pattern
+                            beforepoint afterpoint bounds))
+                         prefix))
+                    (funcall fussy-filter-fn
+                             string table pred point))))
+              ;; (message (format
+              ;;           "fn: %S string: %s prefix: %s infix: %s all: %S pattern: %s"
+              ;;           'fussy-all-completions
+              ;;           string prefix infix (or all '("nada")) pattern))
+              (when all
+                (if (or (length> infix fussy-max-query-length)
+                        (string= infix ""))
+                    (fussy--highlight-collection pattern all)
+                  (if (length< all fussy-max-candidate-limit)
+                      (fussy--highlight-collection
+                       pattern
+                       (fussy-outer-score all infix cache))
+                    (let ((unscored-candidates '())
+                          (candidates-to-score '()))
+                      ;; Presort candidates by
+                      ;; `fussy-max-limit-preferred-candidate-fn'.
+                      (setf unscored-candidates
+                            (if fussy-max-limit-preferred-candidate-fn
+                                (sort
+                                 all fussy-max-limit-preferred-candidate-fn)
+                              ;; If `fussy-max-limit-preferred-candidate-fn'
+                              ;; is nil, we'll partition the candidates as is.
+                              all))
+                      ;; Partition the candidates into sorted and unsorted groups.
+                      (dotimes (_n (* (length unscored-candidates)
+                                      fussy-percent-of-candidates-to-score))
+                        (push (pop unscored-candidates) candidates-to-score))
+                      (append
+                       ;; Compute all of the fuzzy scores only for candidates.
+                       (fussy--highlight-collection
+                        pattern
+                        (fussy-outer-score candidates-to-score infix cache))
+                       unscored-candidates)))))))
+        ('nil
+         ;; (message "fn: %S nil" 'fussy-all-completions)
+         nil)
+        ('t
+         ;; (message "fn: %S quoteT" 'fussy-all-completions)
+         nil)
+        (`,collection
+         ;; (message (format "fn: %S collection: %s"
+         ;;                  'fussy-all-completions collection))
+         ;; Collection can be 0 when there are no candidates returned.
+         (when (consp collection)
+           (when fussy-use-cache
+             ;; (message "putting %s into hash with coll length %s"
+             ;;          string (length collection))
+             ;; (fussy--print-hash-table fussy--all-cache)
+             (puthash string (cl-copy-list collection)
+                      fussy--all-cache))
+           (nconc collection (length prefix))))))))
 
 ;;
 ;; (@* "Scoring & Highlighting" )
