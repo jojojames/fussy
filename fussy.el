@@ -430,7 +430,7 @@ This only applies when `fussy-max-candidate-limit' is reached."
   :type 'boolean
   :group 'fussy)
 
-(defcustom fussy-company-prefix-length 4
+(defcustom fussy-company-prefix-length 3
   "The prefix length before using `fussy' with `company'."
   :group 'fussy
   :type 'integer)
