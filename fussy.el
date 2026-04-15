@@ -856,7 +856,9 @@ If SCORE does not have indices to highlight, return STR unmodified."
   ;; For example, project-find-file uses 'project-files which uses
   ;; substring completion by default. Set our own defaults.
   (setq completion-category-overrides
-        '((buffer
+        '((file ;; https://github.com/jojojames/fussy/issues/46
+           (styles basic))
+          (buffer
            (styles fussy basic))
           (unicode-name
            (styles fussy basic))
