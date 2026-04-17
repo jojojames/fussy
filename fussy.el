@@ -880,6 +880,7 @@ If SCORE does not have indices to highlight, return STR unmodified."
            (styles basic))
           (buffer
            (styles fussy basic))
+          (consult-location (styles fussy basic))
           (unicode-name
            (styles fussy basic))
           (project-file
