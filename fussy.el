@@ -896,6 +896,15 @@ If SCORE does not have indices to highlight, return STR unmodified."
           (symbol-help
            (styles fussy basic)))))
 
+;;;###autoload
+(defun fussy-setup-fzf ()
+  "Set up `fussy' for `fzf-native'."
+  (fussy-setup)
+  (setq fussy-filter-fn 'fussy-filter-by-scoring)
+  (setq fussy-score-fn 'fussy-fzf-native-score)
+  (setq fussy-score-ALL-fn 'fussy-fzf-score)
+  (setq fussy-use-cache t))
+
 ;;
 ;; (@* "Sorting" )
 ;;
