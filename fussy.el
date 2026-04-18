@@ -256,6 +256,8 @@ If using `fussy-filter-default', `fussy-default-regex-fn' can be configured."
                  ,#'fussy-filter-orderless-flex)
           (const :tag "Orderless"
                  ,#'fussy-filter-orderless)
+          (const :tag "By Scoring"
+                 ,#'fussy-filter-by-scoring)
           (function :tag "Custom function"))
   :group 'fussy)
 
@@ -627,17 +629,18 @@ Implement `all-completions' interface with additional fuzzy / `flx' scoring."
                         (gethash
                          (substring string 0 (- (length string) 1))
                          fussy--all-cache)))))
-                (progn
+                (let* ((_ (setf fussy--current-result cached-all))
+                       (pattern (if (fussy--orderless-p)
+                                    (fussy--recreate-orderless-pattern
+                                     string table pred point)
+                                  (fussy--recreate-regex-pattern
+                                   beforepoint afterpoint bounds)))
+                       (candidates (if (fussy--filter-by-scoring-p)
+                                       (fussy-outer-score cached-all infix cache)
+                                     cached-all)))
                   ;; (message "using cache for filter")
-                  (setf fussy--current-result cached-all)
-                  (list
-                   cached-all
-                   (if (fussy--orderless-p)
-                       (fussy--recreate-orderless-pattern
-                        string table pred point)
-                     (fussy--recreate-regex-pattern
-                      beforepoint afterpoint bounds))
-                   prefix))
+                  (setf fussy--current-result candidates)
+                  (list candidates pattern prefix))
               (funcall fussy-filter-fn
                        string table pred point))))
         ;; (message (format
@@ -647,6 +650,7 @@ Implement `all-completions' interface with additional fuzzy / `flx' scoring."
         (when all
           (setf fussy--current-result all)
           (if (or (length> infix fussy-max-query-length)
+                  (fussy--filter-by-scoring-p) ;; We don't need to score again.
                   (string= infix ""))
               (fussy--highlight-collection pattern all)
             (if (length< all fussy-max-candidate-limit)
@@ -1003,9 +1007,23 @@ again."
             (completion-pcm--optimize-pattern
              (fussy-emacs-legacy-completion-flex--make-flex-pattern pattern))))
       pattern))
+   ((and (eq fussy-filter-fn 'fussy-filter-by-scoring)
+         (fussy--fzf-p))
+    (fussy-make-fzf-highlight-pattern
+     (concat (substring beforepoint (car bounds))
+             (substring afterpoint 0 (cdr bounds)))))
    (:default ;; `fussy-filter-default'
     (fussy-make-pcm-highlight-pattern
      beforepoint afterpoint bounds))))
+
+(defun fussy--fzf-p ()
+  "Return whether or not we're using fzf."
+  (or (eq fussy-score-ALL-fn 'fussy-fzf-score)
+      (eq fussy-score-fn 'fussy-fzf-native-score)))
+
+(defun fussy--filter-by-scoring-p ()
+  "Return whether or not we're filtering matches through our scoring function."
+  (eq fussy-filter-fn 'fussy-filter-by-scoring))
 
 (defun fussy--orderless-p ()
   "Return whether or not we're using `orderless' for filtering."
@@ -1021,6 +1039,7 @@ Check if `orderless' is being used."
    ;; If we're using `orderless' to filter, don't use pcm highlights because
    ;; `orderless' does it on its own.
    ((fussy--orderless-p) nil)
+   ((fussy--filter-by-scoring-p) t)
    ;; `fussy-fzf-score' doesn't highlight on its own.
    ((eq fussy-score-ALL-fn 'fussy-fzf-score) t)
    ;; These don't generate match indices to highlight at all so we should
@@ -1186,6 +1205,102 @@ that's written in C for faster filtering."
     ;;   "prefix: %s infix: %s pattern %s completions %S regexp_list: %S"
     ;;   prefix infix pattern completions completion-regexp-list))
     (list completions pattern prefix)))
+
+(defun fussy-filter-by-scoring (string table pred point)
+  "Match STRING to the entries in TABLE.
+
+Use `fussy-score-ALL-fn' for filtering."
+  (let*
+      ((beforepoint (substring string 0 point))
+       (afterpoint (substring string point))
+       (bounds (completion-boundaries beforepoint table pred afterpoint))
+       (prefix (substring beforepoint 0 (car bounds)))
+       (infix (concat
+               (substring beforepoint (car bounds))
+               (substring afterpoint 0 (cdr bounds))))
+       (pred-infix
+        (apply-partially 'fussy-filter-by-scoring-predicate infix table pred))
+       (completion-regexp-list nil)
+       ;; (_ (message (format "prefix: %s infix: %s" prefix infix)))
+       (completions
+        (all-completions prefix table pred-infix))
+       (pattern
+        (fussy--recreate-regex-pattern beforepoint afterpoint bounds)))
+    (list completions pattern prefix)))
+
+(defun fussy-filter-by-scoring-predicate (string table pred candidate
+                                                 &optional hash-table-value)
+  ;; From `all-completions' documentation.
+  ;; COLLECTION can also be a function to do the completion itself.
+  ;; It receives three arguments: STRING, PREDICATE and t.
+  ;; Whatever it returns becomes the value of `all-completions'.
+  ;; If optional third argument PREDICATE is non-nil, it must be a function
+  ;; of one or two arguments, and is used to test each possible completion.
+  ;; A possible completion is accepted only if PREDICATE returns non-nil.
+  ;;
+  ;; The argument given to PREDICATE is either a string or a cons cell (whose
+  ;; car is a string) from the alist, or a symbol from the obarray.
+  ;; If COLLECTION is a hash-table, PREDICATE is called with two arguments:
+  ;; the string key and the associated value.
+  "Predicate for `all-completions' api.
+
+STRING should be applied partially.
+TABLE should be applied partially.
+PRED should be applied partially.
+See `fussy-filter-by-scoring'.
+
+CANDIDATE is the possible completion, either a string, a cons cell
+(whos car is a string), or a symbol from the obarray.
+
+If COLLECTION is a hash-table, candidate is the string key and
+hash-table-value is the associated value."
+  ;; First call pred, if pred returns t, we can proceed to filter with the next step.
+  ;; If pred returns nil, we don't need to filter
+  (if (and pred
+           (not (if (hash-table-p table)
+                    (funcall pred candidate hash-table-value)
+                  (funcall pred candidate))))
+      nil
+    ;; e.g. (> (car (fzf-native-score "abc" "a" )) 0)
+    (if-let* ((x (cond
+                  ((hash-table-p table) candidate)
+                  ((stringp candidate) candidate)
+                  ((consp candidate) (car candidate))
+                  ((symbolp candidate) (symbol-name candidate))
+                  (:default nil))))
+        ;; (message (format "c: %s s: %s score: %d" x string (car score)))
+        (fussy-valid-score-p (funcall fussy-score-fn x string))
+      t)))
+
+(defun fussy-make-fzf-highlight-pattern (infix)
+  "Create a pcm pattern based on fzf rules for highlighting.
+INFIX is the fzf query string."
+  (let ((tokens (split-string infix " " t))
+        (pattern (list 'prefix)))
+    (dolist (token tokens)
+      (cond
+       ;; inverse
+       ((string-prefix-p "!" token) nil)
+       ;; exact
+       ((string-prefix-p "'" token)
+        (push 'any pattern)
+        (push (substring token 1) pattern))
+       ;; prefix-exact
+       ((string-prefix-p "^" token)
+        (push 'any pattern)
+        (push (substring token 1) pattern))
+       ;; suffix-exact
+       ((string-suffix-p "$" token)
+        (push 'any pattern)
+        (push (substring token 0 -1) pattern))
+       ;; fuzzy
+       (t
+        (push 'any pattern)
+        (dolist (char (append token nil))
+          (push (string char) pattern)
+          (push 'any pattern))
+        (pop pattern)))) ;; remove last 'any
+    (completion-pcm--optimize-pattern (nreverse pattern))))
 
 (defun fussy-make-pcm-highlight-pattern (beforepoint afterpoint bounds)
   "Create flex pattern for highlighting.
