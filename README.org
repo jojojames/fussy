@@ -43,10 +43,27 @@ Or clone / download this repository and modify your ~load-path~:
 #+end_src
 ** Use-Package Example
 #+begin_src emacs-lisp :tangle yes
+  ;; `flx`
   (use-package fussy
     :ensure t
     :config
     (fussy-setup))
+#+end_src
+
+or
+
+#+begin_src emacs-lisp :tangle yes
+  ;; `fzf`
+  (use-package fzf-native
+    :vc (:url "https://github.com/dangduc/fzf-native")
+    :config
+    (fzf-native-load-dyn))
+
+  (use-package fussy
+    :config
+    (fussy-setup-fzf)
+    (fussy-eglot-setup)
+    (fussy-company-setup))
 #+end_src
 
 * Scoring Backends
