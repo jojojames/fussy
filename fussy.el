@@ -825,17 +825,17 @@ Set a text-property \='completion-score on candidates with their score.
                        normalized
                      (replace-regexp-in-string "\\\s" "" normalized))))))
     (dolist (x candidates)
-      (setf x (copy-sequence x))
       (if (> (length x) fussy-max-word-length-to-score)
           ;; Don't score x but don't filter it out either.
           (unless fussy-filter-unscored-candidates
-            (push x result))
+            (push (copy-sequence x) result))
         (let ((score (funcall fussy-score-fn x string cache)))
           ;; (message
           ;;  (format "fn: %S candidate: %s query: %s score %S"
           ;;          'fussy-score x string score))
           ;; Candidates with a score of N or less are filtered.
           (when (fussy-valid-score-p score)
+            (setf x (copy-sequence x))
             (put-text-property 0 1 'completion-score (car score) x)
 
             ;; If we're using pcm highlight, we don't need to propertize the
