@@ -1570,13 +1570,16 @@ result: LIST ^a"
               (completion-category-overrides nil)
               (fussy-can-adjust-metadata-p nil))
           (apply f args))
-      (let ((fussy-max-candidate-limit 5000)
-            (fussy-default-regex-fn 'fussy-pattern-first-letter)
-            ;; Make this customizable.
-            ;; e.g. fussy-company-AND-component-separator.
-            (fussy-AND-component-separator "[ &]")
-            (fussy-OR-component-separator "|")
-            (fussy-prefer-prefix nil))
+      (let* ((fussy-max-candidate-limit 5000)
+             (fussy-default-regex-fn 'fussy-pattern-first-letter)
+             (fzf (fussy--fzf-p))
+             ;; Make this customizable.
+             ;; e.g. fussy-company-AND-component-separator.
+             (fussy-AND-component-separator
+              (if fzf "[ &]" fussy-AND-component-separator))
+             (fussy-OR-component-separator
+              (if fzf "|" fussy-OR-component-separator))
+             (fussy-prefer-prefix nil))
         (apply f args)))))
 
 (defun fussy-company--preprocess-candidates (candidates)
