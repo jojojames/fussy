@@ -984,17 +984,10 @@ If SCORE does not have indices to highlight, return STR unmodified."
   ;; For example, project-find-file uses 'project-files which uses
   ;; substring completion by default. Set our own defaults.
   (setq completion-category-overrides
-        '((file ;; https://github.com/jojojames/fussy/issues/46
-           ;; Only issue with this is the first letter in
-           ;; C-x find-file doesn't use `fussy'.
-           ;; Using `fussy' as an example, if the directory is:
-           ;; .git .github .gitignore
-           ;; README.org fussy.el fussy.elc
-           ;; Typing "." will only return:
-           ;; ".git" ".github" and ".gitignore"
-           ;; But typing ".e" will return:
-           ;; fussy.el .gitignore fussy-test.el
-           (styles basic))
+        '((file
+           ;; https://github.com/jojojames/fussy/issues/46
+           ;; https://github.com/minad/vertico?tab=readme-ov-file#tramp-hostname-and-username-completion-fixed-on-emacs-29
+           (styles partial-completion))
           (buffer
            (styles fussy basic))
           (consult-location (styles fussy basic))
