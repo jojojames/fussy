@@ -1044,18 +1044,57 @@ If SCORE does not have indices to highlight, return STR unmodified."
 
 (defun fussy--sort (completions)
   "Sort COMPLETIONS using `completion-score' and completion length."
-  (sort
-   completions
-   (lambda (c1 c2)
-     (let ((s1 (or (get-text-property 0 'completion-score c1) 0))
-           (s2 (or (get-text-property 0 'completion-score c2) 0)))
-       ;; (message (format "c1: %s score: %d" c1 s1))
-       ;; (message (format "c2: %s score: %d" c2 s2))
-       (if (and (= s1 s2)
-                fussy-compare-same-score-fn)
-           (funcall fussy-compare-same-score-fn c1 c2)
-         ;; Candidates with higher completion score have precedence.
-         (> s1 s2))))))
+  (if (or (null fussy-compare-same-score-fn)
+          ;; If not many candidates, just do the old fashion N Log N.
+          (length< completions 200))
+      (sort
+       completions
+       (lambda (c1 c2)
+         (let ((s1 (or (get-text-property 0 'completion-score c1) 0))
+               (s2 (or (get-text-property 0 'completion-score c2) 0)))
+           (if (and (= s1 s2)
+                    fussy-compare-same-score-fn)
+               (funcall fussy-compare-same-score-fn c1 c2)
+             ;; Candidates with higher completion score have precedence.
+             (> s1 s2)))))
+    ;; Schwartzian transform for larger collections to avoid repeated
+    ;; property/hash lookups in the sort predicate.
+    (let* ((hist (fussy--history-hash-table))
+           (uses-hist (memq fussy-compare-same-score-fn
+                            '(fussy-histlen->strlen< fussy-histlen<)))
+           (uses-len (memq fussy-compare-same-score-fn
+                           '(fussy-histlen->strlen< fussy-strlen< fussy-strlen>))))
+      (mapcar
+       #'car
+       (sort
+        (mapcar
+         (lambda (c)
+           (let ((score (or (get-text-property 0 'completion-score c) 0))
+                 (hpos (when (and uses-hist hist)
+                         (or (gethash c hist) most-positive-fixnum)))
+                 (len (when uses-len (length c))))
+             ;; candidate, score, history-pos, length
+             (list c score hpos len)))
+         completions)
+        (lambda (a b)
+          (let ((s1 (nth 1 a))
+                (s2 (nth 1 b)))
+            (if (= s1 s2)
+                (cond
+                 ((eq fussy-compare-same-score-fn #'fussy-histlen->strlen<)
+                  (let ((h1 (nth 2 a))
+                        (h2 (nth 2 b)))
+                    (if (= h1 h2)
+                        (< (nth 3 a) (nth 3 b))
+                      (< h1 h2))))
+                 ((eq fussy-compare-same-score-fn #'fussy-histlen<)
+                  (< (nth 2 a) (nth 2 b)))
+                 ((eq fussy-compare-same-score-fn #'fussy-strlen<)
+                  (< (nth 3 a) (nth 3 b)))
+                 ((eq fussy-compare-same-score-fn #'fussy-strlen>)
+                  (> (nth 3 a) (nth 3 b)))
+                 (t (funcall fussy-compare-same-score-fn (car a) (car b))))
+              (> s1 s2)))))))))
 
 ;;
 ;; (@* "Candidate Comparisons" )
