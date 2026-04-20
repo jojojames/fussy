@@ -607,15 +607,16 @@ If result came back -> :default -> return result."
     (`,collection
      ;; Collection can be 0 when there are no candidates returned.
      (when (consp collection)
-       ;; (message (format "fn: %S collection: %s"
-       ;;                  'fussy-all-completions collection))
-       (when fussy-use-cache
-         ;; (message "putting %s into hash with coll length %s"
-         ;;          string (length collection))
-         ;; (fussy--print-hash-table fussy--all-cache)
-         (puthash string (cl-copy-list collection)
-                  fussy--all-cache))
-       (nconc collection (length fussy--current-prefix))))))
+       (let ((base-size (length fussy--current-prefix)))
+         (when fussy-use-cache
+           ;; (message "putting %s into hash with coll length %s"
+           ;;          string (length collection))
+           ;; (fussy--print-hash-table fussy--all-cache)
+           (puthash string (cl-copy-list collection)
+                    fussy--all-cache))
+         (if (> base-size 0)
+             (nconc collection base-size)
+           collection))))))
 
 ;;;###autoload
 (defun fussy-all-completions-v1 (string table pred point)
