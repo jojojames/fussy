@@ -675,10 +675,7 @@ Implement `all-completions' interface with additional fuzzy / `flx' scoring."
           ((`(,all ,pattern ,_prefix)
             (if-let ((cached-all
                       (and
-                       fussy-use-cache
-                       (length> string 0)
-                       ;; e.g. ~/.emacs.d/url/ should not use entry from "~/.emacs.d/url".
-                       (not (string-suffix-p "/" string))
+                       (fussy--use-cache-instead-of-filter-p string)
                        (cl-copy-list
                         (gethash
                          (substring string 0 (- (length string) 1))
@@ -1210,6 +1207,23 @@ See `fussy-remove-bad-char-fn'."
              (message "key: %s # of elements: %s" key (length value)))
            table)
   (message "------------------------------------------------------------------"))
+
+(defun fussy--use-cache-instead-of-filter-p (string)
+  "Check if this STRING should use the cache or filter instead."
+  (let ((length (length string)))
+    (and
+     fussy-use-cache
+     (> length 0)
+     ;; e.g. ~/.emacs.d/url/ should not use entry from "~/.emacs.d/url".
+     ;; <spc> ^ ! ' . | are related to fzf filtering.
+     (not (or
+           ;; "a|"
+           (memq (aref string (1- length))
+                 '(?  ?/ ?^ ?! ?' ?. ?|))
+           (and (> length 1)
+                ;; "a|b"
+                (memq (aref string (- length 2))
+                      '(?  ?/ ?^ ?! ?' ?. ?|))))))))
 
 (defun fussy-wipe-cache (&rest _)
   "Wipe buffer local `fussy--all-cache'."
