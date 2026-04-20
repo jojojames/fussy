@@ -1414,17 +1414,25 @@ INFIX is the fzf query string."
         (pattern (list 'prefix)))
     (dolist (token tokens)
       (cond
-       ;; inverse
+       ;; inverse (skip for highlighting)
        ((string-prefix-p "!" token) nil)
-       ;; exact
+       ;; OR operator (skip for highlighting to avoid breaking AND groups)
+       ((string= "|" token) nil)
+       ;; exact boundary-match (quoted both ends)
+       ((and (string-prefix-p "'" token)
+             (string-suffix-p "'" token)
+             (length> token 1))
+        (push 'any pattern)
+        (push (substring token 1 -1) pattern))
+       ;; exact-match (quoted)
        ((string-prefix-p "'" token)
         (push 'any pattern)
         (push (substring token 1) pattern))
-       ;; prefix-exact
+       ;; prefix-exact-match
        ((string-prefix-p "^" token)
         (push 'any pattern)
         (push (substring token 1) pattern))
-       ;; suffix-exact
+       ;; suffix-exact-match
        ((string-suffix-p "$" token)
         (push 'any pattern)
         (push (substring token 0 -1) pattern))
