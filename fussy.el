@@ -1555,6 +1555,10 @@ result: LIST ^a"
           (apply f args))
       (let ((fussy-max-candidate-limit 5000)
             (fussy-default-regex-fn 'fussy-pattern-first-letter)
+            ;; Make this customizable.
+            ;; e.g. fussy-company-AND-component-separator.
+            (fussy-AND-component-separator "[ &]")
+            (fussy-OR-component-separator "|")
             (fussy-prefer-prefix nil))
         (apply f args)))))
 
