@@ -553,6 +553,9 @@ VALUES are positions of the values in the list.
 
 See `fussy--history-hash-table'.")
 
+(defvar-local fussy--hist-hash-last-val nil
+  "Last value of the history variable used to build `fussy--hist-hash'.")
+
 (defvar-local fussy--score-threshold-to-filter-alist-cache nil
   "Cached value of threshold derived from alist for score functions.
 
@@ -1170,15 +1173,22 @@ Check if `orderless' is being used."
   "Return hash table representing `minibuffer-history-variable'.
 
 Key is the history string and Value is the history position."
-  (when-let* ((hist (and (not (eq minibuffer-history-variable t))
-                         (symbol-value minibuffer-history-variable)))
-              (table (make-hash-table :test 'equal
-                                      :size (length hist))))
-    (cl-loop for index from 0
-             for item in hist
-             unless (gethash item table)
-             do (puthash item index table))
-    table))
+  (let ((hist (and (not (eq minibuffer-history-variable t))
+                   (symbol-value minibuffer-history-variable))))
+    (cond
+     ((eq hist fussy--hist-hash-last-val)
+      fussy--hist-hash)
+     (t
+      (setq fussy--hist-hash-last-val hist)
+      (setq fussy--hist-hash
+            (when hist
+              (let ((table (make-hash-table :test 'equal
+                                            :size (length hist))))
+                (cl-loop for index from 0
+                         for item in hist
+                         unless (gethash item table)
+                         do (puthash item index table))
+                table)))))))
 
 (defun fussy-without-unencodeable-chars (string)
   "Strip invalid chars from STRING.
