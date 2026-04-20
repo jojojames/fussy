@@ -981,6 +981,15 @@ If SCORE does not have indices to highlight, return STR unmodified."
   ;; substring completion by default. Set our own defaults.
   (setq completion-category-overrides
         '((file ;; https://github.com/jojojames/fussy/issues/46
+           ;; Only issue with this is the first letter in
+           ;; C-x find-file doesn't use `fussy'.
+           ;; Using `fussy' as an example, if the directory is:
+           ;; .git .github .gitignore
+           ;; README.org fussy.el fussy.elc
+           ;; Typing "." will only return:
+           ;; ".git" ".github" and ".gitignore"
+           ;; But typing ".e" will return:
+           ;; fussy.el .gitignore fussy-test.el
            (styles basic))
           (buffer
            (styles fussy basic))
