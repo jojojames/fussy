@@ -318,6 +318,60 @@ This may or may not be used by `fussy-score-ALL-fn'."
   :type '(list function)
   :group 'fussy)
 
+(defcustom fussy-AND-component-separator nil
+  "Separator used to split the query string into AND components.
+This mirrors `orderless-component-separator' and can be either:
+- A regexp string passed to `split-string', e.g. \"[ &]\" to split on
+  spaces or ampersands.
+- A function that takes a string and returns a list of component strings,
+  e.g. `orderless-escapable-split-on-space'.
+When non-nil, the query is split on this separator and the resulting
+components are rejoined with spaces (AND semantics) before being passed
+to the scoring backend.  This is useful for in-buffer completion
+(e.g. `company-mode') where pressing SPC would otherwise dismiss the
+completion UI, allowing you to use a different separator character
+(e.g. \"&\") for multi-token AND queries.
+See also `fussy-OR-component-separator' for OR semantics.
+When nil (the default), the query is passed to the scoring backend as-is.
+Example:
+  ;; Use & as an AND separator in addition to space:
+  (setq fussy-AND-component-separator \"[ &]+\")
+  ;; Or with a custom function matching orderless behavior:
+  (setq fussy-AND-component-separator #\='orderless-escapable-split-on-space)"
+  :type `(choice
+          (const :tag "No separator (disabled)" nil)
+          (string :tag "Regexp separator, e.g. \\"[ &]+\\"")
+          (const :tag "Spaces" " +")
+          (const :tag "Spaces, hyphen or slash" " +\\|[-/]")
+          (function :tag "Custom function"))
+  :group 'fussy)
+
+(defcustom fussy-OR-component-separator nil
+  "Separator used to split the query string into OR groups.
+Can be either:
+- A regexp string passed to `split-string', e.g. \"|\" or \"[ |]+\".
+- A function that takes a string and returns a list of OR-group strings.
+When non-nil, the query is first split on this separator into OR groups.
+Each OR group is then processed by `fussy-AND-component-separator' (if set)
+to produce AND components within the group.  OR groups are rejoined with
+\" | \" which `fzf-native' understands natively as OR.
+This maps to fzf's native | operator:
+  e.g. \"d | x\" matches candidates containing either \"d\" OR \"x\".
+       \"d x\" matches candidates containing both \"d\" AND \"x\".
+Only meaningful when `fussy-score-fn' is `fussy-fzf-native-score' or
+`fussy-score-ALL-fn' is `fussy-fzf-score', since other backends do not
+understand the | OR operator.
+Example — use | for OR and & for AND within each OR group:
+  (setq fussy-OR-component-separator \"|\")    ;; split on |
+  (setq fussy-AND-component-separator \"[ &]+\") ;; AND within each group
+  ;; Typing \"abc&def|ghi\" scores as fzf query \"abc def | ghi\"
+  ;; i.e. (abc AND def) OR ghi"
+  :type `(choice
+          (const :tag "No OR separator (disabled)" nil)
+          (string :tag "Regexp OR separator, e.g. \\\"|\\\"")
+          (function :tag "Custom function"))
+  :group 'fussy)
+
 (defcustom fussy-score-ALL-fn 'fussy-score
   "Function used for score ALL candidates.
 
@@ -698,6 +752,53 @@ Implement `all-completions' interface with additional fuzzy / `flx' scoring."
                          fussy-score-threshold-to-filter-alist)
                         0))))))
 
+(defun fussy--normalize-and-components (string)
+  "Split STRING into AND components using `fussy-AND-component-separator'.
+
+Returns STRING with components joined by spaces (fzf AND semantics).
+If `fussy-AND-component-separator' is nil, returns STRING unchanged."
+  (if fussy-AND-component-separator
+      (let ((components
+             (if (functionp fussy-AND-component-separator)
+                 (funcall fussy-AND-component-separator string)
+               (split-string string fussy-AND-component-separator t))))
+        (string-join components " "))
+    string))
+
+(defun fussy--normalize-or-components (string)
+  "Split STRING into OR groups using `fussy-OR-component-separator'.
+
+Returns STRING with OR groups joined by \" | \" (fzf OR semantics).
+If `fussy-OR-component-separator' is nil, returns STRING unchanged."
+  (if fussy-OR-component-separator
+      (let ((or-groups
+             (if (functionp fussy-OR-component-separator)
+                 (funcall fussy-OR-component-separator string)
+               (split-string string fussy-OR-component-separator t))))
+        (string-join or-groups " | "))
+    string))
+
+(defun fussy-normalize-query (string)
+  "Normalize STRING using component separators.
+
+See `fussy-AND-component-separator' and `fussy-OR-component-separator'.
+
+Applies `fussy--normalize-and-components' first, then
+`fussy--normalize-or-components'.  AND normalization converts custom
+separators (e.g. \"&\") into spaces within each token group.  OR
+normalization then splits on the OR separator and rejoins groups with
+\" | \" which `fzf-native' understands natively as the OR operator.
+
+When both separators are nil, STRING is returned unchanged.
+
+Examples (with fussy-OR-component-separator \"|\" and
+          fussy-AND-component-separator \"[ &]+\"):
+  \"foo|bar\"     -> \"foo | bar\"       (foo OR bar)
+  \"foo&baz|bar\" -> \"foo baz | bar\"  (foo AND baz) OR bar
+  \"foo bar\"     -> \"foo bar\"         (spaces already AND in fzf)"
+  (fussy--normalize-or-components
+   (fussy--normalize-and-components string)))
+
 (defun fussy-outer-score (candidates string &optional cache)
   "Function used to wrap `fussy-score-ALL-fn'."
   (funcall fussy-score-ALL-fn candidates string cache))
@@ -709,7 +810,8 @@ This implementation uses `fzf-native-score-all' to do all its scoring in one go.
 
 Ignore CACHE. This is only added to match `fussy-score'."
   (when (fboundp 'fzf-native-score-all)
-    (let ((string (fussy-encode-coding-string string)))
+    (let ((string (fussy-encode-coding-string
+                   (fussy-normalize-query string))))
       (fzf-native-score-all candidates string))))
 
 (defun fussy-score (candidates string &optional cache)
@@ -721,9 +823,10 @@ Set a text-property \='completion-score on candidates with their score.
 `completion--adjust-metadata' later uses this \='completion-score for sorting."
   (let ((result '())
         (string (fussy-encode-coding-string
-                 (if (memq fussy-score-fn fussy-whitespace-ok-fns)
-                     string
-                   (replace-regexp-in-string "\\\s" "" string)))))
+                 (let ((normalized (fussy-normalize-query string)))
+                   (if (memq fussy-score-fn fussy-whitespace-ok-fns)
+                       normalized
+                     (replace-regexp-in-string "\\\s" "" normalized))))))
     (dolist (x candidates)
       (setf x (copy-sequence x))
       (if (> (length x) fussy-max-word-length-to-score)
@@ -1278,7 +1381,7 @@ hash-table-value is the associated value."
                   ((symbolp candidate) (symbol-name candidate))
                   (:default nil))))
         ;; (message (format "c: %s s: %s score: %d" x string (car score)))
-        (fussy-valid-score-p (funcall fussy-score-fn x string))
+        (fussy-valid-score-p (funcall fussy-score-fn x (fussy-normalize-query string)))
       t)))
 
 (defun fussy-make-fzf-highlight-pattern (infix)
