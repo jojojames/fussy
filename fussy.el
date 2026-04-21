@@ -1401,7 +1401,8 @@ Use `fussy-score-ALL-fn' for filtering."
        (completions
         (if (fussy--fzf-p)
             ;; Gather all valid candidates and score in batch.
-            (fussy-outer-score (all-completions prefix table pred) infix)
+            (fussy-outer-score
+             (all-completions prefix table pred) normalized-infix)
           ;; Fallback path: Score per-candidate (slow).
           (all-completions
            prefix table
