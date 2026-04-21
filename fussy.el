@@ -1396,12 +1396,17 @@ Use `fussy-score-ALL-fn' for filtering."
        (infix (concat
                (substring beforepoint (car bounds))
                (substring afterpoint 0 (cdr bounds))))
-       (pred-infix
-        (apply-partially 'fussy-filter-by-scoring-predicate infix table pred))
+       (normalized-infix (fussy-normalize-query infix))
        (completion-regexp-list nil)
-       ;; (_ (message (format "prefix: %s infix: %s" prefix infix)))
        (completions
-        (all-completions prefix table pred-infix))
+        (if (fussy--fzf-p)
+            ;; Gather all valid candidates and score in batch.
+            (fussy-outer-score (all-completions prefix table pred) infix)
+          ;; Fallback path: Score per-candidate (slow).
+          (all-completions
+           prefix table
+           (apply-partially 'fussy-filter-by-scoring-predicate
+                            normalized-infix table pred))))
        (pattern
         (fussy--recreate-regex-pattern beforepoint afterpoint bounds)))
     (list completions pattern prefix)))
@@ -1447,7 +1452,8 @@ hash-table-value is the associated value."
                   ((symbolp candidate) (symbol-name candidate))
                   (:default nil))))
         ;; (message (format "c: %s s: %s score: %d" x string (car score)))
-        (fussy-valid-score-p (funcall fussy-score-fn x (fussy-normalize-query string)))
+        ;; Note: `string' is already normalized in `fussy-filter-by-scoring'.
+        (fussy-valid-score-p (funcall fussy-score-fn x string))
       t)))
 
 (defun fussy-make-fzf-highlight-pattern (infix)
