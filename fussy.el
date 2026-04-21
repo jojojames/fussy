@@ -590,6 +590,8 @@ Implement `try-completions' interface by using `completion-flex-try-completion'.
   "Current result of `fussy-all-completions'.")
 (defvar-local fussy--current-prefix nil
   "Current prefix of `fussy-all-completions'.")
+(defvar fussy--filtering-p nil
+  "Is `fussy' filtering currently?")
 
 ;;;###autoload
 (defun fussy-all-completions (string table pred point)
@@ -659,6 +661,7 @@ Implement `all-completions' interface with additional fuzzy / `flx' scoring."
          (infix (concat
                  (substring beforepoint (car bounds))
                  (substring afterpoint 0 (cdr bounds)))))
+    (setf fussy--filtering-p (not (string= prefix "")))
     (setf fussy--current-prefix prefix)
     (if-let ((cached-all (and fussy-use-cache
                               (cl-copy-list
@@ -1017,23 +1020,14 @@ If SCORE does not have indices to highlight, return STR unmodified."
 
 (defun fussy--adjust-metadata (metadata)
   "If actually doing filtering, adjust METADATA's sorting."
-  (let ((flex-is-filtering-p
-         ;; JT@2019-12-23: FIXME: this is kinda wrong.  What we need
-         ;; to test here is "some input that actually leads/led to
-         ;; flex filtering", not "something after the minibuffer
-         ;; prompt".  E.g. The latter is always true for file
-         ;; searches, meaning we'll be doing extra work when we
-         ;; needn't.
-         (and
-          fussy-can-adjust-metadata-p
-          (or (not (window-minibuffer-p))
-              (> (point-max) (minibuffer-prompt-end))))))
-    `(metadata
-      ,@(and flex-is-filtering-p
-             `((display-sort-function . fussy--sort)))
-      ,@(and flex-is-filtering-p
-             `((cycle-sort-function . fussy--sort)))
-      ,@(cdr metadata))))
+  (if fussy--filtering-p
+      `(metadata
+        ,@(and fussy--filtering-p
+               `((display-sort-function . fussy--sort)))
+        ,@(and fussy--filtering-p
+               `((cycle-sort-function . fussy--sort)))
+        ,@(cdr metadata))
+    metadata))
 
 (defun fussy--sort (completions)
   "Sort COMPLETIONS using `completion-score' and completion length."
