@@ -1039,7 +1039,7 @@ If SCORE does not have indices to highlight, return STR unmodified."
   "Sort COMPLETIONS using `completion-score' and completion length."
   (if (or (null fussy-compare-same-score-fn)
           ;; If not many candidates, just do the old fashion N Log N.
-          (length< completions 200))
+          (length< completions 1200))
       (sort
        completions
        (lambda (c1 c2)
