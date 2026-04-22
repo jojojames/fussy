@@ -567,13 +567,6 @@ See `fussy-score-threshold-to-filter-alist'.")
 (defvar-local fussy--all-cache nil
   "Hash table representing a cache for `fussy-all-completions'.")
 
-(defvar-local fussy-can-adjust-metadata-p t
-  "Variable to flip whether or not `fussy' can adjust metadata.
-
-This is intended to be let-bound by users when they don't want any sorting.
-
-See `fussy--adjust-metadata' for more details.")
-
 ;;
 ;; (@* "All Completions Interface/API" )
 ;;
@@ -1615,8 +1608,7 @@ result: LIST ^a"
   "Advise `company--transform-candidates'."
   (if (length< company-prefix fussy-company-prefix-length)
       ;; Transform normally for short prefixes.
-      (let ((fussy-can-adjust-metadata-p nil))
-        (apply f args))
+      (apply f args)
     (let ((company-transformers
            ;; `fussy-score' still needs to do sorting.
            ;; `fussy-fzf-score' sorts on its own.
@@ -1633,8 +1625,7 @@ result: LIST ^a"
         (_suffix (nth 1 args)))
     (if (length< prefix fussy-company-prefix-length)
         (let ((completion-styles (remq 'fussy completion-styles))
-              (completion-category-overrides nil)
-              (fussy-can-adjust-metadata-p nil))
+              (completion-category-overrides nil))
           (apply f args))
       (let* ((fussy-max-candidate-limit 5000)
              (fussy-default-regex-fn 'fussy-pattern-first-letter)
