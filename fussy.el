@@ -765,7 +765,7 @@ If `fussy-AND-component-separator' is nil, returns STRING unchanged."
       (let ((components
              (if (functionp fussy-AND-component-separator)
                  (funcall fussy-AND-component-separator string)
-               (split-string string fussy-AND-component-separator t))))
+               (split-string string fussy-AND-component-separator))))
         (string-join components " "))
     string))
 
@@ -1392,14 +1392,25 @@ Use `fussy-score-ALL-fn' for filtering."
                (substring afterpoint 0 (cdr bounds))))
        (normalized-infix (fussy-normalize-query infix))
        (completion-regexp-list nil)
+       (bufferp (eq 'buffer
+                    (alist-get 'category
+                               (completion-metadata string table pred))))
+       ;; When string begins with space in `switch-to-buffer' category,
+       ;; hidden buffers should be shown, so set the prefix to be " ".
+       (prefix-2 (if (and
+                      bufferp
+                      (= (length prefix) 0)
+                      (string-prefix-p " " infix))
+                     " "
+                   prefix))
        (completions
         (if (fussy--fzf-p)
             ;; Gather all valid candidates and score in batch.
             (fussy-outer-score
-             (all-completions prefix table pred) normalized-infix)
+             (all-completions prefix-2 table pred) normalized-infix)
           ;; Fallback path: Score per-candidate (slow).
           (all-completions
-           prefix table
+           prefix-2 table
            (apply-partially 'fussy-filter-by-scoring-predicate
                             normalized-infix table pred))))
        (pattern
