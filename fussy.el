@@ -1551,9 +1551,7 @@ exhaustive on matches."
 
 If length if STR is somewhat long, return nil instead as long flex patterns
 can be really slow when filtering."
-  (if (> (length str) 4)
-      nil
-    (fussy-pattern-flex-2 str)))
+  (fussy-pattern-flex-2 str))
 
 (defun fussy-pattern-first-letter (str)
   "Make pattern for STR.
