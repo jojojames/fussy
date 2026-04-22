@@ -1332,37 +1332,50 @@ that's written in C for faster filtering."
                  (substring afterpoint 0 (cdr bounds))))
          (regexp (funcall fussy-default-regex-fn infix))
          (completion-regexp-list regexp)
-         ;; Commentary on why we prefer prefix over infix.
-         ;; For `find-file', if the prefix exists, we're in a different
-         ;; directory, so should be retrieving candidates from that directory
-         ;; instead.
-         ;; ex. We started in ~/ home directory. User starts typing cod.
-         ;; infix will be: c -> co -> cod
-         ;; prefix will be ~/
-         ;; User then enters a directory called ~/Code and types abc.
-         ;; infix will be: a -> ab -> abc
-         ;; prefix will be ~/Code
-         ;; For `project-find-file', the prefix will usually be empty and only
-         ;; the infix will be matched against.
-         ;; So, *knock on wood*, it seems safe to prefer prefix completion over
-         ;; infix completion.
+         (category (alist-get 'category
+                              (completion-metadata string table pred)))
          (completions
-          ;; Is there an easier way to check if string is empty or nil?
-          (if (or (/= (length prefix) 0)
-                  fussy-prefer-prefix)
-              ;; Always use prefix if available for correctness.
-              ;; For example, `find-file', should always use prefix.
-              (or (all-completions prefix table pred)
-                  (all-completions infix table pred))
-            ;; When prefix is nil, the choice if infix or prefix is preference..
-            ;; Infix is much faster than prefix but can be "wrong" or not
-            ;; exhaustive for matches. Prefix will be exhaustive and "correct"
-            ;; but can be slow. Generally, we should prefer prefix for
-            ;; correctness.
-            ;; We allow an escape hatch to infix for extra performance with
-            ;; `fussy-prefer-prefix' set to nil.
-            (or (all-completions infix table pred)
-                (all-completions prefix table pred))))
+          (cond
+           ((eq category 'buffer)
+            ;; When string begins with space in `switch-to-buffer' category,
+            ;; hidden buffers should be shown, so set the prefix to be " ".
+            (all-completions (if (and
+                                  (= (length prefix) 0)
+                                  (string-prefix-p " " infix))
+                                 " "
+                               prefix)
+                             table pred))
+           (:default
+            ;; Commentary on why we prefer prefix over infix.
+            ;; For `find-file', if the prefix exists, we're in a different
+            ;; directory, so should be retrieving candidates from that directory
+            ;; instead.
+            ;; ex. We started in ~/ home directory. User starts typing cod.
+            ;; infix will be: c -> co -> cod
+            ;; prefix will be ~/
+            ;; User then enters a directory called ~/Code and types abc.
+            ;; infix will be: a -> ab -> abc
+            ;; prefix will be ~/Code
+            ;; For `project-find-file', the prefix will usually be empty and only
+            ;; the infix will be matched against.
+            ;; So, *knock on wood*, it seems safe to prefer prefix completion over
+            ;; infix completion.
+            ;; Is there an easier way to check if string is empty or nil?
+            (if (or (/= (length prefix) 0)
+                    fussy-prefer-prefix)
+                ;; Always use prefix if available for correctness.
+                ;; For example, `find-file', should always use prefix.
+                (or (all-completions prefix table pred)
+                    (all-completions infix table pred))
+              ;; When prefix is nil, the choice if infix or prefix is preference..
+              ;; Infix is much faster than prefix but can be "wrong" or not
+              ;; exhaustive for matches. Prefix will be exhaustive and "correct"
+              ;; but can be slow. Generally, we should prefer prefix for
+              ;; correctness.
+              ;; We allow an escape hatch to infix for extra performance with
+              ;; `fussy-prefer-prefix' set to nil.
+              (or (all-completions infix table pred)
+                  (all-completions prefix table pred))))))
          ;; Create this pattern for the sole purpose of highlighting with
          ;; `completion-pcm--hilit-commonality'. We don't actually need this
          ;; for `all-completions' to work since we're just using
