@@ -983,16 +983,17 @@ If SCORE does not have indices to highlight, return STR unmodified."
         '((file
            ;; https://github.com/jojojames/fussy/issues/46
            ;; https://github.com/minad/vertico?tab=readme-ov-file#tramp-hostname-and-username-completion-fixed-on-emacs-29
-           (styles partial-completion))
+           (styles fussy basic))
           (buffer
            (styles fussy basic))
-          (consult-location (styles fussy basic))
+          (consult-location
+           (styles fussy basic))
           (unicode-name
            (styles fussy basic))
           (project-file
-           (styles fussy))
+           (styles fussy basic))
           (xref-location
-           (styles fussy))
+           (styles fussy basic))
           (info-menu
            (styles fussy basic))
           (symbol-help
