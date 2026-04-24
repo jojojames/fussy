@@ -1255,14 +1255,15 @@ See `fussy-remove-bad-char-fn'."
      (> length 0)
      ;; e.g. ~/.emacs.d/url/ should not use entry from "~/.emacs.d/url".
      ;; <spc> ^ ! ' . | are related to fzf filtering.
+     ;; : for /ssh: /scpx: /sudo:
      (not (or
            ;; "a|"
            (memq (aref string (1- length))
-                 '(?  ?/ ?^ ?! ?' ?. ?|))
+                 '(?  ?/ ?^ ?! ?' ?. ?| ?:))
            (and (> length 1)
                 ;; "a|b"
                 (memq (aref string (- length 2))
-                      '(?  ?/ ?^ ?! ?' ?. ?|))))))))
+                      '(?  ?/ ?^ ?! ?' ?. ?| ?:))))))))
 
 (defun fussy-wipe-cache (&rest _)
   "Wipe buffer local `fussy--all-cache'."
