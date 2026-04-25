@@ -5,6 +5,23 @@
 ;; For `help--symbol-completion-table'.
 (require 'help-fns)
 
+;; `fzf-native' provides the C module exercised by the multibyte tests
+;; below. It is an optional dev dependency in `Eask' (gated on platforms
+;; with shipped binaries), so its presence is not guaranteed. We try to
+;; load both the package and its dynamic module; on any failure we set
+;; `fussy-test--fzf-native-available-p' to nil and the multibyte tests
+;; will skip rather than fail. This keeps the suite green on platforms
+;; without a prebuilt module and tolerates module/Emacs ABI mismatches.
+(defconst fussy-test--fzf-native-available-p
+  (condition-case _
+      (progn
+        (require 'fzf-native)
+        (when (fboundp 'fzf-native-load-dyn)
+          (fzf-native-load-dyn))
+        (fboundp 'fzf-native-score-all))
+    (error nil))
+  "Non-nil if `fzf-native' loaded and its module is callable.")
+
 ;; These tests garbage collect alot so try to avoid garbage collection since
 ;; we're doing benchmark tests.
 (setf gc-cons-threshold most-positive-fixnum
@@ -236,157 +253,6 @@ Called from `fussy-all-completions'."
      (not (fussy-score candidates "blah")))))
 
 ;;
-;; (@* "`fussy-without-unencodeable-chars'" )
-;;
-
-(ert-deftest fussy-without-unencodeable-chars-test ()
-  "Test that unencodeable chars are removed."
-  (should
-   (string=
-    (fussy-without-unencodeable-chars
-     (string-as-multibyte  ";; Copyright 2022 Jo Beøˆ€’"))
-    ";; Copyright 2022 Jo Be"))
-  (should
-   (string=
-    (fussy-without-unencodeable-chars
-     (string-as-multibyte
-      ";; This buffer is for text that is not saved, and for Lisp evaluation.øˆ€€"))
-    ";; This buffer is for text that is not saved, and for Lisp evaluation.")))
-
-(ert-deftest fussy-without-unencodeable-chars-consult--tofu-char-test ()
-  "Test that `consult--tofu-char' is removed."
-  (should
-   (string=
-    (fussy-without-unencodeable-chars (concat "jjbb" (char-to-string #x200000)))
-    "jjbb")))
-
-;;
-;; (@* "`fussy-without-tofu-char'" )
-;;
-
-(ert-deftest fussy-without-tofu-char-test ()
-  "Test `fussy-without-tofu-char'."
-  ;; Good input.
-  (should
-   (string=
-    (fussy-without-tofu-char "bb") "bb"))
-  (should
-   (string=
-    (fussy-without-tofu-char "jj") "jj"))
-  ;; Bad input.
-  (should
-   (string=
-    (fussy-without-tofu-char (string-make-multibyte "Makefile"))
-    "Makefile"))
-  (should
-   (string=
-    (fussy-without-tofu-char
-     (concat "jjbb" (char-to-string fussy--consult--tofu-char)))
-    "jjbb"))
-  (should
-   (string=
-    (fussy-without-tofu-char
-     (string-as-multibyte  ";; Copyright 2022 Jo Beøˆ€’"))
-    ";; Copyright 2022 Jo Be"))
-  (should
-   (string=
-    (fussy-without-tofu-char
-     (string-as-multibyte
-      ";; This buffer is for text that is not saved, and for Lisp evaluation.øˆ€€"))
-    ";; This buffer is for text that is not saved, and for Lisp evaluation.")))
-
-(ert-deftest fussy-without-tofu-char-perf-test ()
-  "Test `fussy-without-tofu-char' performance.
-
-This test asserts `fussy-without-tofu-char''s speed."
-  (let* ((tofu (char-to-string fussy--consult--tofu-char))
-         (string-1 (concat "ojjjojjjoojjjjjoojjbb" tofu))
-         (string-2 (string-as-multibyte ";; Copyright 2022 Jo Beøˆ€’"))
-         (string-3 (string-as-multibyte ";; This buffer is for text that is not saved, and for Lisp evaluation.øˆ€€"))
-         (performance-factor 50)
-         ;; Feels like there is some cold/start warm start that may affect the test here.
-         (_ (fussy-without-tofu-char string-1))
-         (_ (fussy-without-tofu-char string-2))
-         (_ (fussy-without-tofu-char string-3))
-         (result-1 (car (benchmark-run 1000 (fussy-without-tofu-char string-1))))
-         (result-2 (car (benchmark-run 1000 (fussy-without-tofu-char string-2))))
-         (result-3 (car (benchmark-run 1000 (fussy-without-tofu-char string-3)))))
-    (should
-     (<
-      (* performance-factor result-1)
-      (car (benchmark-run 1000 (fussy-without-unencodeable-chars string-1)))))
-    (should
-     (<
-      (* performance-factor result-2)
-      (car (benchmark-run 1000 (fussy-without-unencodeable-chars string-2)))))
-    (should
-     (<
-      (* performance-factor result-3)
-      (car (benchmark-run 1000 (fussy-without-unencodeable-chars string-3)))))))
-
-;;
-;; (@* "`fussy-encode-coding-string'" )
-;;
-
-(ert-deftest fussy-encode-coding-string-test ()
-  "Test `fussy-encode-coding-string'."
-  ;; Good input.
-  (should
-   (string=
-    (fussy-encode-coding-string "bb") "bb"))
-  (should
-   (string=
-    (fussy-encode-coding-string "jj") "jj"))
-  ;; Bad input.
-  (should
-   (string=
-    (fussy-encode-coding-string
-     (concat "jjbb" (char-to-string fussy--consult--tofu-char)))
-    "jjbb\370\210\200\200\200"))
-  (should
-   (string=
-    (fussy-encode-coding-string
-     (string-as-multibyte  ";; Copyright 2022 Jo Beøˆ€’"))
-    ";; Copyright 2022 Jo Be\370\210\200\201\222"))
-  (should
-   (string=
-    (fussy-encode-coding-string
-     (string-as-multibyte
-      ";; This buffer is for text that is not saved, and for Lisp evaluation.øˆ€€"))
-    ";; This buffer is for text that is not saved, and for Lisp evaluation.\370\210\200\200\201")))
-
-(ert-deftest fussy-encode-coding-string-perf-test ()
-  "Test `fussy-encode-coding-string' performance.
-
-This test asserts `fussy-encode-coding-string' is much much faster than
-`fussy-without-unencodeable-chars'."
-  (let* ((tofu (char-to-string fussy--consult--tofu-char))
-         (string-1 (concat "jjbb" tofu))
-         (string-2 (string-as-multibyte ";; Copyright 2022 Jo Beøˆ€’"))
-         (string-3 (string-as-multibyte ";; This buffer is for text that is not saved, and for Lisp evaluation.øˆ€€"))
-         ;; Warm start?
-         (_ (fussy-encode-coding-string string-1))
-         (_ (fussy-encode-coding-string string-2))
-         (_ (fussy-encode-coding-string string-3))
-         (performance-factor 50))
-    (should
-     (<
-      (* performance-factor
-         (car (benchmark-run 1000 (fussy-encode-coding-string string-1))))
-      (car (benchmark-run 1000 (fussy-without-unencodeable-chars string-1)))))
-    (should
-     (<
-      (* performance-factor
-         (car (benchmark-run 1000 (fussy-encode-coding-string string-2))))
-      (car (benchmark-run 1000 (fussy-without-unencodeable-chars string-2)))))
-    (should
-     (<
-      (* performance-factor
-         (car (benchmark-run 1000 (fussy-encode-coding-string string-3))))
-      (car (benchmark-run 1000 (fussy-without-unencodeable-chars string-3)))))))
-
-
-;;
 ;; (@* "`fussy-propertize-common-part'" )
 ;;
 
@@ -484,6 +350,70 @@ This test asserts `fussy-encode-coding-string' is much much faster than
       (should (eq (gethash "first" hist) 0))
       (should (eq (gethash "second" hist) 1)))))
 
+;;
+;; (@* "Multibyte" )
+;;
+;; These exercise the fussy-level integration with the fzf-native C module
+;; against invalid unibyte and legitimate multibyte candidates. The C-layer
+;; handling lives in `fzf-native-test.el'; here we make sure fussy's wrappers
+;; (`fussy-fzf-score' via `fussy-score-ALL-fn', and the per-candidate
+;; `fussy-fzf-native-score' path via `fussy-score') don't signal and return
+;; useful results.
+
+(defconst fussy-test--bad-bytes
+  (string-as-multibyte ";; Copyright 2022 Jo Beï¿½ï¿½ï¿½ï¿½ï¿½")
+  "The exact reproducer from the original bug report.")
+
+(ert-deftest fussy-score-FN-all-multibyte-test ()
+  "`fussy-fzf-score' on a byte-junk candidate does not signal."
+  (skip-unless fussy-test--fzf-native-available-p)
+  (let* ((fussy-score-ALL-fn 'fussy-fzf-score)
+         (result (funcall fussy-score-ALL-fn
+                          (list fussy-test--bad-bytes)
+                          "C")))
+    ;; The bad-byte string contains "C" (in "Copyright"); after
+    ;; encode-coding-string coercion in the C module, fzf scores it
+    ;; normally, so the candidate survives in the result.
+    (should (member fussy-test--bad-bytes result))))
+
+(ert-deftest fussy-score-FN-all-multibyte-mixed-batch-test ()
+  "A bad candidate does not prevent scoring of good ones in the same batch.
+The bad candidate goes through `encode-coding-string' coercion in the C
+module and is scored normally; it survives in the result alongside the
+clean matches."
+  (skip-unless fussy-test--fzf-native-available-p)
+  (let* ((fussy-score-ALL-fn 'fussy-fzf-score)
+         (candidates (list "CCCCC" fussy-test--bad-bytes "CC"))
+         (result (funcall fussy-score-ALL-fn candidates "C")))
+    (should (member "CCCCC" result))
+    (should (member "CC" result))
+    (should (member fussy-test--bad-bytes result))))
+
+(ert-deftest fussy-score-FN-all-chinese-test ()
+  "`fussy-fzf-score' handles Chinese candidates against a Chinese query."
+  (skip-unless fussy-test--fzf-native-available-p)
+  (let* ((fussy-score-ALL-fn 'fussy-fzf-score)
+         (result (funcall fussy-score-ALL-fn
+                          '("ä½ å¥½ä¸–ç•Œ" "Hello" "ä½ æ˜¯")
+                          "ä½ ")))
+    (should (member "ä½ å¥½ä¸–ç•Œ" result))
+    (should (member "ä½ æ˜¯" result))))
+
+(ert-deftest fussy-score-multibyte-test ()
+  "`fussy-score' with `fussy-fzf-native-score' does not signal on bad bytes."
+  (skip-unless fussy-test--fzf-native-available-p)
+  (let* ((fussy-score-fn 'fussy-fzf-native-score)
+         ;; Ensure the C module itself is what's being exercised, not the
+         ;; Elisp-side bad-char stripping.
+         (fussy-remove-bad-char-fn nil)
+         (result (fussy-score (list fussy-test--bad-bytes) "C")))
+    ;; bad-bytes contains "C" (in "Copyright"); coercion lets fzf score it,
+    ;; so the candidate survives.
+    (should (member fussy-test--bad-bytes result))))
+
+;;
+;; (@* "Util" )
+;;
 
 (defun fussy-pattern-str (pattern-compiled)
   "Return PATTERN-COMPILED as a string.

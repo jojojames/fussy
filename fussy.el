@@ -417,45 +417,6 @@ Functions in this list should match `fussy-score-fn'."
   :type '(list function)
   :group 'fussy)
 
-(defcustom fussy-remove-bad-char-fn
-  #'fussy-without-tofu-char
-  "Function used to strip characters that some backends are unable to handle.
-
-Some scoring backends \(e.g. Rust backends\) are unable to handle strings with
-certain character encoding.  This function is applied to the candidate strings
-before they are passed to the scoring function.
-
-This was added specifically for `consult' but other encodings could also pose
-a problem.  To keep the performance of the Rust backends useful,
-`fussy-without-tofu-char' is set as the default function.
-`fussy-without-tofu-char' is an order of magnitude faster than
-`fussy-without-unencodeable-chars' but won't handle every case.
-
-Another option is to use `fussy-encode-coding-string' which dumbly converts
-a multibytestring without considering what the final string will look like.
-Using this may work for the purpose of matching too as the final candidate
-string may go from something like abcX to abcR where X was the multibyte char
-that is not usable with the above scoring backends and R is a random ascii
-character encoded from X.
-
-This is set to nil if `fussy-setup' is called as we use the workaround
-described here:
-https://github.com/axelf4/hotfuzz?tab=readme-ov-file#dynamic-module
-You can set this again if another encoding proves to be a problem.
-
-For more information: \(https://github.com/minad/consult/issues/585\)"
-  :type `(choice
-          (const :tag "Remove Tofu"
-                 ,#'fussy-without-tofu-char)
-          (const :tag "Remove All"
-                 ,#'fussy-without-unencodeable-chars)
-          (const :tag "Convert to Unibyte"
-                 ,#'fussy-encode-coding-string)
-          (const :tag "Don't convert"
-                 nil)
-          (function :tag "Custom function"))
-  :group 'fussy)
-
 (defcustom fussy-prefer-prefix t
   "When using `fussy-filter-default', whether to prefer infix or prefix.
 
@@ -522,21 +483,6 @@ https://lists.gnu.org/archive/html/help-gnu-emacs/2008-06/msg00087.html"
      (let ((result ,@body))
        (message "%.06f" (float-time (time-since time)))
        result)))
-
-;;
-;; (@* "defsubst" )
-;;
-
-
-(defsubst fussy-encode-coding-string (string)
-  "Call `encode-coding-string' for STRING."
-  (encode-coding-string string 'utf-8 t))
-
-(defsubst fussy-without-bad-char (str)
-  "Return STR without bad characters in them."
-  (or (and fussy-remove-bad-char-fn
-           (funcall fussy-remove-bad-char-fn str))
-      str))
 
 ;;
 ;; (@* "Constants and Variables" )
@@ -807,9 +753,7 @@ This implementation uses `fzf-native-score-all' to do all its scoring in one go.
 
 Ignore CACHE. This is only added to match `fussy-score'."
   (when (fboundp 'fzf-native-score-all)
-    (let ((string (fussy-encode-coding-string
-                   (fussy-normalize-query string))))
-      (fzf-native-score-all candidates string))))
+    (fzf-native-score-all candidates (fussy-normalize-query string))))
 
 (defun fussy-score (candidates string &optional cache)
   "Score and propertize CANDIDATES using STRING.
@@ -819,11 +763,10 @@ Use CACHE for scoring.
 Set a text-property \='completion-score on candidates with their score.
 `completion--adjust-metadata' later uses this \='completion-score for sorting."
   (let ((result '())
-        (string (fussy-encode-coding-string
-                 (let ((normalized (fussy-normalize-query string)))
-                   (if (memq fussy-score-fn fussy-whitespace-ok-fns)
-                       normalized
-                     (replace-regexp-in-string "\\\s" "" normalized))))))
+        (string (let ((normalized (fussy-normalize-query string)))
+                  (if (memq fussy-score-fn fussy-whitespace-ok-fns)
+                      normalized
+                    (replace-regexp-in-string "\\\s" "" normalized)))))
     (dolist (x candidates)
       (if (> (length x) fussy-max-word-length-to-score)
           ;; Don't score x but don't filter it out either.
@@ -970,7 +913,6 @@ If SCORE does not have indices to highlight, return STR unmodified."
 
   ;; https://github.com/minad/consult/issues/585
   ;; https://github.com/axelf4/hotfuzz?tab=readme-ov-file#dynamic-module
-  (setq fussy-remove-bad-char-fn nil)
   (with-eval-after-load 'consult
     (defvar consult--tofu-char)
     (defvar consult--tofu-range)
@@ -1210,16 +1152,6 @@ Key is the history string and Value is the history position."
                          do (puthash item index table))
                 table)))))))
 
-(defun fussy-without-unencodeable-chars (string)
-  "Strip invalid chars from STRING.
-
-See `fussy-remove-bad-char-fn'."
-  ;; https://emacs.stackexchange.com/questions/5732/how-to-strip-invalid-utf-8-characters-from-a-string
-  (string-join
-   (delq nil (mapcar (lambda (ch)
-                       (encode-coding-char ch 'utf-8 'unicode))
-                     string))))
-
 (defconst fussy--consult--tofu-char #x200000
   "Special character used to encode line prefixes for disambiguation.
 We use invalid characters outside the Unicode range.")
@@ -1231,14 +1163,6 @@ We use invalid characters outside the Unicode range.")
   "Return non-nil if CHAR is a tofu."
   (<= fussy--consult--tofu-char char
       (+ fussy--consult--tofu-char fussy--consult--tofu-range -1)))
-
-(defun fussy-without-tofu-char (string)
-  "Strip unencodeable char from STRING.
-
-See `fussy-remove-bad-char-fn'."
-  (if (fussy--consult--tofu-p (aref string (- (length string) 1)))
-      (substring string 0 (- (length string) 1))
-    string))
 
 (defun fussy--print-hash-table (table)
   "Print TABLE."
@@ -1675,7 +1599,7 @@ This is to try to avoid a additional sort step."
   "Score STR for QUERY with ARGS using `flx-rs-score'."
   (require 'flx-rs)
   (when (fboundp 'flx-rs-score)
-    (flx-rs-score (fussy-without-bad-char str) query args)))
+    (flx-rs-score str query args)))
 
 (defun fussy-fuz-score (str query &rest _args)
   "Score STR for QUERY using `fuz'.
@@ -1685,18 +1609,17 @@ skim or clangd algorithm can be used.
 If `orderless' is used for filtering, we skip calculating matches
 for more speed."
   (require 'fuz)
-  (let ((str (fussy-without-bad-char str)))
-    (if fussy-fuz-use-skim-p
-        (if (fussy--orderless-p)
-            (when (fboundp 'fuz-calc-score-skim)
-              (list (fuz-calc-score-skim query str)))
-          (when (fboundp 'fuz-fuzzy-match-skim)
-            (fuz-fuzzy-match-skim query str)))
+  (if fussy-fuz-use-skim-p
       (if (fussy--orderless-p)
-          (when (fboundp 'fuz-calc-score-clangd)
-            (list (fuz-calc-score-clangd query str)))
-        (when (fboundp 'fuz-fuzzy-match-clangd)
-          (fuz-fuzzy-match-clangd query str))))))
+          (when (fboundp 'fuz-calc-score-skim)
+            (list (fuz-calc-score-skim query str)))
+        (when (fboundp 'fuz-fuzzy-match-skim)
+          (fuz-fuzzy-match-skim query str)))
+    (if (fussy--orderless-p)
+        (when (fboundp 'fuz-calc-score-clangd)
+          (list (fuz-calc-score-clangd query str)))
+      (when (fboundp 'fuz-fuzzy-match-clangd)
+        (fuz-fuzzy-match-clangd query str)))))
 
 ;; `fuz-bin' integration.
 (declare-function "fuz-bin-dyn-score-skim" "fuz-bin")
@@ -1713,19 +1636,17 @@ If `orderless' is used for filtering, we skip calculating matches
 for more speed."
   (require 'fuz-bin)
   ;; (message (format "before: str: %s query: %s" str query))
-  (let ((str (fussy-without-bad-char str)))
-    ;; (message (format "after: str: %s query: %s" str query))
-    (if fussy-fuz-use-skim-p
-        (if (fussy--orderless-p)
-            (when (fboundp 'fuz-bin-dyn-score-skim)
-              (list (fuz-bin-dyn-score-skim query str)))
-          (when (fboundp 'fuz-bin-score-skim)
-            (fuz-bin-score-skim query str)))
+  (if fussy-fuz-use-skim-p
       (if (fussy--orderless-p)
-          (when (fboundp 'fuz-bin-dyn-score-clangd)
-            (list (fuz-bin-dyn-score-clangd query str)))
-        (when (fboundp 'fuz-bin-score-clangd)
-          (fuz-bin-score-clangd query str))))))
+          (when (fboundp 'fuz-bin-dyn-score-skim)
+            (list (fuz-bin-dyn-score-skim query str)))
+        (when (fboundp 'fuz-bin-score-skim)
+          (fuz-bin-score-skim query str)))
+    (if (fussy--orderless-p)
+        (when (fboundp 'fuz-bin-dyn-score-clangd)
+          (list (fuz-bin-dyn-score-clangd query str)))
+      (when (fboundp 'fuz-bin-score-clangd)
+        (fuz-bin-score-clangd query str)))))
 
 ;; `liquidmetal' integration
 (declare-function "liquidmetal-score" "liquidmetal")
@@ -1737,7 +1658,7 @@ This should be paired with `fussy-filter-orderless' to obtain match
 highlighting."
   (require 'liquidmetal)
   (when (fboundp 'liquidmetal-score)
-    (list (liquidmetal-score (fussy-without-bad-char str) query))))
+    (list (liquidmetal-score str query))))
 
 ;; `sublime-fuzzy' integration
 (declare-function "sublime-fuzzy-score" "sublime-fuzzy")
@@ -1746,7 +1667,7 @@ highlighting."
   "Score STR for QUERY using `sublime-fuzzy'."
   (require 'sublime-fuzzy)
   (when (fboundp 'sublime-fuzzy-score)
-    (list (sublime-fuzzy-score query (fussy-without-bad-char str)))))
+    (list (sublime-fuzzy-score query str))))
 
 ;; `fzf-native' integration
 (defvar fussy--fzf-native-slab nil)
@@ -1761,7 +1682,7 @@ highlighting."
   (require 'fzf-native)
   (when (fboundp 'fzf-native-score)
     (fzf-native-score
-     (fussy-without-bad-char str) query (fussy--fzf-native-slab))))
+     str query (fussy--fzf-native-slab))))
 
 ;; `hotfuzz' integration
 (declare-function "hotfuzz--cost" "hotfuzz")
