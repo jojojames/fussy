@@ -283,6 +283,8 @@ are more exhaustive than Flex 1 functions."
                  ,#'fussy-pattern-default)
           (const :tag "First Letter"
                  ,#'fussy-pattern-first-letter)
+          (const :tag "None"
+                 ,#'fussy-pattern-default-to-backend)
           (function :tag "Custom function"))
   :group 'fussy)
 
@@ -744,7 +746,7 @@ Examples (with fussy-OR-component-separator \"|\" and
 
 (defun fussy-outer-score (candidates string &optional cache)
   "Function used to wrap `fussy-score-ALL-fn'."
-  (funcall fussy-score-ALL-fn candidates string cache))
+  (funcall fussy-score-ALL-fn candidates (fussy-normalize-query string) cache))
 
 (defun fussy-fzf-score (candidates string &optional _cache)
   "Score and propertize CANDIDATES using STRING.
@@ -753,7 +755,7 @@ This implementation uses `fzf-native-score-all' to do all its scoring in one go.
 
 Ignore CACHE. This is only added to match `fussy-score'."
   (when (fboundp 'fzf-native-score-all)
-    (fzf-native-score-all candidates (fussy-normalize-query string))))
+    (fzf-native-score-all candidates string)))
 
 (defun fussy-score (candidates string &optional cache)
   "Score and propertize CANDIDATES using STRING.
@@ -763,10 +765,9 @@ Use CACHE for scoring.
 Set a text-property \='completion-score on candidates with their score.
 `completion--adjust-metadata' later uses this \='completion-score for sorting."
   (let ((result '())
-        (string (let ((normalized (fussy-normalize-query string)))
-                  (if (memq fussy-score-fn fussy-whitespace-ok-fns)
-                      normalized
-                    (replace-regexp-in-string "\\\s" "" normalized)))))
+        (string (if (memq fussy-score-fn fussy-whitespace-ok-fns)
+                    string
+                  (replace-regexp-in-string "\\\s" "" string))))
     (dolist (x candidates)
       (if (> (length x) fussy-max-word-length-to-score)
           ;; Don't score x but don't filter it out either.
@@ -1322,7 +1323,6 @@ Use `fussy-score-ALL-fn' for filtering."
        (infix (concat
                (substring beforepoint (car bounds))
                (substring afterpoint 0 (cdr bounds))))
-       (normalized-infix (fussy-normalize-query infix))
        (completion-regexp-list nil)
        (bufferp (eq 'buffer
                     (alist-get 'category
@@ -1338,13 +1338,18 @@ Use `fussy-score-ALL-fn' for filtering."
        (completions
         (if (fussy--fzf-p)
             ;; Gather all valid candidates and score in batch.
+            ;; `fussy-outer-score' normalizes INFIX once.
             (fussy-outer-score
-             (all-completions prefix-2 table pred) normalized-infix)
-          ;; Fallback path: Score per-candidate (slow).
-          (all-completions
-           prefix-2 table
-           (apply-partially 'fussy-filter-by-scoring-predicate
-                            normalized-infix table pred))))
+             (all-completions prefix-2 table pred) infix)
+          ;; Fallback path: Score per-candidate (slow). The predicate
+          ;; calls `fussy-score-fn' directly (bypassing
+          ;; `fussy-outer-score'), so we must normalize once up-front
+          ;; before the hot loop.
+          (let ((normalized-infix (fussy-normalize-query infix)))
+            (all-completions
+             prefix-2 table
+             (apply-partially 'fussy-filter-by-scoring-predicate
+                              normalized-infix table pred)))))
        (pattern
         (fussy--recreate-regex-pattern beforepoint afterpoint bounds)))
     (list completions pattern prefix)))
@@ -1489,12 +1494,28 @@ exhaustive on matches."
     (when (> (length str) 1)
       "\\)\\)"))))
 
-(defun fussy-pattern-default (str)
-  "Make STR flex pattern.
+(defun fussy-pattern-default (_str)
+  "Default pattern to pass to `completion-regexp-list' when filtering.."
+  (fussy-pattern-default-to-backend _str))
 
-If length if STR is somewhat long, return nil instead as long flex patterns
-can be really slow when filtering."
-  (fussy-pattern-flex-2 str))
+(define-inline fussy-pattern-default-to-backend (_str)
+  "Return nothing, expect backend to filter/score.
+
+This seems faster from benchmarking...
+
+**With regex set:**
+1. C-side `all-completions` walks all N candidates and applies the regex and
+ keeps M.
+2. fussy scores those M candidates.
+- Cost: N regex matches + M fzf scores.
+
+**With regex nil:**
+1. C-side `all-completions` walks all N candidates (no filtering on the regex
+ side, just prefix).
+2. fussy scores all N candidates. fzf returns 0 for non-matches → effectively
+ filters.
+- **Cost**: N fzf scores."
+  (inline-quote nil))
 
 (defun fussy-pattern-first-letter (str)
   "Make pattern for STR.
