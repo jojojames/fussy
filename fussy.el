@@ -602,7 +602,7 @@ Implement `all-completions' interface with additional fuzzy / `flx' scoring."
          (infix (concat
                  (substring beforepoint (car bounds))
                  (substring afterpoint 0 (cdr bounds)))))
-    (setf fussy--filtering-p (not (string= prefix "")))
+    (setf fussy--filtering-p (not (string= infix "")))
     (setf fussy--current-prefix prefix)
     (if-let ((cached-all (and fussy-use-cache
                               (cl-copy-list
