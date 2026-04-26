@@ -212,6 +212,24 @@ If this is nil, do nothing."
           (function :tag "Custom function"))
   :group 'fussy)
 
+(defcustom fussy-default-sort-fn
+  #'fussy-histlen->strlen<
+  "Function used to sort matches when not filtering.
+
+If this is nil, do nothing."
+  :type `(choice
+          (const :tag "Don't sort candidates." nil)
+          (const :tag "Shorter candidates have precedence."
+                 ,#'fussy-strlen<)
+          (const :tag "Longer candidates have precedence."
+                 ,#'fussy-strlen>)
+          (const :tag "Recent candidates have precedence."
+                 ,#'fussy-histlen<)
+          (const :tag "Recent (then shorter length) candidates have precedence."
+                 ,#'fussy-histlen->strlen<)
+          (function :tag "Custom function"))
+  :group 'fussy)
+
 (defcustom fussy-max-limit-preferred-candidate-fn nil
   "Function used when collection length is greater than\
 
@@ -959,12 +977,53 @@ If SCORE does not have indices to highlight, return STR unmodified."
   "If actually doing filtering, adjust METADATA's sorting."
   (if fussy--filtering-p
       `(metadata
-        ,@(and fussy--filtering-p
-               `((display-sort-function . fussy--sort)))
-        ,@(and fussy--filtering-p
-               `((cycle-sort-function . fussy--sort)))
+        (display-sort-function . fussy--sort)
+        (cycle-sort-function . fussy--sort)
         ,@(cdr metadata))
-    metadata))
+    `(metadata
+      (display-sort-function . fussy--default-sort)
+      (cycle-sort-function . fussy--default-sort)
+      ,@(cdr metadata))))
+
+(defun fussy--default-sort (completions)
+  "Sort COMPLETIONS using `fussy-default-sort-fn'.
+
+Used when there's no need to sort. e.g. User hasn't typed anything."
+  (if (or (null fussy-default-sort-fn)
+          (length< completions 1200))
+      (if fussy-default-sort-fn
+          (sort completions fussy-default-sort-fn)
+        completions)
+    (let* ((hist (fussy--history-hash-table))
+           (uses-hist (memq fussy-default-sort-fn
+                            '(fussy-histlen->strlen< fussy-histlen<)))
+           (uses-len (memq fussy-default-sort-fn
+                           '(fussy-histlen->strlen< fussy-strlen< fussy-strlen>))))
+      (mapcar
+       #'car
+       (sort
+        (mapcar
+         (lambda (c)
+           (let ((hpos (when (and uses-hist hist)
+                         (or (gethash c hist) most-positive-fixnum)))
+                 (len (when uses-len (length c))))
+             (list c hpos len)))
+         completions)
+        (lambda (a b)
+          (cond
+           ((eq fussy-default-sort-fn #'fussy-histlen->strlen<)
+            (let ((h1 (nth 1 a))
+                  (h2 (nth 1 b)))
+              (if (= h1 h2)
+                  (< (nth 2 a) (nth 2 b))
+                (< h1 h2))))
+           ((eq fussy-default-sort-fn #'fussy-histlen<)
+            (< (nth 1 a) (nth 1 b)))
+           ((eq fussy-default-sort-fn #'fussy-strlen<)
+            (< (nth 2 a) (nth 2 b)))
+           ((eq fussy-default-sort-fn #'fussy-strlen>)
+            (> (nth 2 a) (nth 2 b)))
+           (t (funcall fussy-default-sort-fn (car a) (car b))))))))))
 
 (defun fussy--sort (completions)
   "Sort COMPLETIONS using `completion-score' and completion length."
