@@ -138,6 +138,20 @@ For more information: [[https://github.com/lotabout/fuzzy-matcher][fuzzy-matcher
       (fuz-build-and-load-dymod)))
 #+end_src
 
+For batch scoring using Rust/rayon parallelism, use ~fussy-fuz-score-all~ instead.
+It calls ~fuz-score-all-skim~ or ~fuz-score-all-clangd~ to score the entire
+candidate collection in a single call.
+
+#+begin_src emacs-lisp :tangle yes
+  (use-package fuz
+    :ensure nil
+    :straight (fuz :type git :host github :repo "rustify-emacs/fuz.el")
+    :config
+    (setq fussy-score-fn 'fussy-fuz-score-all)
+    (unless (require 'fuz-core nil t)
+      (fuz-build-and-load-dymod)))
+#+end_src
+
 #+begin_src emacs-lisp :tangle yes
   ;; Same as fuz but with prebuilt binaries.
   (use-package fuz-bin

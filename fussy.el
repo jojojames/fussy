@@ -407,6 +407,8 @@ For example `fussy-score' makes use of `fussy-score-fn' but
                  ,'fussy-score)
           (const :tag "Scoring using `fzf-native-score-all'."
                  ,#'fussy-fzf-score)
+          (const :tag "Scoring using `fuz-score-all-skim' or `fuz-score-all-clangd'."
+                 ,#'fussy-fuz-score-all)
           (function :tag "Custom function"))
   :group 'fussy)
 
@@ -969,6 +971,19 @@ If SCORE does not have indices to highlight, return STR unmodified."
   (setq fussy-score-ALL-fn 'fussy-fzf-score)
   (setq fussy-use-cache t))
 
+;;;###autoload
+(defun fussy-setup-fuz ()
+  "Set up `fussy' for `fuz' with multithreaded batch scoring.
+
+Uses `fuz-score-all-skim' or `fuz-score-all-clangd' (controlled by
+`fussy-fuz-use-skim-p') to score the entire candidate collection in
+one parallel Rust call instead of per-candidate Elisp iteration."
+  (fussy-setup)
+  (setq fussy-filter-fn 'fussy-filter-by-scoring)
+  (setq fussy-score-fn 'fussy-fuz-score)
+  (setq fussy-score-ALL-fn 'fussy-fuz-score-all)
+  (setq fussy-use-cache t))
+
 ;;
 ;; (@* "Sorting" )
 ;;
@@ -1164,6 +1179,10 @@ again."
   "Return whether or not we're using fzf."
   (or (eq fussy-score-ALL-fn 'fussy-fzf-score)
       (eq fussy-score-fn 'fussy-fzf-native-score)))
+
+(defun fussy--fuz-score-all-p ()
+  "Return whether or not we're using fuz's multithreaded batch scoring."
+  (eq fussy-score-ALL-fn 'fussy-fuz-score-all))
 
 (defun fussy--filter-by-scoring-p ()
   "Return whether or not we're filtering matches through our scoring function."
@@ -1395,7 +1414,7 @@ Use `fussy-score-ALL-fn' for filtering."
                      " "
                    prefix))
        (completions
-        (if (fussy--fzf-p)
+        (if (or (fussy--fzf-p) (fussy--fuz-score-all-p))
             ;; Gather all valid candidates and score in batch.
             ;; `fussy-outer-score' normalizes INFIX once.
             (fussy-outer-score
@@ -1674,6 +1693,8 @@ This is to try to avoid a additional sort step."
 (declare-function "fuz-calc-score-skim" "fuz")
 (declare-function "fuz-fuzzy-match-clangd" "fuz")
 (declare-function "fuz-calc-score-clangd" "fuz")
+(declare-function "fuz-score-all-skim" "fuz")
+(declare-function "fuz-score-all-clangd" "fuz")
 
 (defun fussy-flx-rs-score (str query &rest args)
   "Score STR for QUERY with ARGS using `flx-rs-score'."
@@ -1700,6 +1721,21 @@ for more speed."
           (list (fuz-calc-score-clangd query str)))
       (when (fboundp 'fuz-fuzzy-match-clangd)
         (fuz-fuzzy-match-clangd query str)))))
+
+(defun fussy-fuz-score-all (candidates string &optional _cache)
+  "Score CANDIDATES for STRING using fuz's multithreaded batch scoring.
+
+Uses `fuz-score-all-skim' or `fuz-score-all-clangd' based on
+`fussy-fuz-use-skim-p'.  The entire collection is scored in one call
+using Rust/rayon parallelism.
+
+Ignore CACHE.  This is only added to match `fussy-score'."
+  (require 'fuz)
+  (if fussy-fuz-use-skim-p
+      (when (fboundp 'fuz-score-all-skim)
+        (fuz-score-all-skim candidates string))
+    (when (fboundp 'fuz-score-all-clangd)
+      (fuz-score-all-clangd candidates string))))
 
 ;; `fuz-bin' integration.
 (declare-function "fuz-bin-dyn-score-skim" "fuz-bin")
