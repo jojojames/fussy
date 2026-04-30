@@ -1572,9 +1572,9 @@ exhaustive on matches."
     (when (> (length str) 1)
       "\\)\\)"))))
 
-(defun fussy-pattern-default (_str)
+(defun fussy-pattern-default (str)
   "Default pattern to pass to `completion-regexp-list' when filtering.."
-  (fussy-pattern-default-to-backend _str))
+  (fussy-pattern-default-to-backend str))
 
 (define-inline fussy-pattern-default-to-backend (_str)
   "Return nothing, expect backend to filter/score.
