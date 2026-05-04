@@ -995,10 +995,13 @@ one parallel Rust call instead of per-candidate Elisp iteration."
         (display-sort-function . fussy--sort)
         (cycle-sort-function . fussy--sort)
         ,@(cdr metadata))
-    `(metadata
-      (display-sort-function . fussy--default-sort)
-      (cycle-sort-function . fussy--default-sort)
-      ,@(cdr metadata))))
+    (let ((category (completion-metadata-get metadata 'category)))
+      (if (memq category '(command buffer))
+          `(metadata
+            (display-sort-function . fussy--default-sort)
+            (cycle-sort-function . fussy--default-sort)
+            ,@(cdr metadata))
+        metadata))))
 
 (defun fussy--default-sort (completions)
   "Sort COMPLETIONS using `fussy-default-sort-fn'.
