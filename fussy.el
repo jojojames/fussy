@@ -1096,8 +1096,9 @@ Used when there's no need to sort. e.g. User hasn't typed anything."
        (sort
         (mapcar
          (lambda (c)
-           (let ((hpos (when (and uses-hist hist)
-                         (or (gethash c hist) most-positive-fixnum)))
+           (let ((hpos (if (and uses-hist hist)
+                           (or (gethash c hist) most-positive-fixnum)
+                         0))
                  (len (when uses-len (length c))))
              (list c hpos len)))
          completions)
@@ -1145,8 +1146,9 @@ Used when there's no need to sort. e.g. User hasn't typed anything."
         (mapcar
          (lambda (c)
            (let ((score (or (get-text-property 0 'completion-score c) 0))
-                 (hpos (when (and uses-hist hist)
-                         (or (gethash c hist) most-positive-fixnum)))
+                 (hpos (if (and uses-hist hist)
+                           (or (gethash c hist) most-positive-fixnum)
+                         0))
                  (len (when uses-len (length c))))
              ;; candidate, score, history-pos, length
              (list c score hpos len)))
