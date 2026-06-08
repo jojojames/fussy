@@ -67,6 +67,7 @@
 ;;; Code:
 
 (defvar fzf-native-case-mode)
+(defvar fzf-native-fuzzy)
 (defvar fzf-native-batch-highlight)
 (defvar fzf-native-filter-only-length)
 (defvar fzf-native-filter-only-logic)
@@ -145,6 +146,23 @@ Only meaningful when `fussy-score-ALL-fn' is `fussy-fzf-score'."
   :type '(choice (const :tag "Smart case (default)" smart)
                  (const :tag "Ignore case"          ignore)
                  (const :tag "Respect case"         respect)))
+
+(defcustom fussy-fzf-fuzzy t
+  "Whether to fuzzy match with `fzf-native'.
+
+If t, use fuzzy matching, if nil, use exact/substring matching.
+
+If t, prefixing a term with ' switches that term to exact matching.
+
+If nil, prefixing a term with ' switches that term to fuzzy matching.
+
+Read at the start of every scoring call.
+
+Propagated to `fzf-native-fuzzy' via `setq-local' inside
+`fussy-all-completions-v1'.  Only meaningful when `fussy-score-ALL-fn'
+is `fussy-fzf-score'."
+  :group 'fussy
+  :type 'boolean)
 
 (defcustom fussy-score-threshold-to-filter nil
   "Candidates with scores of N or less are filtered.
@@ -712,6 +730,7 @@ Implement `all-completions' interface with additional fuzzy / `flx' scoring."
   ;; Propagate to fzf-native's per-call case mode so the C scorer matches
   ;; the elisp-side case treatment.
   (setq-local fzf-native-case-mode fussy-fzf-case-mode)
+  (setq-local fzf-native-fuzzy fussy-fzf-fuzzy)
   (setq-local fzf-native-batch-highlight fussy-fzf-native-highlight)
   (let* ((metadata (completion-metadata string table pred))
          (cache (if (memq (completion-metadata-get metadata 'category)

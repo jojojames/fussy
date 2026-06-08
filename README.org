@@ -108,6 +108,26 @@ for a native C implementation of ~fzf~,
   :vc (:url "https://github.com/dangduc/fzf-native" :rev :newest))
 #+end_src
 
+NOTE: You can use non-fuzzy matching with ~fzf-native~ by configuring:
+~fussy-fzf-fuzzy~, which controls whether terms in queries are matched
+fuzzily or as exact substrings.  Propagated to ~fzf-native-fuzzy~ via
+~setq-local~ inside ~fussy-all-completions-v1~; only meaningful when
+~fussy-score-ALL-fn~ is ~fussy-fzf-score~.
+
+| Value | Behavior                                                                |
+|-------+-------------------------------------------------------------------------|
+| ~t~   | Fuzzy matching (default).  Prefix a term with ~'~ to force exact match. |
+| ~nil~ | Exact/substring matching.  Prefix a term with ~'~ to force fuzzy match. |
+
+Operator filters (~!~, ~^~, ~$~, ~|~, space-separated AND terms) work
+identically regardless of this setting — ~fussy-fzf-fuzzy~ only changes
+the default matcher used for bare terms.
+
+#+begin_src emacs-lisp :tangle yes
+  (setq fussy-fzf-fuzzy t)   ; default
+  (setq fussy-fzf-fuzzy nil) ; exact/substring matching
+#+end_src
+
 ** Fuz
 Another option is to use the [[https://github.com/rustify-emacs/fuz.el][fuz]]
 library (also in Rust) for scoring.
@@ -481,9 +501,7 @@ We also override ~ivy--re-filter~ to control filtering.
 
 For more information: https://github.com/abo-abo/swiper/issues/848#issuecomment-1143129670
 
-
 * fzfa
-
 [[https://github.com/jojojames/fzfa][fzfa]] is the companion sibling project to ~fussy~. Where ~fussy~
 is a synchronous ~completion-style~ that works inside Emacs's standard
 completion machinery (=completing-read=, =completion-at-point=, etc.),
