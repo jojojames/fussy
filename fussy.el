@@ -1091,13 +1091,36 @@ top-N via `fzf-native-highlight-all'.  Needed because the C-side
 scorer highlights the top-N by its own score-order, but
 `fussy--sort' re-orders ties via `fussy-compare-same-score-fn',
 so the displayed top-N would otherwise differ from the highlighted
-top-N (most candidates tying at the same score for short queries)."
+top-N (most candidates tying at the same score for short queries).
+
+For file completion specifically, candidates carry an internal
+`completion--unquoted' text property whose value is the display
+string (Emacs bug#77754 — quoted paths need unquoting before
+display).  Vertico reads that property and renders the inner
+string, not the outer candidate.  The outer `highlight-all' pass
+faces only the outer candidate, so without further work the
+displayed unquoted layer stays plain.  We propagate face onto the
+unquoted layer with a second per-candidate highlight pass and
+re-attach the faced copy as the property's value."
   (let ((sorted (funcall orig-fn completions)))
     (when (and sorted
                (fboundp 'fzf-native-highlight-all)
                (stringp fussy--current-infix)
                (not (string= fussy--current-infix "")))
-      (fzf-native-highlight-all sorted fussy--current-infix))
+      (fzf-native-highlight-all sorted fussy--current-infix)
+      ;; Second pass: propagate face onto each candidate's
+      ;; `completion--unquoted' property string, for vertico file
+      ;; completion (bug#77754).
+      (dolist (cand sorted)
+        (when (and (stringp cand) (> (length cand) 0))
+          (when-let* ((unq (get-text-property
+                            0 'completion--unquoted cand))
+                      ((stringp unq))
+                      (cell (list (copy-sequence unq))))
+            (fzf-native-highlight-all cell fussy--current-infix)
+            (put-text-property 0 (length cand)
+                               'completion--unquoted (car cell)
+                               cand)))))
     sorted))
 
 (defvar fussy--fzf-loaded-p nil
