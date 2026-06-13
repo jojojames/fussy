@@ -748,6 +748,30 @@ Implement `all-completions' interface with additional fuzzy / `flx' scoring."
     (setf fussy--filtering-p (not (string= infix "")))
     (setf fussy--current-prefix prefix)
     (setf fussy--current-infix infix)
+    ;; Lazy-hilit opt-in: when the frontend has requested lazy highlighting
+    ;; (vertico, icomplete on Emacs 28+ bind `completion-lazy-hilit'), set
+    ;; `completion-lazy-hilit-fn' so face is applied per /visible/ candidate
+    ;; at render time rather than eagerly across the top-N.
+    ;;
+    ;; The fzf path needs an explicit set — `fzf-native-highlight-all' is
+    ;; eager-only.  The pcm path is left alone: Emacs's own
+    ;; `completion-pcm--hilit-commonality' (called downstream via
+    ;; `fussy--pcm-highlight') sets the lazy fn itself when invoked.  Non-fzf
+    ;; non-pcm backends keep eager (see Chunk 8 in fzfa's sort-hilit-design).
+    ;;
+    ;; `infix' is captured lexically — sidesteps the buffer-local
+    ;; `fussy--current-infix'.  Vertico's `vertico--hilit' passes the
+    ;; `completion--unquoted' string for file completion (Emacs bug#77754),
+    ;; so face lands on whichever variant is actually displayed.
+    (when (and (bound-and-true-p completion-lazy-hilit)
+               fussy-propertize-fn
+               (fussy--fzf-p)
+               (fboundp 'fzf-native-highlight-one)
+               (not (string-empty-p infix)))
+      (let ((query infix))
+        (setq completion-lazy-hilit-fn
+              (lambda (cand)
+                (fzf-native-highlight-one cand query)))))
     (if-let* ((cached-all (and fussy-use-cache
                                (cl-copy-list
                                 (gethash string fussy--all-cache)))))
