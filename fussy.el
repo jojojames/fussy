@@ -1149,12 +1149,20 @@ string, not the outer candidate.  The outer `highlight-all' pass
 faces only the outer candidate, so without further work the
 displayed unquoted layer stays plain.  We propagate face onto the
 unquoted layer with a second per-candidate highlight pass and
-re-attach the faced copy as the property's value."
+re-attach the faced copy as the property's value.
+
+Skip both eager passes when the frontend has opted into lazy hilit
+\(vertico, icomplete on Emacs 28+).  `fussy-all-completions' has
+already set `completion-lazy-hilit-fn' to a per-candidate closure;
+vertico drives face at render time against the displayed string
+\(unquoted for files), which is the natural way to resolve
+bug#77754.  The eager pass here would be redundant under lazy."
   (let ((sorted (funcall orig-fn completions)))
     (when (and sorted
                (fboundp 'fzf-native-highlight-all)
                (stringp fussy--current-infix)
-               (not (string= fussy--current-infix "")))
+               (not (string= fussy--current-infix ""))
+               (not (bound-and-true-p completion-lazy-hilit)))
       (fzf-native-highlight-all sorted fussy--current-infix)
       ;; Second pass: propagate face onto each candidate's
       ;; `completion--unquoted' property string, for vertico file
