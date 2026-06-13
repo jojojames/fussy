@@ -755,13 +755,11 @@ Implement `all-completions' interface with additional fuzzy / `flx' scoring."
           (setf fussy--current-result cached-all)
           (fussy--debug "%s from hash with length %d"
                         string (length cached-all))
-          (if (fussy--fzf-p)
-              (when (fboundp 'fzf-native-highlight-all)
-                (fzf-native-highlight-all cached-all infix))
-            (fussy--highlight-collection
+          (fussy--highlight-collection
+           (if (fussy--fzf-p) infix
              (fussy--recreate-regex-pattern
-              beforepoint afterpoint bounds)
-             cached-all))
+              beforepoint afterpoint bounds))
+           cached-all)
           cached-all)
       (pcase-let*
           ((`(,all ,pattern ,_prefix)
@@ -801,9 +799,8 @@ Implement `all-completions' interface with additional fuzzy / `flx' scoring."
                     ;; since `fussy--adjust-metadata' skips installing
                     ;; `fussy--sort' in that case and no later highlight
                     ;; pass will run.
-                    (when (and fussy--last-was-filter-only
-                               (fboundp 'fzf-native-highlight-all))
-                      (fzf-native-highlight-all all infix))
+                    (when fussy--last-was-filter-only
+                      (fussy--highlight-collection infix all))
                   (fussy--highlight-collection pattern all))
                 all)
             (if (length< all fussy-max-candidate-limit)
@@ -976,14 +973,32 @@ If `fussy-propertize-fn' is nil, no highlighting should take place."
    (not (fussy--fzf-p))
    fussy-propertize-fn))
 
-(defun fussy--highlight-collection (pattern collection)
-  "Highlight COLLECTION using PATTERN.
+(defun fussy--highlight-collection (query-or-pattern collection)
+  "Highlight COLLECTION.
 
-  Only highlight if `fussy--use-pcm-highlight-p' is t."
+QUERY-OR-PATTERN is routed by the active scoring backend:
+- `fussy--fzf-p' — interpreted as a query string and passed to
+  `fzf-native-highlight-all'.
+- `fussy--use-pcm-highlight-p' — interpreted as a pcm pattern list and
+  passed to `completion-pcm--hilit-commonality'.
+- Otherwise — ignored.  COLLECTION returned unchanged on the assumption
+  that highlighting was applied elsewhere (e.g. by `fussy-propertize-fn'
+  during scoring).
+
+COLLECTION is mutated in place for the fzf path (via setcar/aset inside
+`fzf-native-highlight-all') and returned.  Pass a list of one to use
+this as the per-candidate highlighter behind
+`completion-lazy-hilit-fn'."
   (when collection
     (cond
+     ((fussy--fzf-p)
+      (when (and (fboundp 'fzf-native-highlight-all)
+                 (stringp query-or-pattern)
+                 (not (string-empty-p query-or-pattern)))
+        (fzf-native-highlight-all collection query-or-pattern))
+      collection)
      ((fussy--use-pcm-highlight-p)
-      (fussy--pcm-highlight pattern collection))
+      (fussy--pcm-highlight query-or-pattern collection))
      (:default
       ;; Assume that the collection's highlighting is handled elsewhere.
       collection))))
