@@ -1016,12 +1016,21 @@ this as the per-candidate highlighter behind
   (when collection
     (cond
      ((fussy--fzf-p)
+      ;; Skip the eager pass when the frontend has opted into lazy hilit —
+      ;; `fussy-all-completions' has already set `completion-lazy-hilit-fn'
+      ;; to a closure calling `fzf-native-highlight-one' per visible
+      ;; candidate.  Avoids redundant eager face on top-N that the lazy fn
+      ;; will overwrite at render time.
       (when (and (fboundp 'fzf-native-highlight-all)
                  (stringp query-or-pattern)
-                 (not (string-empty-p query-or-pattern)))
+                 (not (string-empty-p query-or-pattern))
+                 (not (bound-and-true-p completion-lazy-hilit)))
         (fzf-native-highlight-all collection query-or-pattern))
       collection)
      ((fussy--use-pcm-highlight-p)
+      ;; `completion-pcm--hilit-commonality' is itself lazy-aware (Emacs
+      ;; 30+) — under lazy it sets `completion-lazy-hilit-fn' and returns
+      ;; the collection unchanged.  Safe to call unconditionally.
       (fussy--pcm-highlight query-or-pattern collection))
      (:default
       ;; Assume that the collection's highlighting is handled elsewhere.
