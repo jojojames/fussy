@@ -60,7 +60,6 @@
 
 ;; Development dependencies
 (development
-  (depends-on "f")
   (depends-on "ert-runner")
   (depends-on "package-lint"))
 
