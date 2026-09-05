@@ -25,15 +25,10 @@ jobs:
         with:
           version: ${{ matrix.emacs-version }}
 
-      - uses: emacs-eask/setup-eask@master
-        with:
-          version: 'snapshot'
-
       - name: Print emacs version
         run: |
           emacs --version
 
-      - run: echo "$HOME/.cask/bin" >> $GITHUB_PATH
       - run: make install
       - run: make compile
       - run: make lint
