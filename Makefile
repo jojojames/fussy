@@ -29,17 +29,24 @@ FZF_LOAD := $(if $(wildcard $(FZF_NATIVE_LOCAL)),-L $(FZF_NATIVE_LOCAL),)
 PACKAGE_INIT := (progn \
   (require 'package) \
   (setq package-user-dir \"$(PACKAGE_DIR)\") \
-  (setq package-archives '((\"gnu\"   . \"https://elpa.gnu.org/packages/\") \
-                           (\"melpa\" . \"https://melpa.org/packages/\"))) \
+  (setq package-archives '((\"melpa\" . \"https://melpa.org/packages/\"))) \
   (package-initialize))
 
 .PHONY: install compile test lint clean
 
+# `compat' lives on GNU ELPA only, and Emacs on Windows CI runners
+# often can't complete the TLS handshake against elpa.gnu.org. Install
+# it via `package-vc-install' from the `emacs-straight/compat' mirror
+# (updated daily from GNU ELPA) so we never touch elpa.gnu.org. Guard
+# on `package-alist' rather than `package-installed-p' - Emacs 30 ships
+# a built-in `compat' stub that makes `package-installed-p' return t
+# but doesn't satisfy `package-lint's installability check.
 $(STAMP): Makefile
 	$(EMACS) --batch \
 	  --eval "$(PACKAGE_INIT)" \
 	  --eval "(package-refresh-contents)" \
-	  --eval "(dolist (p '(flx compat package-lint)) (unless (package-installed-p p) (package-install p)))"
+	  --eval "(unless (assq 'compat package-alist) (package-vc-install \"https://github.com/emacs-straight/compat\"))" \
+	  --eval "(dolist (p '(flx package-lint)) (unless (package-installed-p p) (package-install p)))"
 	@mkdir -p $(PACKAGE_DIR)
 	@touch $@
 
