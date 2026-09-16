@@ -1,4 +1,5 @@
 ;;; fussy-test.el --- `fussy' test. -*- lexical-binding: t; -*-
+(require 'cl-lib)
 (require 'ert)
 (require 'fussy)
 
@@ -320,6 +321,52 @@ Called from `fussy-all-completions'."
     (let ((hist (fussy--history-hash-table)))
       (should (eq (gethash "first" hist) 0))
       (should (eq (gethash "second" hist) 1)))))
+
+;;
+;; (@* "`fussy--remote-file-name-p'" )
+;;
+
+(ert-deftest fussy--remote-file-name-p-test ()
+  "Test `fussy--remote-file-name-p' recognizes remote file names."
+  (should (fussy--remote-file-name-p "/ssh:host:"))
+  (should (fussy--remote-file-name-p "/ssh:user@host:/etc/hosts"))
+  ;; A method is enough, before the name is complete enough for
+  ;; `file-remote-p' to recognize it.
+  (should (fussy--remote-file-name-p "/scpx:root@host#11122:"))
+  (should-not (fussy--remote-file-name-p "/usr/local"))
+  (should-not (fussy--remote-file-name-p "~/src"))
+  (should-not (fussy--remote-file-name-p ""))
+  (should-not (fussy--remote-file-name-p nil)))
+
+;;
+;; (@* "`fussy-cancel-on-input-p'" )
+;;
+
+(ert-deftest fussy-cancel-on-input-p-test ()
+  "Test `fussy-cancel-on-input-p' declines to abort remote file completion."
+  (should-not (fussy-cancel-on-input-p))
+  (cl-letf (((symbol-function 'minibufferp) (lambda (&rest _) t)))
+    (with-temp-buffer
+      ;; Not completing a file name at all.
+      (insert "/ssh:host:")
+      (let ((minibuffer-completing-file-name nil))
+        (should (fussy-cancel-on-input-p)))
+      ;; Local file name.
+      (erase-buffer)
+      (insert "/usr/local")
+      (let ((minibuffer-completing-file-name t))
+        (should (fussy-cancel-on-input-p)))
+      ;; Remote file name being typed.
+      (erase-buffer)
+      (insert "/ssh:host:")
+      (let ((minibuffer-completing-file-name t))
+        (should-not (fussy-cancel-on-input-p)))
+      ;; Relative name, but the current directory is remote.
+      (erase-buffer)
+      (insert "etc/")
+      (let ((minibuffer-completing-file-name t)
+            (default-directory "/ssh:host:/"))
+        (should-not (fussy-cancel-on-input-p))))))
 
 ;;
 ;; (@* "Multibyte" )
