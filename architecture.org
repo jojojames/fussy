@@ -65,7 +65,7 @@ valid backend.
 | Function                             | Role                                                   |
 |--------------------------------------+--------------------------------------------------------|
 | =fussy-try-completions= (autoload)   | =try-completion= side. Delegates to =completion-flex-try-completion=. Registered in =completion-styles-alist=. |
-| =fussy-all-completions= (autoload)   | =all-completions= side. Outer wrapper that invokes =fussy-all-completions-v1= under =while-no-input=. |
+| =fussy-all-completions= (autoload)   | =all-completions= side. Outer wrapper that invokes =fussy-all-completions-v1=, under =while-no-input= when =fussy-cancel-on-input-fn= says so. |
 | =fussy-all-completions-v1=           | Core implementation. Filters, scores, sorts, highlights. |
 | =fussy-setup= (autoload)             | Activates fussy globally: pushes =fussy= onto =completion-styles=. |
 | =fussy-setup-fzf= / =fussy-setup-fuz=| Convenience wrappers that set the score-fn defcustom. |
@@ -81,7 +81,8 @@ and =fussy-all-completions=. Everything else is implementation.
        │
        ▼
   ┌──────────────────────────────────────────────┐
-  │ wrap with while-no-input                     │
+  │ wrap with while-no-input (unless             │
+  │ fussy-cancel-on-input-fn returns nil)        │
   │ → call fussy-all-completions-v1              │
   └──────────────────────────────────────────────┘
        │
@@ -143,6 +144,14 @@ and =fussy-all-completions=. Everything else is implementation.
 The =while-no-input= wrap on step 1 is critical: filtering and scoring
 millions of candidates can take meaningful time, and fussy must
 release the main thread the moment the user types another key.
+
+It is not always wanted, so =fussy-cancel-on-input-fn= gates it. Two
+cases opt out. In-buffer completion (=company-mode=, =corfu=) flickers
+its popup with stale results when the fetch is aborted during fast
+typing. Remote file name completion is worse: there the table call is a
+Tramp connection attempt, and aborting it unwinds out of the middle of
+the remote shell handshake, leaving Tramp waiting with no timeout for a
+prompt marker the half-configured shell never prints.
 
 * Filtering — narrowing before scoring
 
@@ -412,6 +421,7 @@ for the long form.
 | =fussy-score-threshold-to-filter-alist=  | Per-backend score thresholds.                              |
 | =fussy-company-prefix-length=            | Bypass cutoff in the company integration.                  |
 | =fussy-company-filter-only-length=       | Filter-only cutoff in the company integration. Overrides the bypass when set; nil disables. |
+| =fussy-cancel-on-input-fn=               | Whether a fetch may be aborted by new input. Default excludes remote file name completion. |
 
 * Behavior reference (canonical input → output)
 
