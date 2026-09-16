@@ -648,7 +648,26 @@ Implement `try-completions' interface by using `completion-flex-try-completion'.
 (defvar fussy--filtering-p nil
   "Is `fussy' filtering currently?")
 
-(defcustom fussy-cancel-on-input-fn #'minibufferp
+(defsubst fussy--remote-file-name-p (path)
+  "Whether PATH looks like a remote file name.
+
+Matches as soon as a method has been typed, before `file-remote-p'
+would recognize the name, and without consulting a file name handler."
+  (and (stringp path)
+       (string-match-p "\\`/[^/|:]+:" (substitute-in-file-name path))))
+
+(defun fussy-cancel-on-input-p ()
+  "Whether `fussy-all-completions' may be aborted by new input.
+
+Non-nil in the minibuffer, except while completing a remote file
+name.  See `fussy-cancel-on-input-fn'."
+  (and (minibufferp)
+       (not (and minibuffer-completing-file-name
+                 (or (fussy--remote-file-name-p
+                      (minibuffer-contents-no-properties))
+                     (fussy--remote-file-name-p default-directory))))))
+
+(defcustom fussy-cancel-on-input-fn #'fussy-cancel-on-input-p
   "Predicate deciding whether `fussy-all-completions' is abortable.
 
 When this returns non-nil the call is wrapped in `while-no-input'
@@ -663,7 +682,15 @@ input loop queues keystrokes for after it returns — same model
 completion (`company-mode' popup, `corfu'), where the abort path
 otherwise flickers the popup with stale results during fast typing.
 
-Default `minibufferp' matches that split exactly."
+It is also wrong for remote file names.  There the table call is a
+Tramp connection attempt, and aborting it unwinds out of the middle
+of the remote shell handshake; Tramp is then left waiting, with no
+timeout, for a prompt marker the half-configured shell never prints.
+`vertico' declines to interrupt completion for the same reason.
+
+Default `fussy-cancel-on-input-p' is `minibufferp' minus remote file
+name completion.  Use `minibufferp' to abort in the minibuffer
+unconditionally, or `ignore' to never abort."
   :type 'function
   :group 'fussy)
 
